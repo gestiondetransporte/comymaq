@@ -8,7 +8,7 @@ import { Search, FileText, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
+import { format, differenceInDays, isPast, isWithinInterval, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 
@@ -71,6 +71,44 @@ export default function Contratos() {
     }
   };
 
+  const calculateContratoStatus = (contrato: Contrato): string => {
+    if (!contrato.fecha_vencimiento) return contrato.status || 'activo';
+    
+    const now = new Date();
+    const fechaVencimiento = new Date(contrato.fecha_vencimiento);
+    const diasParaVencer = differenceInDays(fechaVencimiento, now);
+    
+    // Si el contrato está explícitamente cancelado, respetar ese estado
+    if (contrato.status === 'cancelado') return 'cancelado';
+    
+    // Si ya venció
+    if (isPast(fechaVencimiento) && diasParaVencer < 0) {
+      return 'vencido';
+    }
+    
+    // Si está por vencer (7 días o menos)
+    if (diasParaVencer >= 0 && diasParaVencer <= 7) {
+      return 'por vencer';
+    }
+    
+    // Si está activo
+    return 'activo';
+  };
+
+  const calculateDiasTranscurridos = (fechaInicio: string | null): number => {
+    if (!fechaInicio) return 0;
+    const inicio = new Date(fechaInicio);
+    const now = new Date();
+    return differenceInDays(now, inicio);
+  };
+
+  const calculateDiasRestantes = (fechaVencimiento: string | null): number => {
+    if (!fechaVencimiento) return 0;
+    const vencimiento = new Date(fechaVencimiento);
+    const now = new Date();
+    return Math.max(0, differenceInDays(vencimiento, now));
+  };
+
   const filterContratos = () => {
     let filtered = [...contratos];
 
@@ -85,24 +123,31 @@ export default function Contratos() {
       );
     }
 
-    // Filtrar por status
+    // Filtrar por status calculado
     if (statusFilter !== "todos") {
-      filtered = filtered.filter(contrato => contrato.status === statusFilter);
+      filtered = filtered.filter(contrato => {
+        const statusCalculado = calculateContratoStatus(contrato);
+        return statusCalculado === statusFilter;
+      });
     }
 
     setFilteredContratos(filtered);
   };
 
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
+  const getStatusBadge = (contrato: Contrato) => {
+    const statusCalculado = calculateContratoStatus(contrato);
+    
+    switch (statusCalculado) {
       case 'activo':
-        return <Badge variant="default">Activo</Badge>;
-      case 'finalizado':
-        return <Badge variant="secondary">Finalizado</Badge>;
+        return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Activo</Badge>;
+      case 'por vencer':
+        return <Badge variant="default" className="bg-yellow-600 hover:bg-yellow-700">Por Vencer</Badge>;
+      case 'vencido':
+        return <Badge variant="destructive">Vencido</Badge>;
       case 'cancelado':
-        return <Badge variant="destructive">Cancelado</Badge>;
+        return <Badge variant="outline" className="bg-gray-600 hover:bg-gray-700 text-white">Cancelado</Badge>;
       default:
-        return <Badge variant="outline">{status || 'N/A'}</Badge>;
+        return <Badge variant="outline">{statusCalculado || 'N/A'}</Badge>;
     }
   };
 
@@ -156,7 +201,8 @@ export default function Contratos() {
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="activo">Activos</SelectItem>
-                  <SelectItem value="finalizado">Finalizados</SelectItem>
+                  <SelectItem value="por vencer">Por Vencer</SelectItem>
+                  <SelectItem value="vencido">Vencidos</SelectItem>
                   <SelectItem value="cancelado">Cancelados</SelectItem>
                 </SelectContent>
               </Select>
@@ -186,39 +232,55 @@ export default function Contratos() {
                     <TableHead>Suma</TableHead>
                     <TableHead>Fecha Inicio</TableHead>
                     <TableHead>Vencimiento</TableHead>
-                    <TableHead>Días</TableHead>
+                    <TableHead>Días Transcurridos</TableHead>
+                    <TableHead>Días Restantes</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Vendedor</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredContratos.map((contrato) => (
-                    <TableRow key={contrato.id}>
-                      <TableCell className="font-medium">{contrato.folio_contrato}</TableCell>
-                      <TableCell>{contrato.cliente}</TableCell>
-                      <TableCell>{contrato.obra || 'N/A'}</TableCell>
-                      <TableCell>{formatCurrency(contrato.suma)}</TableCell>
-                      <TableCell>{formatDate(contrato.fecha_inicio)}</TableCell>
-                      <TableCell>{formatDate(contrato.fecha_vencimiento)}</TableCell>
-                      <TableCell>{contrato.dias_contratado || 'N/A'}</TableCell>
-                      <TableCell>{getStatusBadge(contrato.status)}</TableCell>
-                      <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedContrato(contrato);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalles
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredContratos.map((contrato) => {
+                    const diasTranscurridos = calculateDiasTranscurridos(contrato.fecha_inicio);
+                    const diasRestantes = calculateDiasRestantes(contrato.fecha_vencimiento);
+                    
+                    return (
+                      <TableRow key={contrato.id}>
+                        <TableCell className="font-medium">{contrato.folio_contrato}</TableCell>
+                        <TableCell>{contrato.cliente}</TableCell>
+                        <TableCell>{contrato.obra || 'N/A'}</TableCell>
+                        <TableCell>{formatCurrency(contrato.suma)}</TableCell>
+                        <TableCell>{formatDate(contrato.fecha_inicio)}</TableCell>
+                        <TableCell>{formatDate(contrato.fecha_vencimiento)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{diasTranscurridos} días</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={diasRestantes <= 7 && diasRestantes > 0 ? "default" : "outline"}
+                            className={diasRestantes <= 7 && diasRestantes > 0 ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+                          >
+                            {diasRestantes} días
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(contrato)}</TableCell>
+                        <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedContrato(contrato);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalles
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
