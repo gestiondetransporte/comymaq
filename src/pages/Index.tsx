@@ -14,7 +14,9 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isVendedor } = useAuth();
+  
+  const canAccessSales = isAdmin || isVendedor;
 
   const handleSearch = async (query?: string) => {
     const searchValue = query || searchQuery;
@@ -123,16 +125,31 @@ export default function Index() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/contratos')}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📋 Contratos
-            </CardTitle>
-            <CardDescription>
-              Gestiona contratos de renta de equipo
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        {canAccessSales && (
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/clientes')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                👥 Clientes
+              </CardTitle>
+              <CardDescription>
+                Gestiona información de clientes
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
+        {canAccessSales && (
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/contratos')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📋 Contratos
+              </CardTitle>
+              <CardDescription>
+                Gestiona contratos de renta de equipo
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
 
         <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/entradas-salidas')}>
           <CardHeader>
@@ -156,16 +173,18 @@ export default function Index() {
           </CardHeader>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/almacenes')}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📦 Almacenes
-            </CardTitle>
-            <CardDescription>
-              Gestiona almacenes y ubicaciones
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        {canAccessSales && (
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/almacenes')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                📦 Almacenes
+              </CardTitle>
+              <CardDescription>
+                Gestiona almacenes y ubicaciones
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
       </div>
     </div>
   );

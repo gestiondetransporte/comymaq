@@ -12,18 +12,21 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, isVendedor } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const canAccessSales = isAdmin || isVendedor;
+
   const navItems = [
     { path: "/", label: "Buscador", icon: Search },
     { path: "/inventario", label: "Inventario", icon: List },
-    { path: "/contratos", label: "Contratos", icon: FileText },
+    { path: "/contratos", label: "Contratos", icon: FileText, restricted: true },
+    { path: "/clientes", label: "Clientes", icon: Shield, restricted: true },
     { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
     { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
-    { path: "/almacenes", label: "Almacenes", icon: Package },
+    { path: "/almacenes", label: "Almacenes", icon: Package, restricted: true },
     { path: "/configuracion", label: "Configuración", icon: Settings },
   ];
 
@@ -39,21 +42,23 @@ export default function Layout({ children }: LayoutProps) {
 
   const NavLinks = () => (
     <>
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = location.pathname === item.path;
-        return (
-          <Button
-            key={item.path}
-            variant={isActive ? "default" : "ghost"}
-            onClick={() => handleNavigation(item.path)}
-            className="w-full justify-start"
-          >
-            <Icon className="mr-2 h-4 w-4" />
-            {item.label}
-          </Button>
-        );
-      })}
+      {navItems
+        .filter(item => !item.restricted || canAccessSales)
+        .map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Button
+              key={item.path}
+              variant={isActive ? "default" : "ghost"}
+              onClick={() => handleNavigation(item.path)}
+              className="w-full justify-start"
+            >
+              <Icon className="mr-2 h-4 w-4" />
+              {item.label}
+            </Button>
+          );
+        })}
       {isAdmin && (
         <>
           <div className="my-2 border-t" />
@@ -112,21 +117,23 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActive ? "default" : "ghost"}
-                  onClick={() => navigate(item.path)}
-                  size="sm"
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {item.label}
-                </Button>
-              );
-            })}
+            {navItems
+              .filter(item => !item.restricted || canAccessSales)
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Button
+                    key={item.path}
+                    variant={isActive ? "default" : "ghost"}
+                    onClick={() => navigate(item.path)}
+                    size="sm"
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {item.label}
+                  </Button>
+                );
+              })}
             {isAdmin && (
               <>
                 <div className="h-6 w-px bg-border mx-2" />

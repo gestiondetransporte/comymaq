@@ -33,7 +33,7 @@ import {
 interface UserWithRole {
   id: string;
   email: string;
-  role: 'admin' | 'moderator' | 'user';
+  role: 'admin' | 'moderator' | 'user' | 'vendedor';
   created_at: string;
 }
 
@@ -42,12 +42,12 @@ export default function AdminUsuarios() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [role, setRole] = useState<'admin' | 'moderator' | 'user' | 'vendedor'>('user');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
-  const [newRole, setNewRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [newRole, setNewRole] = useState<'admin' | 'moderator' | 'user' | 'vendedor'>('user');
 
   useEffect(() => {
     if (isAdmin) {
@@ -176,10 +176,18 @@ export default function AdminUsuarios() {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       admin: "destructive",
       moderator: "secondary",
+      vendedor: "default",
       user: "default",
     };
 
-    return <Badge variant={variants[role]}>{role}</Badge>;
+    const labels: Record<string, string> = {
+      admin: "Administrador",
+      moderator: "Moderador",
+      vendedor: "Vendedor",
+      user: "Usuario",
+    };
+
+    return <Badge variant={variants[role]}>{labels[role] || role}</Badge>;
   };
 
   if (!isAdmin) {
@@ -237,6 +245,7 @@ export default function AdminUsuarios() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
                     <SelectItem value="moderator">Moderador</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
@@ -340,6 +349,7 @@ export default function AdminUsuarios() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuario</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
                   <SelectItem value="moderator">Moderador</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>

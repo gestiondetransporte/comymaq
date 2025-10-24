@@ -7,11 +7,12 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isVendedor: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  createUser: (email: string, password: string, role: 'admin' | 'moderator' | 'user') => Promise<{ error: any }>;
+  createUser: (email: string, password: string, role: 'admin' | 'moderator' | 'user' | 'vendedor') => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVendedor, setIsVendedor] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -31,19 +33,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Check if user is admin
+          // Check user roles
           setTimeout(async () => {
             const { data: roles } = await supabase
               .from('user_roles')
               .select('role')
-              .eq('user_id', session.user.id)
-              .eq('role', 'admin')
-              .maybeSingle();
+              .eq('user_id', session.user.id);
             
-            setIsAdmin(!!roles);
+            const userRoles = roles?.map(r => r.role) || [];
+            setIsAdmin(userRoles.includes('admin'));
+            setIsVendedor(userRoles.includes('vendedor'));
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsVendedor(false);
         }
       }
     );
@@ -90,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/auth');
   };
 
-  const createUser = async (email: string, password: string, role: 'admin' | 'moderator' | 'user') => {
+  const createUser = async (email: string, password: string, role: 'admin' | 'moderator' | 'user' | 'vendedor') => {
     try {
       // Get current session to restore it after
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -150,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         isAdmin,
+        isVendedor,
         loading,
         signIn,
         signUp,

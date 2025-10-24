@@ -16,6 +16,7 @@ import Almacenes from "./pages/Almacenes";
 import Inventario from "./pages/Inventario";
 import AdminUsuarios from "./pages/AdminUsuarios";
 import Configuracion from "./pages/Configuracion";
+import Clientes from "./pages/Clientes";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -117,6 +118,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Configuracion />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clientes"
+        element={
+          <ProtectedRoute>
+            <Clientes />
           </ProtectedRoute>
         }
       />
