@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Eye } from "lucide-react";
+import { Search, FileText, Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +41,7 @@ export default function Contratos() {
   const [loading, setLoading] = useState(true);
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -170,6 +171,18 @@ export default function Contratos() {
     }
   };
 
+  const handleCreateContrato = () => {
+    setSelectedContrato(null);
+    setIsCreating(true);
+    setDialogOpen(true);
+  };
+
+  const handleOpenDialog = (contrato: Contrato) => {
+    setSelectedContrato(contrato);
+    setIsCreating(false);
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -179,7 +192,7 @@ export default function Contratos() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle>Vista de Contratos</CardTitle>
               <CardDescription>
@@ -187,6 +200,10 @@ export default function Contratos() {
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleCreateContrato} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo Contrato
+              </Button>
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -271,10 +288,7 @@ export default function Contratos() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setSelectedContrato(contrato);
-                              setDialogOpen(true);
-                            }}
+                            onClick={() => handleOpenDialog(contrato)}
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalles
@@ -293,8 +307,15 @@ export default function Contratos() {
       <ContratoDetailsDialog
         contrato={selectedContrato}
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setIsCreating(false);
+            setSelectedContrato(null);
+          }
+        }}
         onUpdate={fetchContratos}
+        isCreating={isCreating}
       />
     </div>
   );

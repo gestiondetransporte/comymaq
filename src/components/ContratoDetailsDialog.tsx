@@ -18,10 +18,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Trash2 } from "lucide-react";
 
 interface Contrato {
   id: string;
@@ -49,6 +60,7 @@ interface ContratoDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  isCreating?: boolean;
 }
 
 export function ContratoDetailsDialog({
@@ -56,18 +68,26 @@ export function ContratoDetailsDialog({
   open,
   onOpenChange,
   onUpdate,
+  isCreating = false,
 }: ContratoDetailsDialogProps) {
   const [formData, setFormData] = useState<Partial<Contrato>>({});
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const { getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
     if (contrato) {
       setFormData(contrato);
+    } else if (isCreating) {
+      setFormData({
+        folio_contrato: '',
+        cliente: '',
+        status: 'activo',
+      });
     }
-  }, [contrato]);
+  }, [contrato, isCreating, open]);
 
   // Auto-calculate fecha_vencimiento based on fecha_inicio + dias_contratado
   useEffect(() => {
@@ -92,12 +112,19 @@ export function ContratoDetailsDialog({
           title: "Ubicación capturada",
           description: "La ubicación GPS se ha guardado correctamente",
         });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error de ubicación",
+          description: "No se pudo obtener la ubicación. Verifica que los permisos de ubicación estén habilitados en tu navegador.",
+        });
       }
     } catch (error) {
+      console.error('Error getting location:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo obtener la ubicación. Verifica los permisos.",
+        description: "No se pudo obtener la ubicación. Asegúrate de dar permisos de ubicación al navegador.",
       });
     } finally {
       setLoadingLocation(false);
@@ -106,72 +133,138 @@ export function ContratoDetailsDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contrato) return;
-
     setLoading(true);
+
     try {
-      const { error } = await supabase
-        .from("contratos")
-        .update({
-          numero_contrato: formData.numero_contrato,
-          cliente: formData.cliente,
-          obra: formData.obra,
-          suma: formData.suma,
-          fecha_inicio: formData.fecha_inicio,
-          fecha_vencimiento: formData.fecha_vencimiento,
-          dias_contratado: formData.dias_contratado,
-          status: formData.status,
-          vendedor: formData.vendedor,
-          comprador: formData.comprador,
-          dentro_fuera: formData.dentro_fuera,
-          horas_trabajo: formData.horas_trabajo,
-          comentarios: formData.comentarios,
-          ubicacion_gps: formData.ubicacion_gps,
-          direccion: formData.direccion,
-        })
-        .eq("id", contrato.id);
+      if (isCreating) {
+        const { error } = await supabase
+          .from("contratos")
+          .insert({
+            folio_contrato: formData.folio_contrato,
+            numero_contrato: formData.numero_contrato || null,
+            cliente: formData.cliente,
+            obra: formData.obra || null,
+            suma: formData.suma || null,
+            fecha_inicio: formData.fecha_inicio || null,
+            fecha_vencimiento: formData.fecha_vencimiento || null,
+            dias_contratado: formData.dias_contratado || null,
+            status: formData.status || 'activo',
+            vendedor: formData.vendedor || null,
+            comprador: formData.comprador || null,
+            dentro_fuera: formData.dentro_fuera || null,
+            horas_trabajo: formData.horas_trabajo || null,
+            comentarios: formData.comentarios || null,
+            ubicacion_gps: formData.ubicacion_gps || null,
+            direccion: formData.direccion || null,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Éxito",
-        description: "Contrato actualizado correctamente",
-      });
+        toast({
+          title: "Éxito",
+          description: "Contrato creado correctamente",
+        });
+      } else {
+        if (!contrato) return;
+        
+        const { error } = await supabase
+          .from("contratos")
+          .update({
+            numero_contrato: formData.numero_contrato || null,
+            cliente: formData.cliente,
+            obra: formData.obra || null,
+            suma: formData.suma || null,
+            fecha_inicio: formData.fecha_inicio || null,
+            fecha_vencimiento: formData.fecha_vencimiento || null,
+            dias_contratado: formData.dias_contratado || null,
+            status: formData.status || 'activo',
+            vendedor: formData.vendedor || null,
+            comprador: formData.comprador || null,
+            dentro_fuera: formData.dentro_fuera || null,
+            horas_trabajo: formData.horas_trabajo || null,
+            comentarios: formData.comentarios || null,
+            ubicacion_gps: formData.ubicacion_gps || null,
+            direccion: formData.direccion || null,
+          })
+          .eq("id", contrato.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Éxito",
+          description: "Contrato actualizado correctamente",
+        });
+      }
+
       onUpdate();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error updating contrato:", error);
+      console.error(`Error ${isCreating ? 'creating' : 'updating'} contrato:`, error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo actualizar el contrato",
+        description: `No se pudo ${isCreating ? 'crear' : 'actualizar'} el contrato`,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!contrato) return null;
+  const handleDelete = async () => {
+    if (!contrato) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("contratos")
+        .delete()
+        .eq("id", contrato.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Contrato eliminado correctamente",
+      });
+
+      onUpdate();
+      onOpenChange(false);
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error deleting contrato:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el contrato",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Detalles del Contrato</DialogTitle>
+          <DialogTitle>{isCreating ? 'Crear Nuevo Contrato' : 'Detalles del Contrato'}</DialogTitle>
           <DialogDescription>
-            Folio: {contrato.folio_contrato}
+            {isCreating ? 'Completa la información del nuevo contrato' : `Folio: ${contrato?.folio_contrato}`}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="folio_contrato">Folio Contrato</Label>
+              <Label htmlFor="folio_contrato">Folio Contrato *</Label>
               <Input
                 id="folio_contrato"
+                required
                 value={formData.folio_contrato || ""}
-                disabled
-                className="bg-muted"
+                onChange={(e) =>
+                  setFormData({ ...formData, folio_contrato: e.target.value })
+                }
+                disabled={!isCreating}
+                className={!isCreating ? "bg-muted" : ""}
               />
             </div>
 
@@ -383,25 +476,58 @@ export function ContratoDetailsDialog({
             />
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                "Guardar Cambios"
+          <DialogFooter className="flex justify-between gap-2">
+            <div className="flex gap-2 flex-1">
+              {!isCreating && contrato && (
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive" className="gap-2">
+                      <Trash2 className="h-4 w-4" />
+                      Eliminar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Se eliminará permanentemente el contrato "{formData.folio_contrato}".
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDelete} 
+                        disabled={loading}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
-            </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isCreating ? 'Creando...' : 'Guardando...'}
+                  </>
+                ) : (
+                  isCreating ? 'Crear Contrato' : 'Guardar Cambios'
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

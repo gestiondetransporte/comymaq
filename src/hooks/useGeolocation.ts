@@ -72,20 +72,23 @@ export function useGeolocation() {
   const getCurrentPosition = async () => {
     try {
       const hasPerms = hasPermission || await requestPermissions();
-      if (!hasPerms) return null;
+      if (!hasPerms) {
+        console.log('No se tienen permisos de ubicación');
+        return null;
+      }
 
-      const position = await Geolocation.getCurrentPosition();
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
       setPosition(position);
       setError(null);
       return position;
     } catch (err) {
-      const errorMsg = 'No se pudo obtener la ubicación';
+      console.error('Error getting position:', err);
+      const errorMsg = 'No se pudo obtener la ubicación. Verifica que los permisos estén habilitados.';
       setError(errorMsg);
-      toast({
-        title: "Error de ubicación",
-        description: errorMsg,
-        variant: "destructive"
-      });
       return null;
     }
   };
