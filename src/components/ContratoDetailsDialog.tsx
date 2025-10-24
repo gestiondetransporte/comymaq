@@ -64,6 +64,18 @@ export function ContratoDetailsDialog({
     }
   }, [contrato]);
 
+  // Auto-calculate fecha_vencimiento based on fecha_inicio + dias_contratado
+  useEffect(() => {
+    if (formData.fecha_inicio && formData.dias_contratado) {
+      const startDate = new Date(formData.fecha_inicio);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + formData.dias_contratado);
+      
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      setFormData(prev => ({ ...prev, fecha_vencimiento: formattedEndDate }));
+    }
+  }, [formData.fecha_inicio, formData.dias_contratado]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contrato) return;

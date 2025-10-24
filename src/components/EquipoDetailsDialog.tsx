@@ -82,13 +82,84 @@ export function EquipoDetailsDialog({
   const [descripcionMantenimiento, setDescripcionMantenimiento] = useState("");
   const [proximoServicio, setProximoServicio] = useState("");
   
+  // Maintenance tracking
+  const [mantenimientoInfo, setMantenimientoInfo] = useState<{
+    horasActuales: number;
+    horasUltimoMantenimiento: number;
+    enRenta: boolean;
+    proximoMantenimiento: number;
+  } | null>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
     if (equipo) {
       setFormData(equipo);
+      fetchMantenimientoInfo();
     }
   }, [equipo]);
+
+  const fetchMantenimientoInfo = async () => {
+    if (!equipo) return;
+
+    try {
+      // Get active contract for this equipment
+      const { data: contratos, error: contratoError } = await supabase
+        .from("contratos")
+        .select("horas_trabajo, status")
+        .eq("equipo_id", equipo.id)
+        .eq("status", "activo")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (contratoError) throw contratoError;
+
+      const enRenta = contratos && contratos.length > 0;
+      const horasActuales = enRenta ? (contratos[0].horas_trabajo || 0) : 0;
+
+      // Get last maintenance record
+      const { data: mantenimientos, error: mantenimientoError } = await supabase
+        .from("mantenimientos")
+        .select("*")
+        .eq("equipo_id", equipo.id)
+        .order("fecha", { ascending: false })
+        .limit(1);
+
+      if (mantenimientoError) throw mantenimientoError;
+
+      // Get the contract hours at the time of last maintenance
+      let horasUltimoMantenimiento = 0;
+      if (mantenimientos && mantenimientos.length > 0) {
+        const fechaUltimoMantenimiento = mantenimientos[0].fecha;
+        
+        // Get contract hours at the time of last maintenance
+        const { data: contratoAnterior } = await supabase
+          .from("contratos")
+          .select("horas_trabajo")
+          .eq("equipo_id", equipo.id)
+          .lte("fecha_inicio", fechaUltimoMantenimiento)
+          .order("fecha_inicio", { ascending: false })
+          .limit(1);
+
+        horasUltimoMantenimiento = contratoAnterior && contratoAnterior.length > 0 
+          ? (contratoAnterior[0].horas_trabajo || 0) 
+          : 0;
+      }
+
+      const horasDesdeMantenimiento = horasActuales - horasUltimoMantenimiento;
+      const proximoMantenimiento = horasUltimoMantenimiento + 300;
+
+      setMantenimientoInfo({
+        horasActuales,
+        horasUltimoMantenimiento,
+        enRenta,
+        proximoMantenimiento
+      });
+
+    } catch (error) {
+      console.error("Error fetching mantenimiento info:", error);
+    }
+  };
 
   const handleUpdateEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,11 +323,29 @@ export function EquipoDetailsDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1">
               <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
               <DialogDescription>
                 {equipo.descripcion}
               </DialogDescription>
+              
+              {/* Maintenance Alert */}
+              {mantenimientoInfo && mantenimientoInfo.enRenta && 
+               mantenimientoInfo.horasActuales >= mantenimientoInfo.proximoMantenimiento && (
+                <div className="mt-2">
+                  <Badge variant="destructive" className="gap-1">
+                    <Wrench className="h-3 w-3" />
+                    Mantenimiento preventivo requerido a las {mantenimientoInfo.proximoMantenimiento} horas
+                  </Badge>
+                </div>
+              )}
+              
+              {mantenimientoInfo && mantenimientoInfo.enRenta && (
+                <div className="mt-2 text-sm text-muted-foreground">
+                  Horas actuales: {mantenimientoInfo.horasActuales} | 
+                  Próximo mantenimiento: {mantenimientoInfo.proximoMantenimiento} horas
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
