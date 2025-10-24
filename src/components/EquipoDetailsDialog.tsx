@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Save, ArrowRightLeft, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -96,6 +97,7 @@ export function EquipoDetailsDialog({
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (equipo) {
@@ -254,6 +256,7 @@ export function EquipoDetailsDialog({
         .from("entradas_salidas")
         .insert({
           equipo_id: equipo.id,
+          created_by: user?.id,
           tipo: movimientoTipo,
           fecha: new Date().toISOString().split('T')[0],
           almacen_origen_id: almacenOrigenId || null,
@@ -315,6 +318,7 @@ export function EquipoDetailsDialog({
         .from("mantenimientos")
         .insert({
           equipo_id: equipo.id,
+          usuario_id: user?.id,
           tipo_servicio: tipoServicio,
           orden_servicio: ordenServicio || null,
           tecnico: tecnico || null,

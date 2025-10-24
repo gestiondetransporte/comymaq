@@ -29,6 +29,8 @@ interface Mantenimiento {
     marca: string | null;
     modelo: string | null;
   } | null;
+  isProgramado?: boolean;
+  horas_contrato?: number;
 }
 
 export default function Mantenimiento() {
@@ -58,7 +60,8 @@ export default function Mantenimiento() {
 
   const fetchMantenimientos = async () => {
     try {
-      const { data, error } = await supabase
+      // Obtener mantenimientos registrados
+      const { data: mantenimientosData, error: mantenimientosError } = await supabase
         .from('mantenimientos')
         .select(`
           *,
@@ -71,9 +74,51 @@ export default function Mantenimiento() {
         `)
         .order('fecha', { ascending: false });
 
-      if (error) throw error;
+      if (mantenimientosError) throw mantenimientosError;
 
-      setMantenimientos(data || []);
+      // Obtener equipos con contratos activos que necesitan mantenimiento programado
+      const { data: contratosActivos, error: contratosError } = await supabase
+        .from('contratos')
+        .select(`
+          id,
+          equipo_id,
+          horas_trabajo,
+          equipos (
+            id,
+            numero_equipo,
+            descripcion,
+            marca,
+            modelo
+          )
+        `)
+        .eq('status', 'activo')
+        .gte('horas_trabajo', 300);
+
+      if (contratosError) throw contratosError;
+
+      // Crear registros virtuales de mantenimientos programados
+      const mantenimientosProgramados: Mantenimiento[] = (contratosActivos || []).map(contrato => ({
+        id: `programado-${contrato.equipo_id}`,
+        equipo_id: contrato.equipo_id,
+        fecha: new Date().toISOString().split('T')[0],
+        tipo_servicio: 'programado',
+        orden_servicio: null,
+        tecnico: null,
+        descripcion: `Mantenimiento preventivo requerido - ${contrato.horas_trabajo} horas acumuladas`,
+        proximo_servicio: null,
+        equipos: contrato.equipos ? {
+          numero_equipo: contrato.equipos.numero_equipo,
+          descripcion: contrato.equipos.descripcion,
+          marca: contrato.equipos.marca,
+          modelo: contrato.equipos.modelo,
+        } : null,
+        isProgramado: true,
+        horas_contrato: contrato.horas_trabajo,
+      }));
+
+      // Combinar mantenimientos reales con programados
+      const todosMantenimientos = [...mantenimientosProgramados, ...(mantenimientosData || [])];
+      setMantenimientos(todosMantenimientos);
     } catch (error) {
       console.error('Error fetching mantenimientos:', error);
       toast({
@@ -188,7 +233,15 @@ export default function Mantenimiento() {
     setFilteredMantenimientos(filtered);
   };
 
-  const getTipoServicioBadge = (tipo: string) => {
+  const getTipoServicioBadge = (tipo: string, isProgramado?: boolean, horas?: number) => {
+    if (isProgramado) {
+      return (
+        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+          Programado ({horas}h)
+        </Badge>
+      );
+    }
+    
     switch (tipo.toLowerCase()) {
       case 'preventivo':
         return <Badge variant="default">Preventivo</Badge>;
@@ -362,7 +415,7 @@ export default function Mantenimiento() {
                 </TableHeader>
                 <TableBody>
                   {filteredMantenimientos.map((mantenimiento) => (
-                    <TableRow key={mantenimiento.id}>
+                    <TableRow key={mantenimiento.id} className={mantenimiento.isProgramado ? "bg-yellow-500/5" : ""}>
                       <TableCell>{formatDate(mantenimiento.fecha)}</TableCell>
                       <TableCell className="font-medium">
                         {mantenimiento.equipos?.numero_equipo || 'N/A'}
@@ -375,7 +428,9 @@ export default function Mantenimiento() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>{getTipoServicioBadge(mantenimiento.tipo_servicio)}</TableCell>
+                      <TableCell>
+                        {getTipoServicioBadge(mantenimiento.tipo_servicio, mantenimiento.isProgramado, mantenimiento.horas_contrato)}
+                      </TableCell>
                       <TableCell>{mantenimiento.orden_servicio || 'N/A'}</TableCell>
                       <TableCell>{mantenimiento.tecnico || 'N/A'}</TableCell>
                       <TableCell className="max-w-xs truncate">{mantenimiento.descripcion}</TableCell>
