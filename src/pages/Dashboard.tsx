@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { 
   BarChart3, 
   Package, 
@@ -28,11 +28,13 @@ interface DashboardStats {
   contratosVencer30Dias: number;
   montoContratosActivos: number;
   mantenimientosMes: number;
+  mantenimientosProgramados: number;
   clientesActivos: number;
 }
 
 export default function Dashboard() {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalEquipos: 0,
     equiposDisponibles: 0,
@@ -43,6 +45,7 @@ export default function Dashboard() {
     contratosVencer30Dias: 0,
     montoContratosActivos: 0,
     mantenimientosMes: 0,
+    mantenimientosProgramados: 0,
     clientesActivos: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -113,6 +116,15 @@ export default function Dashboard() {
 
       if (mantenimientosError) throw mantenimientosError;
 
+      // Obtener equipos con contratos activos que necesitan mantenimiento (>300 horas)
+      const { data: contratosProgramados, error: programadosError } = await supabase
+        .from('contratos')
+        .select('equipo_id')
+        .eq('status', 'activo')
+        .gte('horas_trabajo', 300);
+
+      if (programadosError) throw programadosError;
+
       // Obtener clientes únicos con contratos activos
       const { data: clientesData, error: clientesError } = await supabase
         .from('contratos')
@@ -133,6 +145,7 @@ export default function Dashboard() {
         contratosVencer30Dias: contratosProxVencer,
         montoContratosActivos: montoTotal,
         mantenimientosMes: mantenimientos?.length || 0,
+        mantenimientosProgramados: contratosProgramados?.length || 0,
         clientesActivos: clientesUnicos.size,
       });
     } catch (error) {
@@ -154,6 +167,7 @@ export default function Dashboard() {
       description: "Inventario total",
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      link: "/inventario",
     },
     {
       title: "Equipos Disponibles",
@@ -163,6 +177,7 @@ export default function Dashboard() {
       color: "text-green-600",
       bgColor: "bg-green-50",
       badge: `${((stats.equiposDisponibles / stats.totalEquipos) * 100).toFixed(0)}%`,
+      link: "/inventario",
     },
     {
       title: "Equipos Rentados",
@@ -172,6 +187,7 @@ export default function Dashboard() {
       color: "text-orange-600",
       bgColor: "bg-orange-50",
       badge: `${((stats.equiposRentados / stats.totalEquipos) * 100).toFixed(0)}%`,
+      link: "/inventario",
     },
     {
       title: "Contratos Activos",
@@ -180,6 +196,7 @@ export default function Dashboard() {
       description: "Vigentes actualmente",
       color: "text-purple-600",
       bgColor: "bg-purple-50",
+      link: "/contratos",
     },
     {
       title: "Monto Total Activo",
@@ -188,6 +205,7 @@ export default function Dashboard() {
       description: "Suma de contratos activos",
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
+      link: "/contratos",
     },
     {
       title: "Contratos por Vencer",
@@ -197,6 +215,7 @@ export default function Dashboard() {
       color: "text-red-600",
       bgColor: "bg-red-50",
       alert: stats.contratosVencer30Dias > 0,
+      link: "/contratos",
     },
     {
       title: "Salidas del Mes",
@@ -205,6 +224,7 @@ export default function Dashboard() {
       description: format(new Date(), 'MMMM yyyy', { locale: es }),
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      link: "/entradas-salidas",
     },
     {
       title: "Entradas del Mes",
@@ -213,6 +233,7 @@ export default function Dashboard() {
       description: format(new Date(), 'MMMM yyyy', { locale: es }),
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
+      link: "/entradas-salidas",
     },
     {
       title: "Mantenimientos del Mes",
@@ -221,6 +242,7 @@ export default function Dashboard() {
       description: format(new Date(), 'MMMM yyyy', { locale: es }),
       color: "text-amber-600",
       bgColor: "bg-amber-50",
+      link: "/mantenimiento",
     },
     {
       title: "Clientes Activos",
@@ -229,6 +251,7 @@ export default function Dashboard() {
       description: "Con contratos vigentes",
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
+      link: "/contratos",
     },
   ];
 
@@ -260,7 +283,11 @@ export default function Dashboard() {
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={index} 
+              className="hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+              onClick={() => stat.link && navigate(stat.link)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {stat.title}
@@ -292,7 +319,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Resumen de Ocupación</CardTitle>
@@ -367,20 +394,55 @@ export default function Dashboard() {
                 {stats.entradasMes}
               </span>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg">
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/mantenimiento')}
+        >
+          <CardHeader>
+            <CardTitle>Mantenimientos - {format(new Date(), 'MMMM', { locale: es })}</CardTitle>
+            <CardDescription>Comparativa programados vs realizados</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <Wrench className="h-5 w-5 text-amber-600" />
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-amber-900">Mantenimientos</p>
-                  <p className="text-xs text-amber-600">Servicios realizados</p>
+                  <p className="text-sm font-medium text-yellow-900">Programados</p>
+                  <p className="text-xs text-yellow-600">Requieren servicio</p>
                 </div>
               </div>
-              <span className="text-3xl font-bold text-amber-600">
+              <span className="text-3xl font-bold text-yellow-600">
+                {stats.mantenimientosProgramados}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Wrench className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-900">Realizados</p>
+                  <p className="text-xs text-green-600">Completados</p>
+                </div>
+              </div>
+              <span className="text-3xl font-bold text-green-600">
                 {stats.mantenimientosMes}
               </span>
+            </div>
+
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Pendientes</span>
+                <span className="font-bold text-orange-600">
+                  {Math.max(0, stats.mantenimientosProgramados - stats.mantenimientosMes)}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
