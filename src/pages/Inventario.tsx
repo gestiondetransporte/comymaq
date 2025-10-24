@@ -20,6 +20,12 @@ interface Equipo {
   estado: string | null;
   categoria: string | null;
   clase: string | null;
+  contrato_activo?: {
+    id: string;
+    folio_contrato: string;
+    cliente: string;
+    status: string;
+  } | null;
 }
 
 export default function Inventario() {
@@ -28,6 +34,7 @@ export default function Inventario() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("TODOS");
+  const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,16 +44,18 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter]);
 
   const fetchEquipos = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch equipos
+    const { data: equiposData, error: equiposError } = await supabase
       .from('equipos')
       .select('*')
       .order('numero_equipo', { ascending: true });
 
-    if (error) {
+    if (equiposError) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -56,7 +65,24 @@ export default function Inventario() {
       return;
     }
 
-    setEquipos(data || []);
+    // Fetch all active contracts
+    const { data: contratosData } = await supabase
+      .from('contratos')
+      .select('id, equipo_id, folio_contrato, cliente, status')
+      .eq('status', 'activo');
+
+    // Create a map of equipo_id to contrato
+    const contratosMap = new Map(
+      contratosData?.map(c => [c.equipo_id, c]) || []
+    );
+
+    // Merge data
+    const equiposWithContratos = equiposData.map(equipo => ({
+      ...equipo,
+      contrato_activo: contratosMap.get(equipo.id) || null
+    }));
+
+    setEquipos(equiposWithContratos);
     setLoading(false);
   };
 
@@ -68,6 +94,13 @@ export default function Inventario() {
       filtered = filtered.filter(e => e.tipo === typeFilter);
     }
 
+    // Filter by disponibilidad
+    if (disponibilidadFilter === "DISPONIBLE") {
+      filtered = filtered.filter(e => !e.contrato_activo);
+    } else if (disponibilidadFilter === "RENTADO") {
+      filtered = filtered.filter(e => e.contrato_activo);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -76,7 +109,8 @@ export default function Inventario() {
         e.descripcion?.toLowerCase().includes(query) ||
         e.marca?.toLowerCase().includes(query) ||
         e.modelo?.toLowerCase().includes(query) ||
-        e.serie?.toLowerCase().includes(query)
+        e.serie?.toLowerCase().includes(query) ||
+        e.contrato_activo?.cliente?.toLowerCase().includes(query)
       );
     }
 
@@ -87,6 +121,13 @@ export default function Inventario() {
     if (tipo === 'ELECTRICA') return <Badge variant="default">ELÉCTRICA</Badge>;
     if (tipo === 'COMBUSTIÓN') return <Badge variant="secondary">COMBUSTIÓN</Badge>;
     return <Badge variant="outline">N/A</Badge>;
+  };
+
+  const getDisponibilidadBadge = (contrato: any) => {
+    if (contrato) {
+      return <Badge variant="destructive">RENTADO</Badge>;
+    }
+    return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
   };
 
   if (loading) {
@@ -110,38 +151,67 @@ export default function Inventario() {
         <CardHeader>
           <CardTitle>Filtros de Búsqueda</CardTitle>
           <CardDescription>
-            Busca por número, descripción, marca, modelo o serie
+            Busca por número, descripción, marca, modelo, serie o cliente
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 flex-col md:flex-row">
+          <div className="flex gap-4 flex-col">
             <div className="flex-1">
               <Input
-                placeholder="Buscar equipo..."
+                placeholder="Buscar equipo o cliente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full"
               />
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={typeFilter === "TODOS" ? "default" : "outline"}
-                onClick={() => setTypeFilter("TODOS")}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={typeFilter === "ELECTRICA" ? "default" : "outline"}
-                onClick={() => setTypeFilter("ELECTRICA")}
-              >
-                Eléctricos
-              </Button>
-              <Button
-                variant={typeFilter === "COMBUSTIÓN" ? "default" : "outline"}
-                onClick={() => setTypeFilter("COMBUSTIÓN")}
-              >
-                Combustión
-              </Button>
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2">
+                <Button
+                  variant={typeFilter === "TODOS" ? "default" : "outline"}
+                  onClick={() => setTypeFilter("TODOS")}
+                  size="sm"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={typeFilter === "ELECTRICA" ? "default" : "outline"}
+                  onClick={() => setTypeFilter("ELECTRICA")}
+                  size="sm"
+                >
+                  Eléctricos
+                </Button>
+                <Button
+                  variant={typeFilter === "COMBUSTIÓN" ? "default" : "outline"}
+                  onClick={() => setTypeFilter("COMBUSTIÓN")}
+                  size="sm"
+                >
+                  Combustión
+                </Button>
+              </div>
+              <div className="flex gap-2 ml-auto">
+                <Button
+                  variant={disponibilidadFilter === "TODOS" ? "default" : "outline"}
+                  onClick={() => setDisponibilidadFilter("TODOS")}
+                  size="sm"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={disponibilidadFilter === "DISPONIBLE" ? "default" : "outline"}
+                  onClick={() => setDisponibilidadFilter("DISPONIBLE")}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Disponibles
+                </Button>
+                <Button
+                  variant={disponibilidadFilter === "RENTADO" ? "default" : "outline"}
+                  onClick={() => setDisponibilidadFilter("RENTADO")}
+                  size="sm"
+                >
+                  Rentados
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -159,13 +229,15 @@ export default function Inventario() {
                   <TableHead>Modelo</TableHead>
                   <TableHead>Serie</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEquipos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
@@ -178,6 +250,19 @@ export default function Inventario() {
                       <TableCell>{equipo.modelo || "N/A"}</TableCell>
                       <TableCell className="font-mono text-sm">{equipo.serie || "N/A"}</TableCell>
                       <TableCell>{getTipoBadge(equipo.tipo)}</TableCell>
+                      <TableCell>{getDisponibilidadBadge(equipo.contrato_activo)}</TableCell>
+                      <TableCell>
+                        {equipo.contrato_activo ? (
+                          <div className="text-sm">
+                            <p className="font-medium">{equipo.contrato_activo.cliente}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {equipo.contrato_activo.folio_contrato}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
