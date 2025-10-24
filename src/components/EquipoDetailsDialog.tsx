@@ -53,6 +53,7 @@ interface EquipoDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  initialTab?: "detalles" | "movimiento" | "mantenimiento";
 }
 
 export function EquipoDetailsDialog({
@@ -60,8 +61,9 @@ export function EquipoDetailsDialog({
   open,
   onOpenChange,
   onUpdate,
+  initialTab = "detalles",
 }: EquipoDetailsDialogProps) {
-  const [activeTab, setActiveTab] = useState("detalles");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState<Partial<Equipo>>({});
   const [loading, setLoading] = useState(false);
   
@@ -98,6 +100,13 @@ export function EquipoDetailsDialog({
       fetchMantenimientoInfo();
     }
   }, [equipo]);
+
+  // Update active tab when dialog opens
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   const fetchMantenimientoInfo = async () => {
     if (!equipo) return;
@@ -158,6 +167,12 @@ export function EquipoDetailsDialog({
 
     } catch (error) {
       console.error("Error fetching mantenimiento info:", error);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    if (value === "detalles" || value === "movimiento" || value === "mantenimiento") {
+      setActiveTab(value);
     }
   };
 
@@ -370,7 +385,7 @@ export function EquipoDetailsDialog({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="detalles">
               <Save className="h-4 w-4 mr-2" />

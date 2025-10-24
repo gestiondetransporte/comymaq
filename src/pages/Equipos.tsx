@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, FileText, Wrench, TruckIcon } from "lucide-react";
+import { ArrowLeft, Package, FileText, Wrench, TruckIcon, ArrowRightLeft, Plus } from "lucide-react";
+import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 
 interface Equipo {
   id: string;
@@ -19,6 +20,19 @@ interface Equipo {
   serie: string | null;
   clase: string | null;
   categoria: string | null;
+  tipo: string | null;
+  estado: string | null;
+  proveedor: string | null;
+  precio_lista: number | null;
+  precio_real_cliente: number | null;
+  costo_proveedor_mxn: number | null;
+  costo_proveedor_usd: number | null;
+  ganancia: number | null;
+  tipo_negocio: string | null;
+  asegurado: string | null;
+  ubicacion_actual: string | null;
+  almacen_id: string | null;
+  codigo_qr: string | null;
 }
 
 interface Contrato {
@@ -50,6 +64,8 @@ export default function Equipos() {
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTab, setDialogTab] = useState<"detalles" | "movimiento" | "mantenimiento">("detalles");
 
   useEffect(() => {
     if (!id) return;
@@ -97,6 +113,11 @@ export default function Equipos() {
 
     setMantenimientos(mantenimientosData || []);
     setLoading(false);
+  };
+
+  const handleOpenDialog = (tab: "detalles" | "movimiento" | "mantenimiento") => {
+    setDialogTab(tab);
+    setDialogOpen(true);
   };
 
   if (loading) {
@@ -222,6 +243,12 @@ export default function Equipos() {
         </TabsList>
 
         <TabsContent value="mantenimiento" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => handleOpenDialog("mantenimiento")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Registrar Mantenimiento
+            </Button>
+          </div>
           {mantenimientos.filter(m => m.tipo_servicio === 'mantenimiento').length > 0 ? (
             mantenimientos
               .filter(m => m.tipo_servicio === 'mantenimiento')
@@ -261,6 +288,12 @@ export default function Equipos() {
         </TabsContent>
 
         <TabsContent value="reparaciones" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => handleOpenDialog("mantenimiento")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Registrar Reparación
+            </Button>
+          </div>
           {mantenimientos.filter(m => m.tipo_servicio === 'reparacion').length > 0 ? (
             mantenimientos
               .filter(m => m.tipo_servicio === 'reparacion')
@@ -301,20 +334,49 @@ export default function Equipos() {
       </Tabs>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => handleOpenDialog("movimiento")}
+        >
           <TruckIcon className="mr-2 h-4 w-4" />
           Movimiento de Almacén
         </Button>
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => handleOpenDialog("movimiento")}
+        >
+          <ArrowRightLeft className="mr-2 h-4 w-4" />
           Entrada de Equipo
         </Button>
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => handleOpenDialog("movimiento")}
+        >
+          <ArrowRightLeft className="mr-2 h-4 w-4" />
           Salida de Equipo
         </Button>
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => handleOpenDialog("movimiento")}
+        >
+          <TruckIcon className="mr-2 h-4 w-4" />
           Traspaso de Equipo
         </Button>
       </div>
+
+      {equipo && (
+        <EquipoDetailsDialog
+          equipo={equipo}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onUpdate={fetchEquipo}
+          initialTab={dialogTab}
+        />
+      )}
     </div>
   );
 }
