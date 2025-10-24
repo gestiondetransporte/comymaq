@@ -234,46 +234,79 @@ export type Database = {
         Row: {
           almacen_id: string | null
           anio: number | null
+          asegurado: string | null
           categoria: string | null
           clase: string | null
           codigo_qr: string | null
+          costo_proveedor_mxn: number | null
+          costo_proveedor_usd: number | null
           created_at: string
           descripcion: string
+          estado: string | null
+          ganancia: number | null
           id: string
           marca: string | null
           modelo: string | null
           numero_equipo: string
+          precio_lista: number | null
+          precio_real_cliente: number | null
+          proveedor: string | null
           serie: string | null
+          tipo: string | null
+          tipo_negocio: string | null
+          ubicacion_actual: string | null
           updated_at: string
         }
         Insert: {
           almacen_id?: string | null
           anio?: number | null
+          asegurado?: string | null
           categoria?: string | null
           clase?: string | null
           codigo_qr?: string | null
+          costo_proveedor_mxn?: number | null
+          costo_proveedor_usd?: number | null
           created_at?: string
           descripcion: string
+          estado?: string | null
+          ganancia?: number | null
           id?: string
           marca?: string | null
           modelo?: string | null
           numero_equipo: string
+          precio_lista?: number | null
+          precio_real_cliente?: number | null
+          proveedor?: string | null
           serie?: string | null
+          tipo?: string | null
+          tipo_negocio?: string | null
+          ubicacion_actual?: string | null
           updated_at?: string
         }
         Update: {
           almacen_id?: string | null
           anio?: number | null
+          asegurado?: string | null
           categoria?: string | null
           clase?: string | null
           codigo_qr?: string | null
+          costo_proveedor_mxn?: number | null
+          costo_proveedor_usd?: number | null
           created_at?: string
           descripcion?: string
+          estado?: string | null
+          ganancia?: number | null
           id?: string
           marca?: string | null
           modelo?: string | null
           numero_equipo?: string
+          precio_lista?: number | null
+          precio_real_cliente?: number | null
+          proveedor?: string | null
           serie?: string | null
+          tipo?: string | null
+          tipo_negocio?: string | null
+          ubicacion_actual?: string | null
           updated_at?: string
         }
         Relationships: [
