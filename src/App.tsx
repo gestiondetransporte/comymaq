@@ -13,6 +13,7 @@ import EntradasSalidas from "./pages/EntradasSalidas";
 import Mantenimiento from "./pages/Mantenimiento";
 import Almacenes from "./pages/Almacenes";
 import Inventario from "./pages/Inventario";
+import AdminUsuarios from "./pages/AdminUsuarios";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 
@@ -89,6 +90,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Inventario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/usuarios"
+        element={
+          <ProtectedRoute>
+            <AdminUsuarios />
           </ProtectedRoute>
         }
       />

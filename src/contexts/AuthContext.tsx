@@ -11,6 +11,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  createUser: (email: string, password: string, role: 'admin' | 'moderator' | 'user') => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +90,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/auth');
   };
 
+  const createUser = async (email: string, password: string, role: 'admin' | 'moderator' | 'user') => {
+    try {
+      // Create user using admin API
+      const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (signUpError) return { error: signUpError };
+      if (!newUser) return { error: { message: 'No se pudo crear el usuario' } };
+
+      // Assign role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newUser.id,
+          role: role,
+        });
+
+      if (roleError) return { error: roleError };
+
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -99,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
+        createUser,
       }}
     >
       {children}
