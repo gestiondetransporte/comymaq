@@ -123,6 +123,49 @@ Para verificar permisos en Xcode:
 2. Prueba la cámara con otra app para asegurarte que funciona
 3. Revisa los logs de la consola (ver sección de debugging)
 
+## Configuración del Icono de la App
+
+El logo de COMYMAQ ya está configurado para generarse automáticamente en todos los tamaños necesarios para iOS y Android.
+
+### Generar iconos automáticamente
+
+Después de agregar las plataformas (`npx cap add android` / `npx cap add ios`), ejecuta:
+
+```bash
+npx capacitor-assets generate --iconBackgroundColor '#1e40af' --iconBackgroundColorDark '#1e40af'
+```
+
+Este comando:
+- ✅ Genera todos los tamaños de iconos para iOS (desde 20x20 hasta 1024x1024)
+- ✅ Genera todos los tamaños de iconos para Android (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)
+- ✅ Usa el logo ubicado en `resources/icon.png`
+- ✅ Aplica un fondo azul (`#1e40af`) que coincide con los colores de COMYMAQ
+
+### Verificar iconos generados
+
+**Android:**
+- Los iconos se generan en: `android/app/src/main/res/mipmap-*/ic_launcher.png`
+- Abre Android Studio y verás el icono en la carpeta `res`
+
+**iOS:**
+- Los iconos se generan en: `ios/App/App/Assets.xcassets/AppIcon.appiconset/`
+- Abre Xcode y verás todos los tamaños en el AppIcon asset
+
+### Personalizar el fondo del icono (opcional)
+
+Si quieres cambiar el color de fondo del icono, edita el comando:
+
+```bash
+# Fondo blanco
+npx capacitor-assets generate --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#ffffff'
+
+# Fondo azul más claro
+npx capacitor-assets generate --iconBackgroundColor '#3b82f6' --iconBackgroundColorDark '#3b82f6'
+
+# Fondo azul oscuro (actual)
+npx capacitor-assets generate --iconBackgroundColor '#1e40af' --iconBackgroundColorDark '#1e40af'
+```
+
 ## Desarrollo con Hot Reload
 
 El proyecto está configurado para usar hot reload desde el sandbox de Lovable:
