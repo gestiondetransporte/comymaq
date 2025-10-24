@@ -82,6 +82,7 @@ export type Database = {
           created_at: string
           dentro_fuera: string | null
           dias_contratado: number | null
+          direccion: string | null
           equipo_id: string | null
           fecha_inicio: string | null
           fecha_vencimiento: string | null
@@ -92,6 +93,7 @@ export type Database = {
           obra: string | null
           status: string | null
           suma: number | null
+          ubicacion_gps: string | null
           updated_at: string
           vendedor: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           created_at?: string
           dentro_fuera?: string | null
           dias_contratado?: number | null
+          direccion?: string | null
           equipo_id?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
@@ -112,6 +115,7 @@ export type Database = {
           obra?: string | null
           status?: string | null
           suma?: number | null
+          ubicacion_gps?: string | null
           updated_at?: string
           vendedor?: string | null
         }
@@ -122,6 +126,7 @@ export type Database = {
           created_at?: string
           dentro_fuera?: string | null
           dias_contratado?: number | null
+          direccion?: string | null
           equipo_id?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
@@ -132,6 +137,7 @@ export type Database = {
           obra?: string | null
           status?: string | null
           suma?: number | null
+          ubicacion_gps?: string | null
           updated_at?: string
           vendedor?: string | null
         }

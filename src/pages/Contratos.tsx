@@ -29,6 +29,8 @@ interface Contrato {
   horas_trabajo: number | null;
   comentarios: string | null;
   equipo_id: string | null;
+  ubicacion_gps: string | null;
+  direccion: string | null;
 }
 
 export default function Contratos() {

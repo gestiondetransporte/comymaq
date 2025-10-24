@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { Loader2, MapPin } from "lucide-react";
 
 interface Contrato {
   id: string;
@@ -39,6 +40,8 @@ interface Contrato {
   horas_trabajo: number | null;
   comentarios: string | null;
   equipo_id: string | null;
+  ubicacion_gps: string | null;
+  direccion: string | null;
 }
 
 interface ContratoDetailsDialogProps {
@@ -56,7 +59,9 @@ export function ContratoDetailsDialog({
 }: ContratoDetailsDialogProps) {
   const [formData, setFormData] = useState<Partial<Contrato>>({});
   const [loading, setLoading] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
   const { toast } = useToast();
+  const { getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
     if (contrato) {
@@ -75,6 +80,29 @@ export function ContratoDetailsDialog({
       setFormData(prev => ({ ...prev, fecha_vencimiento: formattedEndDate }));
     }
   }, [formData.fecha_inicio, formData.dias_contratado]);
+
+  const handleGetLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      const position = await getCurrentPosition();
+      if (position) {
+        const ubicacionGps = `${position.coords.latitude}, ${position.coords.longitude}`;
+        setFormData(prev => ({ ...prev, ubicacion_gps: ubicacionGps }));
+        toast({
+          title: "Ubicación capturada",
+          description: "La ubicación GPS se ha guardado correctamente",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo obtener la ubicación. Verifica los permisos.",
+      });
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +126,8 @@ export function ContratoDetailsDialog({
           dentro_fuera: formData.dentro_fuera,
           horas_trabajo: formData.horas_trabajo,
           comentarios: formData.comentarios,
+          ubicacion_gps: formData.ubicacion_gps,
+          direccion: formData.direccion,
         })
         .eq("id", contrato.id);
 
@@ -298,6 +328,47 @@ export function ContratoDetailsDialog({
                 }
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ubicacion_gps">Ubicación GPS</Label>
+            <div className="flex gap-2">
+              <Input
+                id="ubicacion_gps"
+                value={formData.ubicacion_gps || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, ubicacion_gps: e.target.value })
+                }
+                placeholder="Latitud, Longitud"
+                disabled={loadingLocation}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleGetLocation}
+                disabled={loadingLocation}
+              >
+                {loadingLocation ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <MapPin className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="direccion">Dirección</Label>
+            <Textarea
+              id="direccion"
+              value={formData.direccion || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, direccion: e.target.value })
+              }
+              rows={2}
+              placeholder="Ingresa la dirección manualmente"
+            />
           </div>
 
           <div className="space-y-2">
