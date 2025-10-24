@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import Equipos from "./pages/Equipos";
 import Contratos from "./pages/Contratos";
 import EntradasSalidas from "./pages/EntradasSalidas";
@@ -90,6 +91,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Inventario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
           </ProtectedRoute>
         }
       />

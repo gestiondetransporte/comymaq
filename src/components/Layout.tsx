@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List } from "lucide-react";
+import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,6 +24,11 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
     { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
     { path: "/almacenes", label: "Almacenes", icon: Package },
+  ];
+
+  const adminNavItems = [
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/admin/usuarios", label: "Usuarios", icon: Shield },
   ];
 
   const handleNavigation = (path: string) => {
@@ -48,6 +53,29 @@ export default function Layout({ children }: LayoutProps) {
           </Button>
         );
       })}
+      {isAdmin && (
+        <>
+          <div className="my-2 border-t" />
+          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+            ADMINISTRACIÓN
+          </p>
+          {adminNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Button
+                key={item.path}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </>
+      )}
     </>
   );
 
@@ -98,6 +126,26 @@ export default function Layout({ children }: LayoutProps) {
                 </Button>
               );
             })}
+            {isAdmin && (
+              <>
+                <div className="h-6 w-px bg-border mx-2" />
+                {adminNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={isActive ? "default" : "ghost"}
+                      onClick={() => navigate(item.path)}
+                      size="sm"
+                    >
+                      <Icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Button>
+                  );
+                })}
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
