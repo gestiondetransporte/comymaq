@@ -108,14 +108,35 @@ export default function EntradasSalidas() {
 
     setLoading(true);
 
-    const movimiento = {
-      equipo_id: equipoId,
-      tipo,
-      fecha: new Date().toISOString(),
-      observaciones: observaciones.trim() || null,
-    };
-
     try {
+      // Primero buscar el equipo por número para obtener su UUID
+      const { data: equipoData, error: equipoError } = await supabase
+        .from('equipos')
+        .select('id, numero_equipo, serie, modelo')
+        .eq('numero_equipo', equipoId.trim())
+        .maybeSingle();
+
+      if (equipoError) throw equipoError;
+
+      if (!equipoData) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `No se encontró el equipo con número ${equipoId}`,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const movimiento = {
+        equipo_id: equipoData.id,
+        tipo,
+        fecha: new Date().toISOString().split('T')[0],
+        serie: equipoData.serie,
+        modelo: equipoData.modelo,
+        comentarios: observaciones.trim() || null,
+      };
+
       if (isOnline) {
         // Si hay conexión, guardar directamente
         const { error } = await supabase
@@ -126,7 +147,7 @@ export default function EntradasSalidas() {
 
         toast({
           title: "Movimiento registrado",
-          description: `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente`,
+          description: `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente para equipo ${equipoId}`,
         });
         
         fetchMovimientos();
@@ -148,7 +169,7 @@ export default function EntradasSalidas() {
       setEquipoId("");
       setObservaciones("");
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error registrando movimiento:', error);
       toast({
         variant: "destructive",
         title: "Error",
