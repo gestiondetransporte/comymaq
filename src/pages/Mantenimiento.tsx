@@ -22,7 +22,7 @@ interface Mantenimiento {
   orden_servicio: string | null;
   tecnico: string | null;
   descripcion: string;
-  proximo_servicio: string | null;
+  proximo_servicio_horas: number | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
@@ -45,7 +45,7 @@ export default function Mantenimiento() {
   const [ordenServicio, setOrdenServicio] = useState("");
   const [tecnico, setTecnico] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [proximoServicio, setProximoServicio] = useState("");
+  const [proximoServicioHoras, setProximoServicioHoras] = useState<number | "">("");
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -105,7 +105,7 @@ export default function Mantenimiento() {
         orden_servicio: null,
         tecnico: null,
         descripcion: `Mantenimiento preventivo requerido - ${contrato.horas_trabajo} horas acumuladas`,
-        proximo_servicio: null,
+        proximo_servicio_horas: null,
         equipos: contrato.equipos ? {
           numero_equipo: contrato.equipos.numero_equipo,
           descripcion: contrato.equipos.descripcion,
@@ -180,7 +180,7 @@ export default function Mantenimiento() {
         tecnico: tecnico.trim() || null,
         descripcion: descripcion.trim(),
         fecha: new Date().toISOString().split('T')[0],
-        proximo_servicio: proximoServicio || null,
+        proximo_servicio_horas: proximoServicioHoras || null,
       };
 
       const { error } = await supabase
@@ -199,7 +199,7 @@ export default function Mantenimiento() {
       setOrdenServicio("");
       setTecnico("");
       setDescripcion("");
-      setProximoServicio("");
+      setProximoServicioHoras("");
       setTipoServicio("preventivo");
 
       // Recargar lista
@@ -263,6 +263,11 @@ export default function Mantenimiento() {
     } catch {
       return 'N/A';
     }
+  };
+
+  const formatHoras = (horas: number | null) => {
+    if (!horas) return 'N/A';
+    return `${horas} hrs`;
   };
 
   return (
@@ -329,13 +334,19 @@ export default function Mantenimiento() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="proximo_servicio">Próximo Servicio</Label>
+                <Label htmlFor="proximo_servicio_horas">Próximo Servicio (Horas)</Label>
                 <Input
-                  id="proximo_servicio"
-                  type="date"
-                  value={proximoServicio}
-                  onChange={(e) => setProximoServicio(e.target.value)}
+                  id="proximo_servicio_horas"
+                  type="number"
+                  placeholder="300, 400, 500..."
+                  value={proximoServicioHoras}
+                  onChange={(e) => setProximoServicioHoras(e.target.value ? parseInt(e.target.value) : "")}
+                  min="0"
+                  step="100"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Ingresa las horas de operación para programar el próximo mantenimiento
+                </p>
               </div>
             </div>
 
@@ -410,7 +421,7 @@ export default function Mantenimiento() {
                     <TableHead>Orden</TableHead>
                     <TableHead>Técnico</TableHead>
                     <TableHead>Descripción</TableHead>
-                    <TableHead>Próximo Servicio</TableHead>
+                    <TableHead>Próximo Servicio (Horas)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -434,7 +445,7 @@ export default function Mantenimiento() {
                       <TableCell>{mantenimiento.orden_servicio || 'N/A'}</TableCell>
                       <TableCell>{mantenimiento.tecnico || 'N/A'}</TableCell>
                       <TableCell className="max-w-xs truncate">{mantenimiento.descripcion}</TableCell>
-                      <TableCell>{formatDate(mantenimiento.proximo_servicio)}</TableCell>
+                      <TableCell>{formatHoras(mantenimiento.proximo_servicio_horas)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

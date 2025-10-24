@@ -83,7 +83,7 @@ export function EquipoDetailsDialog({
   const [ordenServicio, setOrdenServicio] = useState("");
   const [tecnico, setTecnico] = useState("");
   const [descripcionMantenimiento, setDescripcionMantenimiento] = useState("");
-  const [proximoServicio, setProximoServicio] = useState("");
+  const [proximoServicioHoras, setProximoServicioHoras] = useState<number | "">("");
   
   // Maintenance tracking
   const [mantenimientoInfo, setMantenimientoInfo] = useState<{
@@ -324,7 +324,7 @@ export function EquipoDetailsDialog({
           tecnico: tecnico || null,
           descripcion: descripcionMantenimiento,
           fecha: new Date().toISOString().split('T')[0],
-          proximo_servicio: proximoServicio || null,
+          proximo_servicio_horas: proximoServicioHoras || null,
         });
 
       if (error) throw error;
@@ -339,7 +339,7 @@ export function EquipoDetailsDialog({
       setOrdenServicio("");
       setTecnico("");
       setDescripcionMantenimiento("");
-      setProximoServicio("");
+      setProximoServicioHoras("");
       
       onUpdate();
     } catch (error) {
@@ -794,13 +794,19 @@ export function EquipoDetailsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="proximo_servicio">Próximo Servicio</Label>
+                  <Label htmlFor="proximo_servicio_horas">Próximo Servicio (Horas)</Label>
                   <Input
-                    id="proximo_servicio"
-                    type="date"
-                    value={proximoServicio}
-                    onChange={(e) => setProximoServicio(e.target.value)}
+                    id="proximo_servicio_horas"
+                    type="number"
+                    placeholder="300, 400, 500..."
+                    value={proximoServicioHoras}
+                    onChange={(e) => setProximoServicioHoras(e.target.value ? parseInt(e.target.value) : "")}
+                    min="0"
+                    step="100"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Ingresa las horas de operación para programar el próximo mantenimiento
+                  </p>
                 </div>
               </div>
 

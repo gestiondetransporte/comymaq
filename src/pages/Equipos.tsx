@@ -54,7 +54,7 @@ interface Mantenimiento {
   tipo_servicio: string;
   tecnico: string | null;
   descripcion: string;
-  proximo_servicio: string | null;
+  proximo_servicio_horas: number | null;
 }
 
 interface EntradaSalida {
@@ -342,9 +342,9 @@ export default function Equipos() {
                         <p className="font-medium">{m.descripcion}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Próximo Servicio</p>
+                        <p className="text-sm text-muted-foreground">Próximo Servicio (Horas)</p>
                         <p className="font-medium">
-                          {m.proximo_servicio ? new Date(m.proximo_servicio).toLocaleDateString() : "N/A"}
+                          {m.proximo_servicio_horas ? `${m.proximo_servicio_horas} hrs` : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -387,9 +387,9 @@ export default function Equipos() {
                         <p className="font-medium">{m.descripcion}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Próximo Servicio</p>
+                        <p className="text-sm text-muted-foreground">Próximo Servicio (Horas)</p>
                         <p className="font-medium">
-                          {m.proximo_servicio ? new Date(m.proximo_servicio).toLocaleDateString() : "N/A"}
+                          {m.proximo_servicio_horas ? `${m.proximo_servicio_horas} hrs` : "N/A"}
                         </p>
                       </div>
                     </div>

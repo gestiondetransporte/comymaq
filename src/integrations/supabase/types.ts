@@ -328,7 +328,7 @@ export type Database = {
           firma_aceptacion_url: string | null
           id: string
           orden_servicio: string | null
-          proximo_servicio: string | null
+          proximo_servicio_horas: number | null
           tecnico: string | null
           tipo_servicio: string
           usuario_id: string | null
@@ -341,7 +341,7 @@ export type Database = {
           firma_aceptacion_url?: string | null
           id?: string
           orden_servicio?: string | null
-          proximo_servicio?: string | null
+          proximo_servicio_horas?: number | null
           tecnico?: string | null
           tipo_servicio: string
           usuario_id?: string | null
@@ -354,7 +354,7 @@ export type Database = {
           firma_aceptacion_url?: string | null
           id?: string
           orden_servicio?: string | null
-          proximo_servicio?: string | null
+          proximo_servicio_horas?: number | null
           tecnico?: string | null
           tipo_servicio?: string
           usuario_id?: string | null
