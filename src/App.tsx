@@ -12,6 +12,7 @@ import Contratos from "./pages/Contratos";
 import EntradasSalidas from "./pages/EntradasSalidas";
 import Mantenimiento from "./pages/Mantenimiento";
 import Almacenes from "./pages/Almacenes";
+import Inventario from "./pages/Inventario";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 
@@ -80,6 +81,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Almacenes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventario"
+        element={
+          <ProtectedRoute>
+            <Inventario />
           </ProtectedRoute>
         }
       />
