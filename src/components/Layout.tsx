@@ -5,6 +5,7 @@ import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List } from "lu
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SyncButton } from "@/components/SyncButton";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -100,6 +101,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <SyncButton />
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user.email}
             </span>

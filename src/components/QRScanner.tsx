@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -15,18 +18,92 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const { toast } = useToast();
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
-    if (isOpen && videoRef.current) {
+    if (isOpen && !isNative && videoRef.current) {
       startScanning();
     }
     return () => {
-      stopScanning();
+      if (!isNative) {
+        stopScanning();
+      }
     };
   }, [isOpen]);
 
-  const startScanning = async () => {
+  const requestCameraPermission = async () => {
+    if (isNative) {
+      try {
+        const permission = await CapCamera.requestPermissions({ permissions: ['camera'] });
+        return permission.camera === 'granted';
+      } catch (error) {
+        console.error('Error requesting camera permission:', error);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const scanWithNativeCamera = async () => {
     try {
+      const hasPermission = await requestCameraPermission();
+      
+      if (!hasPermission) {
+        toast({
+          variant: 'destructive',
+          title: 'Permiso denegado',
+          description: 'Se necesita acceso a la cámara para escanear códigos QR',
+        });
+        return;
+      }
+
+      const image = await CapCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera,
+      });
+
+      if (image.webPath) {
+        // Use ZXing to decode QR from the captured image
+        const reader = new BrowserMultiFormatReader();
+        const result = await reader.decodeFromImageUrl(image.webPath);
+        
+        if (result) {
+          onScan(result.getText());
+          setIsOpen(false);
+          toast({
+            title: 'QR Escaneado',
+            description: 'Código QR detectado exitosamente',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error scanning with native camera:', error);
+      onError?.('Error al escanear con la cámara nativa');
+    }
+  };
+
+  const handleOpenScanner = async () => {
+    if (isNative) {
+      await scanWithNativeCamera();
+    } else {
+      setIsOpen(true);
+    }
+  };
+
+  const startScanning = async () => {
+    if (isNative) return;
+    
+    try {
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        onError?.("Permiso de cámara denegado");
+        setIsOpen(false);
+        return;
+      }
+
       setIsScanning(true);
       readerRef.current = new BrowserMultiFormatReader();
       
@@ -101,7 +178,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
       <Button
         type="button"
         variant="outline"
-        onClick={() => setIsOpen(true)}
+        onClick={handleOpenScanner}
         className="gap-2"
       >
         <Camera className="h-4 w-4" />
