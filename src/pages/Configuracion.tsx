@@ -22,8 +22,8 @@ import {
 
 export default function Configuracion() {
   const { isOnline, isOffline } = useOffline();
-  const { hasPermission: hasGeoPermission, requestPermissions: requestGeoPermissions, getCurrentPosition } = useGeolocation();
-  const { hasPermission: hasPushPermission, requestPermissions: requestPushPermissions, sendLocalNotification } = usePushNotifications();
+  const { hasPermission: hasGeoPermission, isNative: isGeoNative, requestPermissions: requestGeoPermissions, getCurrentPosition } = useGeolocation();
+  const { hasPermission: hasPushPermission, isNative: isPushNative, requestPermissions: requestPushPermissions, sendLocalNotification } = usePushNotifications();
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
@@ -145,9 +145,16 @@ export default function Configuracion() {
               </CardTitle>
               <CardDescription>
                 Permite a la app acceder a tu ubicación para funciones de geolocalización
+                {!isGeoNative && " (funcionalidad limitada en navegador web)"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Plataforma:</span>
+                <Badge variant="outline">
+                  {isGeoNative ? 'Nativa (Android/iOS)' : 'Web'}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between">
                 <span>Estado del permiso:</span>
                 <Badge variant={hasGeoPermission ? "default" : "secondary"}>
@@ -182,9 +189,16 @@ export default function Configuracion() {
               </CardTitle>
               <CardDescription>
                 Recibe notificaciones sobre eventos importantes y recordatorios
+                {!isPushNative && " (solo disponible en Android/iOS)"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Plataforma:</span>
+                <Badge variant="outline">
+                  {isPushNative ? 'Nativa (Android/iOS)' : 'Web'}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between">
                 <span>Estado del permiso:</span>
                 <Badge variant={hasPushPermission ? "default" : "secondary"}>
@@ -195,9 +209,22 @@ export default function Configuracion() {
                   )}
                 </Badge>
               </div>
+              {!isPushNative && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    Las notificaciones push solo funcionan en dispositivos móviles nativos (Android/iOS).
+                    Para probarlas, exporta el proyecto a GitHub y compílalo como app nativa.
+                  </p>
+                </div>
+              )}
               <div className="flex gap-2">
                 {!hasPushPermission && (
-                  <Button onClick={requestPushPermissions} variant="outline" className="flex-1">
+                  <Button 
+                    onClick={requestPushPermissions} 
+                    variant="outline" 
+                    className="flex-1"
+                    disabled={!isPushNative}
+                  >
                     Solicitar permiso
                   </Button>
                 )}
@@ -233,12 +260,25 @@ export default function Configuracion() {
         </div>
 
         {/* Información adicional */}
-        <Card className="mt-6 bg-muted/50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">
-              <strong>Nota:</strong> Los permisos de cámara, ubicación y notificaciones son necesarios solo en dispositivos móviles (Android/iOS). 
-              En la web, algunas funcionalidades pueden tener limitaciones.
-            </p>
+        <Card className="mt-6 bg-primary/10 border-primary/20">
+          <CardContent className="pt-6 space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">¿Cómo probar en dispositivos reales?</h3>
+              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                <li>Exporta el proyecto a GitHub usando el botón en la parte superior</li>
+                <li>Clona el repositorio en tu computadora</li>
+                <li>Instala las dependencias: <code className="bg-muted px-1 rounded">npm install</code></li>
+                <li>Agrega la plataforma: <code className="bg-muted px-1 rounded">npx cap add android</code> o <code className="bg-muted px-1 rounded">npx cap add ios</code></li>
+                <li>Compila: <code className="bg-muted px-1 rounded">npm run build && npx cap sync</code></li>
+                <li>Abre en IDE nativo: <code className="bg-muted px-1 rounded">npx cap open android</code> o <code className="bg-muted px-1 rounded">npx cap open ios</code></li>
+              </ol>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                <strong>Nota:</strong> Las notificaciones push requieren configuración adicional en Firebase (Android) y APNs (iOS).
+                La ubicación y la cámara funcionan automáticamente en dispositivos móviles.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

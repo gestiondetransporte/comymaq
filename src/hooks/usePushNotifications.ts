@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react';
 import { PushNotifications, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 
 export function usePushNotifications() {
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(null);
+  const [isNative, setIsNative] = useState<boolean>(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    setIsNative(Capacitor.isNativePlatform());
+  }, []);
+
   const checkPermissions = async () => {
+    if (!isNative) return false;
+    
     try {
       const permission = await PushNotifications.checkPermissions();
       setHasPermission(permission.receive === 'granted');
@@ -19,6 +27,15 @@ export function usePushNotifications() {
   };
 
   const requestPermissions = async () => {
+    if (!isNative) {
+      toast({
+        title: "Solo disponible en móvil",
+        description: "Las notificaciones push solo funcionan en dispositivos móviles (Android/iOS)",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
     try {
       const permission = await PushNotifications.requestPermissions();
       const granted = permission.receive === 'granted';
@@ -60,6 +77,8 @@ export function usePushNotifications() {
   };
 
   useEffect(() => {
+    if (!isNative) return;
+    
     checkPermissions();
 
     // Listener para cuando se recibe el token de registro
@@ -90,11 +109,12 @@ export function usePushNotifications() {
     return () => {
       PushNotifications.removeAllListeners();
     };
-  }, []);
+  }, [isNative]);
 
   return {
     hasPermission,
     token,
+    isNative,
     checkPermissions,
     requestPermissions,
     sendLocalNotification

@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Geolocation, Position } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
 
 export function useGeolocation() {
   const [position, setPosition] = useState<Position | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [isNative, setIsNative] = useState<boolean>(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsNative(Capacitor.isNativePlatform());
+  }, []);
 
   const checkPermissions = async () => {
     try {
@@ -20,6 +26,24 @@ export function useGeolocation() {
   };
 
   const requestPermissions = async () => {
+    if (!isNative) {
+      // En web, intentar usar la API de geolocalización del navegador
+      try {
+        await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        setHasPermission(true);
+        return true;
+      } catch (err) {
+        toast({
+          title: "Permiso denegado",
+          description: "El navegador no permite acceder a la ubicación",
+          variant: "destructive"
+        });
+        return false;
+      }
+    }
+    
     try {
       const permission = await Geolocation.requestPermissions();
       const granted = permission.location === 'granted';
@@ -74,6 +98,7 @@ export function useGeolocation() {
     position,
     error,
     hasPermission,
+    isNative,
     checkPermissions,
     requestPermissions,
     getCurrentPosition
