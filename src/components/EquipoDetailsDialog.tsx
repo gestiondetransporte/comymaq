@@ -1,0 +1,691 @@
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Save, ArrowRightLeft, Wrench } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface Equipo {
+  id: string;
+  numero_equipo: string;
+  descripcion: string;
+  marca: string | null;
+  modelo: string | null;
+  serie: string | null;
+  tipo: string | null;
+  estado: string | null;
+  categoria: string | null;
+  clase: string | null;
+  anio: number | null;
+  proveedor: string | null;
+  precio_lista: number | null;
+  precio_real_cliente: number | null;
+  costo_proveedor_mxn: number | null;
+  costo_proveedor_usd: number | null;
+  ganancia: number | null;
+  tipo_negocio: string | null;
+  asegurado: string | null;
+  ubicacion_actual: string | null;
+  almacen_id: string | null;
+  codigo_qr: string | null;
+}
+
+interface EquipoDetailsDialogProps {
+  equipo: Equipo | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: () => void;
+}
+
+export function EquipoDetailsDialog({
+  equipo,
+  open,
+  onOpenChange,
+  onUpdate,
+}: EquipoDetailsDialogProps) {
+  const [activeTab, setActiveTab] = useState("detalles");
+  const [formData, setFormData] = useState<Partial<Equipo>>({});
+  const [loading, setLoading] = useState(false);
+  
+  // Entrada/Salida form
+  const [movimientoTipo, setMovimientoTipo] = useState<"entrada" | "salida">("salida");
+  const [almacenOrigenId, setAlmacenOrigenId] = useState("");
+  const [almacenDestinoId, setAlmacenDestinoId] = useState("");
+  const [cliente, setCliente] = useState("");
+  const [obra, setObra] = useState("");
+  const [chofer, setChofer] = useState("");
+  const [transporte, setTransporte] = useState("");
+  const [comentariosMovimiento, setComentariosMovimiento] = useState("");
+  
+  // Mantenimiento form
+  const [tipoServicio, setTipoServicio] = useState("");
+  const [ordenServicio, setOrdenServicio] = useState("");
+  const [tecnico, setTecnico] = useState("");
+  const [descripcionMantenimiento, setDescripcionMantenimiento] = useState("");
+  const [proximoServicio, setProximoServicio] = useState("");
+  
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (equipo) {
+      setFormData(equipo);
+    }
+  }, [equipo]);
+
+  const handleUpdateEquipo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipo) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("equipos")
+        .update({
+          descripcion: formData.descripcion,
+          marca: formData.marca,
+          modelo: formData.modelo,
+          serie: formData.serie,
+          tipo: formData.tipo,
+          estado: formData.estado,
+          categoria: formData.categoria,
+          clase: formData.clase,
+          anio: formData.anio,
+          proveedor: formData.proveedor,
+          precio_lista: formData.precio_lista,
+          precio_real_cliente: formData.precio_real_cliente,
+          costo_proveedor_mxn: formData.costo_proveedor_mxn,
+          costo_proveedor_usd: formData.costo_proveedor_usd,
+          ganancia: formData.ganancia,
+          tipo_negocio: formData.tipo_negocio,
+          asegurado: formData.asegurado,
+          ubicacion_actual: formData.ubicacion_actual,
+        })
+        .eq("id", equipo.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Equipo actualizado correctamente",
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Error updating equipo:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el equipo",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegistrarMovimiento = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipo) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("entradas_salidas")
+        .insert({
+          equipo_id: equipo.id,
+          tipo: movimientoTipo,
+          fecha: new Date().toISOString().split('T')[0],
+          almacen_origen_id: almacenOrigenId || null,
+          almacen_destino_id: almacenDestinoId || null,
+          cliente: cliente || null,
+          obra: obra || null,
+          serie: equipo.serie,
+          modelo: equipo.modelo,
+          chofer: chofer || null,
+          transporte: transporte || null,
+          comentarios: comentariosMovimiento || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: `${movimientoTipo === "entrada" ? "Entrada" : "Salida"} registrada correctamente`,
+      });
+      
+      // Limpiar formulario
+      setCliente("");
+      setObra("");
+      setChofer("");
+      setTransporte("");
+      setComentariosMovimiento("");
+      setAlmacenOrigenId("");
+      setAlmacenDestinoId("");
+      
+      onUpdate();
+    } catch (error) {
+      console.error("Error registering movimiento:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo registrar el movimiento",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegistrarMantenimiento = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipo) return;
+
+    if (!tipoServicio || !descripcionMantenimiento) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Tipo de servicio y descripción son obligatorios",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("mantenimientos")
+        .insert({
+          equipo_id: equipo.id,
+          tipo_servicio: tipoServicio,
+          orden_servicio: ordenServicio || null,
+          tecnico: tecnico || null,
+          descripcion: descripcionMantenimiento,
+          fecha: new Date().toISOString().split('T')[0],
+          proximo_servicio: proximoServicio || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Mantenimiento registrado correctamente",
+      });
+      
+      // Limpiar formulario
+      setTipoServicio("");
+      setOrdenServicio("");
+      setTecnico("");
+      setDescripcionMantenimiento("");
+      setProximoServicio("");
+      
+      onUpdate();
+    } catch (error) {
+      console.error("Error registering mantenimiento:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo registrar el mantenimiento",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!equipo) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
+          <DialogDescription>
+            {equipo.descripcion}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="detalles">
+              <Save className="h-4 w-4 mr-2" />
+              Detalles
+            </TabsTrigger>
+            <TabsTrigger value="movimiento">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Entrada/Salida
+            </TabsTrigger>
+            <TabsTrigger value="mantenimiento">
+              <Wrench className="h-4 w-4 mr-2" />
+              Mantenimiento
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="detalles" className="space-y-4">
+            <form onSubmit={handleUpdateEquipo} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="numero_equipo">Número de Equipo</Label>
+                  <Input
+                    id="numero_equipo"
+                    value={formData.numero_equipo || ""}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="descripcion">Descripción *</Label>
+                  <Input
+                    id="descripcion"
+                    required
+                    value={formData.descripcion || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, descripcion: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="marca">Marca</Label>
+                  <Input
+                    id="marca"
+                    value={formData.marca || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, marca: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="modelo">Modelo</Label>
+                  <Input
+                    id="modelo"
+                    value={formData.modelo || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, modelo: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="serie">Serie</Label>
+                  <Input
+                    id="serie"
+                    value={formData.serie || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, serie: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipo">Tipo</Label>
+                  <Select
+                    value={formData.tipo || ""}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, tipo: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ELECTRICA">ELÉCTRICA</SelectItem>
+                      <SelectItem value="COMBUSTIÓN">COMBUSTIÓN</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Input
+                    id="estado"
+                    value={formData.estado || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, estado: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="categoria">Categoría</Label>
+                  <Input
+                    id="categoria"
+                    value={formData.categoria || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, categoria: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="clase">Clase</Label>
+                  <Input
+                    id="clase"
+                    value={formData.clase || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, clase: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="anio">Año</Label>
+                  <Input
+                    id="anio"
+                    type="number"
+                    value={formData.anio || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, anio: parseInt(e.target.value) || null })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="proveedor">Proveedor</Label>
+                  <Input
+                    id="proveedor"
+                    value={formData.proveedor || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, proveedor: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ubicacion_actual">Ubicación Actual</Label>
+                  <Input
+                    id="ubicacion_actual"
+                    value={formData.ubicacion_actual || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ubicacion_actual: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="precio_lista">Precio Lista (MXN)</Label>
+                  <Input
+                    id="precio_lista"
+                    type="number"
+                    step="0.01"
+                    value={formData.precio_lista || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, precio_lista: parseFloat(e.target.value) || null })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="precio_real_cliente">Precio Real Cliente (MXN)</Label>
+                  <Input
+                    id="precio_real_cliente"
+                    type="number"
+                    step="0.01"
+                    value={formData.precio_real_cliente || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, precio_real_cliente: parseFloat(e.target.value) || null })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asegurado">Asegurado</Label>
+                  <Select
+                    value={formData.asegurado || ""}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, asegurado: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Si">Sí</SelectItem>
+                      <SelectItem value="No">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_negocio">Tipo de Negocio</Label>
+                  <Input
+                    id="tipo_negocio"
+                    value={formData.tipo_negocio || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tipo_negocio: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Guardar Cambios
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="movimiento" className="space-y-4">
+            <form onSubmit={handleRegistrarMovimiento} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="movimiento_tipo">Tipo de Movimiento *</Label>
+                  <Select
+                    value={movimientoTipo}
+                    onValueChange={(value: "entrada" | "salida") => setMovimientoTipo(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="entrada">Entrada</SelectItem>
+                      <SelectItem value="salida">Salida</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Input
+                    id="cliente"
+                    value={cliente}
+                    onChange={(e) => setCliente(e.target.value)}
+                    placeholder="Nombre del cliente"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="obra">Obra</Label>
+                  <Input
+                    id="obra"
+                    value={obra}
+                    onChange={(e) => setObra(e.target.value)}
+                    placeholder="Nombre de la obra"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="chofer">Chofer</Label>
+                  <Input
+                    id="chofer"
+                    value={chofer}
+                    onChange={(e) => setChofer(e.target.value)}
+                    placeholder="Nombre del chofer"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="transporte">Transporte</Label>
+                  <Input
+                    id="transporte"
+                    value={transporte}
+                    onChange={(e) => setTransporte(e.target.value)}
+                    placeholder="Tipo o placas del transporte"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="comentarios_movimiento">Comentarios</Label>
+                <Textarea
+                  id="comentarios_movimiento"
+                  value={comentariosMovimiento}
+                  onChange={(e) => setComentariosMovimiento(e.target.value)}
+                  placeholder="Observaciones adicionales..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("detalles")}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registrando...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="mr-2 h-4 w-4" />
+                      Registrar Movimiento
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="mantenimiento" className="space-y-4">
+            <form onSubmit={handleRegistrarMantenimiento} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_servicio">Tipo de Servicio *</Label>
+                  <Select
+                    value={tipoServicio}
+                    onValueChange={setTipoServicio}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="preventivo">Preventivo</SelectItem>
+                      <SelectItem value="correctivo">Correctivo</SelectItem>
+                      <SelectItem value="revision">Revisión</SelectItem>
+                      <SelectItem value="reparacion">Reparación</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="orden_servicio">Orden de Servicio</Label>
+                  <Input
+                    id="orden_servicio"
+                    value={ordenServicio}
+                    onChange={(e) => setOrdenServicio(e.target.value)}
+                    placeholder="Número de orden"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tecnico">Técnico</Label>
+                  <Input
+                    id="tecnico"
+                    value={tecnico}
+                    onChange={(e) => setTecnico(e.target.value)}
+                    placeholder="Nombre del técnico"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="proximo_servicio">Próximo Servicio</Label>
+                  <Input
+                    id="proximo_servicio"
+                    type="date"
+                    value={proximoServicio}
+                    onChange={(e) => setProximoServicio(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="descripcion_mantenimiento">Descripción del Servicio *</Label>
+                <Textarea
+                  id="descripcion_mantenimiento"
+                  required
+                  value={descripcionMantenimiento}
+                  onChange={(e) => setDescripcionMantenimiento(e.target.value)}
+                  placeholder="Describe el servicio realizado..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setActiveTab("detalles")}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Registrando...
+                    </>
+                  ) : (
+                    <>
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Registrar Mantenimiento
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,22 +1,98 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
+import { Search, ArrowRightLeft } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+interface EntradaSalida {
+  id: string;
+  equipo_id: string;
+  tipo: string;
+  fecha: string;
+  cliente: string | null;
+  obra: string | null;
+  serie: string | null;
+  modelo: string | null;
+  chofer: string | null;
+  transporte: string | null;
+  comentarios: string | null;
+  equipos: {
+    numero_equipo: string;
+    descripcion: string;
+  } | null;
+}
 
 export default function EntradasSalidas() {
   const [equipoId, setEquipoId] = useState("");
   const [tipo, setTipo] = useState<"entrada" | "salida">("entrada");
   const [observaciones, setObservaciones] = useState("");
   const [loading, setLoading] = useState(false);
+  const [movimientos, setMovimientos] = useState<EntradaSalida[]>([]);
+  const [filteredMovimientos, setFilteredMovimientos] = useState<EntradaSalida[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { isOnline } = useOffline();
+
+  useEffect(() => {
+    fetchMovimientos();
+  }, []);
+
+  useEffect(() => {
+    filterMovimientos();
+  }, [searchQuery, movimientos]);
+
+  const fetchMovimientos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('entradas_salidas')
+        .select(`
+          *,
+          equipos (
+            numero_equipo,
+            descripcion
+          )
+        `)
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
+
+      setMovimientos(data || []);
+    } catch (error) {
+      console.error('Error fetching movimientos:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los movimientos",
+      });
+    }
+  };
+
+  const filterMovimientos = () => {
+    let filtered = [...movimientos];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(m =>
+        m.equipos?.numero_equipo?.toLowerCase().includes(query) ||
+        m.equipos?.descripcion?.toLowerCase().includes(query) ||
+        m.cliente?.toLowerCase().includes(query) ||
+        m.obra?.toLowerCase().includes(query) ||
+        m.tipo?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredMovimientos(filtered);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +128,8 @@ export default function EntradasSalidas() {
           title: "Movimiento registrado",
           description: `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente`,
         });
+        
+        fetchMovimientos();
       } else {
         // Si no hay conexión, guardar para sincronizar después
         await savePendingSync({
@@ -78,6 +156,21 @@ export default function EntradasSalidas() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getTipoBadge = (tipo: string) => {
+    return tipo === "entrada" 
+      ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">Entrada</Badge>
+      : <Badge variant="destructive">Salida</Badge>;
+  };
+
+  const formatDate = (date: string | null) => {
+    if (!date) return 'N/A';
+    try {
+      return format(new Date(date), 'dd/MMM/yyyy HH:mm', { locale: es });
+    } catch {
+      return 'N/A';
     }
   };
 
@@ -142,6 +235,73 @@ export default function EntradasSalidas() {
               {loading ? "Registrando..." : "Registrar Movimiento"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle>Historial de Movimientos</CardTitle>
+              <CardDescription>
+                {filteredMovimientos.length} de {movimientos.length} registros
+              </CardDescription>
+            </div>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por equipo, cliente, obra..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredMovimientos.length === 0 ? (
+            <div className="text-center py-8">
+              <ArrowRightLeft className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {searchQuery
+                  ? "No se encontraron movimientos con los filtros aplicados"
+                  : "No hay movimientos registrados"}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>N° Equipo</TableHead>
+                    <TableHead>Equipo</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Obra</TableHead>
+                    <TableHead>Chofer</TableHead>
+                    <TableHead>Transporte</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMovimientos.map((movimiento) => (
+                    <TableRow key={movimiento.id}>
+                      <TableCell>{formatDate(movimiento.fecha)}</TableCell>
+                      <TableCell className="font-medium">
+                        {movimiento.equipos?.numero_equipo || 'N/A'}
+                      </TableCell>
+                      <TableCell>{movimiento.equipos?.descripcion || 'N/A'}</TableCell>
+                      <TableCell>{getTipoBadge(movimiento.tipo)}</TableCell>
+                      <TableCell>{movimiento.cliente || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.obra || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

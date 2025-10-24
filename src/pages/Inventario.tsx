@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Search, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 
 interface Equipo {
   id: string;
@@ -35,6 +36,8 @@ export default function Inventario() {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("TODOS");
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
+  const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -267,7 +270,10 @@ export default function Inventario() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/equipo/${equipo.id}`)}
+                          onClick={() => {
+                            setSelectedEquipo(equipo as any);
+                            setDialogOpen(true);
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Ver detalles
@@ -281,6 +287,13 @@ export default function Inventario() {
           </div>
         </CardContent>
       </Card>
+
+      <EquipoDetailsDialog
+        equipo={selectedEquipo as any}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onUpdate={fetchEquipos}
+      />
     </div>
   );
 }
