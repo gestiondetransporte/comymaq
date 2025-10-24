@@ -92,17 +92,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createUser = async (email: string, password: string, role: 'admin' | 'moderator' | 'user') => {
     try {
-      // Create user using admin API
+      // Get current session to restore it after
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      // Create user
       const { data: { user: newUser }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            email_confirmed: true, // Auto-confirm email
+          }
         },
       });
 
-      if (signUpError) return { error: signUpError };
-      if (!newUser) return { error: { message: 'No se pudo crear el usuario' } };
+      if (signUpError) {
+        console.error('Error creating user:', signUpError);
+        return { error: signUpError };
+      }
+      
+      if (!newUser) {
+        return { error: { message: 'No se pudo crear el usuario' } };
+      }
 
       // Assign role
       const { error: roleError } = await supabase
@@ -112,10 +124,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: role,
         });
 
-      if (roleError) return { error: roleError };
+      if (roleError) {
+        console.error('Error assigning role:', roleError);
+        return { error: roleError };
+      }
+
+      // Restore the admin's session
+      if (currentSession) {
+        await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
+        });
+      }
 
       return { error: null };
     } catch (error: any) {
+      console.error('Error in createUser:', error);
       return { error };
     }
   };
