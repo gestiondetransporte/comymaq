@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield } from "lucide-react";
+import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +24,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
     { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
     { path: "/almacenes", label: "Almacenes", icon: Package },
+    { path: "/configuracion", label: "Configuración", icon: Settings },
   ];
 
   const adminNavItems = [

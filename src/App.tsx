@@ -15,8 +15,10 @@ import Mantenimiento from "./pages/Mantenimiento";
 import Almacenes from "./pages/Almacenes";
 import Inventario from "./pages/Inventario";
 import AdminUsuarios from "./pages/AdminUsuarios";
+import Configuracion from "./pages/Configuracion";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +112,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/configuracion"
+        element={
+          <ProtectedRoute>
+            <Configuracion />
+          </ProtectedRoute>
+        }
+      />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -124,6 +134,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OfflineIndicator />
             <AppRoutes />
           </TooltipProvider>
         </AuthProvider>
