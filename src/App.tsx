@@ -7,6 +7,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Equipos from "./pages/Equipos";
+import Contratos from "./pages/Contratos";
+import EntradasSalidas from "./pages/EntradasSalidas";
+import Mantenimiento from "./pages/Mantenimiento";
+import Almacenes from "./pages/Almacenes";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 
@@ -35,6 +40,46 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Index />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/equipo/:id"
+        element={
+          <ProtectedRoute>
+            <Equipos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contratos"
+        element={
+          <ProtectedRoute>
+            <Contratos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/entradas-salidas"
+        element={
+          <ProtectedRoute>
+            <EntradasSalidas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mantenimiento"
+        element={
+          <ProtectedRoute>
+            <Mantenimiento />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/almacenes"
+        element={
+          <ProtectedRoute>
+            <Almacenes />
           </ProtectedRoute>
         }
       />
