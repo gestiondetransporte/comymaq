@@ -3,12 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, FileText, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 
 interface Contrato {
   id: string;
@@ -22,8 +24,10 @@ interface Contrato {
   dias_contratado: number | null;
   status: string | null;
   vendedor: string | null;
-  horas_trabajo: number | null;
+  comprador: string | null;
   dentro_fuera: string | null;
+  horas_trabajo: number | null;
+  comentarios: string | null;
   equipo_id: string | null;
 }
 
@@ -33,6 +37,8 @@ export default function Contratos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [loading, setLoading] = useState(true);
+  const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -183,6 +189,7 @@ export default function Contratos() {
                     <TableHead>Días</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Vendedor</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,6 +204,19 @@ export default function Contratos() {
                       <TableCell>{contrato.dias_contratado || 'N/A'}</TableCell>
                       <TableCell>{getStatusBadge(contrato.status)}</TableCell>
                       <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedContrato(contrato);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Detalles
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -205,6 +225,13 @@ export default function Contratos() {
           )}
         </CardContent>
       </Card>
+
+      <ContratoDetailsDialog
+        contrato={selectedContrato}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onUpdate={fetchContratos}
+      />
     </div>
   );
 }
