@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ interface EntradaSalida {
 }
 
 export default function EntradasSalidas() {
+  const [searchParams] = useSearchParams();
+  const equipoIdParam = searchParams.get('equipo_id');
   const [equipoId, setEquipoId] = useState("");
   const [tipo, setTipo] = useState<"entrada" | "salida">("entrada");
   const [cliente, setCliente] = useState("");
@@ -61,7 +64,7 @@ export default function EntradasSalidas() {
 
   const fetchMovimientos = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('entradas_salidas')
         .select(`
           *,
@@ -69,8 +72,14 @@ export default function EntradasSalidas() {
             numero_equipo,
             descripcion
           )
-        `)
-        .order('fecha', { ascending: false });
+        `);
+
+      // Si hay un filtro de equipo en la URL, aplicarlo
+      if (equipoIdParam) {
+        query = query.eq('equipo_id', equipoIdParam);
+      }
+
+      const { data, error } = await query.order('fecha', { ascending: false });
 
       if (error) throw error;
 

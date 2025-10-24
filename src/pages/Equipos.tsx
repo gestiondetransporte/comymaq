@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, FileText, Wrench, TruckIcon, ArrowRightLeft, Plus } from "lucide-react";
+import { ArrowLeft, Package, FileText, Wrench, TruckIcon, ArrowRightLeft, Plus, History } from "lucide-react";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Equipo {
   id: string;
@@ -56,6 +57,17 @@ interface Mantenimiento {
   proximo_servicio: string | null;
 }
 
+interface EntradaSalida {
+  id: string;
+  fecha: string;
+  tipo: string;
+  cliente: string | null;
+  obra: string | null;
+  chofer: string | null;
+  transporte: string | null;
+  comentarios: string | null;
+}
+
 export default function Equipos() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -63,6 +75,7 @@ export default function Equipos() {
   const [equipo, setEquipo] = useState<Equipo | null>(null);
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
+  const [entradasSalidas, setEntradasSalidas] = useState<EntradaSalida[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTab, setDialogTab] = useState<"detalles" | "movimiento" | "mantenimiento">("detalles");
@@ -112,6 +125,16 @@ export default function Equipos() {
       .order('fecha', { ascending: false });
 
     setMantenimientos(mantenimientosData || []);
+
+    // Fetch recent entries and exits (last 5)
+    const { data: entradasSalidasData } = await supabase
+      .from('entradas_salidas')
+      .select('*')
+      .eq('equipo_id', id)
+      .order('fecha', { ascending: false })
+      .limit(5);
+
+    setEntradasSalidas(entradasSalidasData || []);
     setLoading(false);
   };
 
@@ -229,6 +252,56 @@ export default function Equipos() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Últimas Entradas/Salidas
+          </CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/entradas-salidas?equipo_id=${id}`)}
+          >
+            Ver Todas
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {entradasSalidas.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Obra</TableHead>
+                  <TableHead>Transporte</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entradasSalidas.map((es) => (
+                  <TableRow key={es.id}>
+                    <TableCell>{new Date(es.fecha).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={es.tipo === 'entrada' ? 'default' : 'secondary'}>
+                        {es.tipo.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{es.cliente || "N/A"}</TableCell>
+                    <TableCell>{es.obra || "N/A"}</TableCell>
+                    <TableCell>{es.transporte || "N/A"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="py-8 text-center text-muted-foreground">
+              No hay registros de entradas o salidas
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="mantenimiento" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
