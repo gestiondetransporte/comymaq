@@ -75,10 +75,53 @@ npx cap run ios
 La aplicación solicita automáticamente permisos de cámara cuando intentas escanear un código QR.
 
 ### Android
-Los permisos se configuran automáticamente en `android/app/src/main/AndroidManifest.xml`
+Los permisos se configuran automáticamente en `android/app/src/main/AndroidManifest.xml`:
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+Para verificar permisos en Android Studio:
+1. Abre el proyecto en Android Studio
+2. Navega a `android/app/src/main/AndroidManifest.xml`
+3. Asegúrate que la línea de permisos de cámara esté presente
 
 ### iOS
-Los permisos se configuran automáticamente en `ios/App/App/Info.plist`
+Los permisos se configuran automáticamente en `ios/App/App/Info.plist`:
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Esta aplicación necesita acceso a la cámara para escanear códigos QR de equipos</string>
+```
+
+Para verificar permisos en Xcode:
+1. Abre el proyecto en Xcode
+2. Selecciona el target "App"
+3. Ve a la pestaña "Info"
+4. Busca "Privacy - Camera Usage Description"
+
+### Verificar que los permisos funcionan
+
+**En la web:**
+- Al hacer clic en "Escanear QR", el navegador mostrará un popup pidiendo permiso para usar la cámara
+- Acepta el permiso para continuar
+
+**En Android/iOS:**
+- Al hacer clic en "Escanear QR", se abrirá la cámara nativa directamente
+- Si es la primera vez, el sistema operativo mostrará un diálogo pidiendo permiso
+- Si los permisos fueron denegados previamente, debes ir a:
+  - **Android**: Ajustes → Apps → COMYMAQ → Permisos → Cámara
+  - **iOS**: Ajustes → COMYMAQ → Permitir acceso a Cámara
+
+### Problemas comunes con permisos
+
+**"Permiso denegado":**
+1. Verifica que los permisos estén en el manifest/Info.plist
+2. Desinstala y reinstala la app
+3. Verifica los permisos de la app en ajustes del dispositivo
+
+**La cámara no se abre:**
+1. Verifica que el dispositivo tenga cámara
+2. Prueba la cámara con otra app para asegurarte que funciona
+3. Revisa los logs de la consola (ver sección de debugging)
 
 ## Desarrollo con Hot Reload
 

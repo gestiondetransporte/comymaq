@@ -73,34 +73,38 @@ export default function Index() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-primary">Buscador de Equipo</h1>
-        <p className="text-muted-foreground text-lg">
+    <div className="max-w-4xl mx-auto space-y-8 px-4">
+      <div className="text-center space-y-4 pt-4">
+        <h1 className="text-3xl md:text-4xl font-bold text-primary">Buscador de Equipo</h1>
+        <p className="text-muted-foreground text-base md:text-lg">
           Ingresa el número de equipo para ver sus detalles
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Buscar Equipo</CardTitle>
-          <CardDescription>
+      <Card className="border-2 md:border">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl md:text-2xl">Buscar Equipo</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             Ingresa el número de equipo o escanea su código QR
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleFormSubmit} className="flex gap-4">
+          <form onSubmit={handleFormSubmit} className="flex flex-col gap-3">
             <Input
               placeholder="Número de equipo o código QR..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
+              className="h-12 md:h-10 text-base md:text-sm"
             />
-            <Button type="submit" disabled={loading}>
-              <Search className="mr-2 h-4 w-4" />
-              {loading ? "Buscando..." : "Buscar"}
-            </Button>
-            <QRScanner onScan={handleQRScan} onError={handleQRError} />
+            <div className="flex gap-2">
+              <Button type="submit" disabled={loading} className="flex-1 h-12 md:h-10">
+                <Search className="mr-2 h-5 w-5 md:h-4 md:w-4" />
+                {loading ? "Buscando..." : "Buscar"}
+              </Button>
+              <div className="flex-1">
+                <QRScanner onScan={handleQRScan} onError={handleQRError} />
+              </div>
+            </div>
           </form>
         </CardContent>
       </Card>

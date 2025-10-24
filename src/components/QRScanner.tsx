@@ -179,9 +179,9 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         type="button"
         variant="outline"
         onClick={handleOpenScanner}
-        className="gap-2"
+        className="gap-2 w-full h-12 md:h-10 md:w-auto"
       >
-        <Camera className="h-4 w-4" />
+        <Camera className="h-5 w-5 md:h-4 md:w-4" />
         Escanear QR
       </Button>
 
