@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes: {
+        Row: {
+          correo_electronico: string | null
+          created_at: string
+          direccion: string | null
+          id: string
+          nombre: string
+          persona_contacto: string | null
+          razon_social: string | null
+          rfc: string | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          correo_electronico?: string | null
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre: string
+          persona_contacto?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          correo_electronico?: string | null
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre?: string
+          persona_contacto?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contratos: {
         Row: {
           cliente: string
