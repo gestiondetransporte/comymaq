@@ -55,6 +55,7 @@ export default function Mantenimiento() {
   const [showProgramadoDialog, setShowProgramadoDialog] = useState(false);
   const [showUbicacionDialog, setShowUbicacionDialog] = useState(false);
   const [selectedUbicacion, setSelectedUbicacion] = useState<{obra: string, ubicacion: string} | null>(null);
+  const [proximoServicioManual, setProximoServicioManual] = useState<number>(0);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -301,6 +302,15 @@ export default function Mantenimiento() {
   const handleMarcarRealizado = async () => {
     if (!selectedProgramado) return;
     
+    if (!proximoServicioManual || proximoServicioManual <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes ingresar las horas para el próximo servicio",
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const { error } = await supabase
@@ -313,7 +323,7 @@ export default function Mantenimiento() {
           tecnico: null,
           descripcion: `Mantenimiento preventivo realizado - ${selectedProgramado.horas_contrato} horas`,
           fecha: new Date().toISOString().split('T')[0],
-          proximo_servicio_horas: (selectedProgramado.horas_contrato || 0) + 300,
+          proximo_servicio_horas: proximoServicioManual,
         });
 
       if (error) throw error;
@@ -325,6 +335,7 @@ export default function Mantenimiento() {
 
       setShowProgramadoDialog(false);
       setSelectedProgramado(null);
+      setProximoServicioManual(0);
       fetchMantenimientos();
     } catch (error) {
       console.error('Error registrando mantenimiento:', error);
@@ -548,6 +559,7 @@ export default function Mantenimiento() {
                             size="sm"
                             onClick={() => {
                               setSelectedProgramado(mantenimiento);
+                              setProximoServicioManual((mantenimiento.horas_contrato || 0) + 300);
                               setShowProgramadoDialog(true);
                             }}
                           >
@@ -596,10 +608,27 @@ export default function Mantenimiento() {
                 )}
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="proximo_servicio_manual">Próximo Servicio (Horas) *</Label>
+                <Input
+                  id="proximo_servicio_manual"
+                  type="number"
+                  placeholder="300, 400, 500..."
+                  value={proximoServicioManual}
+                  onChange={(e) => setProximoServicioManual(e.target.value ? parseInt(e.target.value) : 0)}
+                  min="0"
+                  step="100"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ingresa las horas de operación para programar el próximo mantenimiento
+                </p>
+              </div>
+              
               <div className="rounded-lg bg-blue-50 p-4">
                 <p className="text-sm text-blue-900">
                   Se registrará un mantenimiento preventivo para hoy y se programará el próximo servicio a las{' '}
-                  <span className="font-bold">{(selectedProgramado.horas_contrato || 0) + 300} horas</span>.
+                  <span className="font-bold">{proximoServicioManual} horas</span>.
                 </p>
               </div>
             </div>
@@ -611,6 +640,7 @@ export default function Mantenimiento() {
               onClick={() => {
                 setShowProgramadoDialog(false);
                 setSelectedProgramado(null);
+                setProximoServicioManual(0);
               }}
               disabled={loading}
             >
