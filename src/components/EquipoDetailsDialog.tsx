@@ -251,10 +251,34 @@ export function EquipoDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
-          <DialogDescription>
-            {equipo.descripcion}
-          </DialogDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
+              <DialogDescription>
+                {equipo.descripcion}
+              </DialogDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("movimiento")}
+                className="gap-2"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                Entrada/Salida
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("mantenimiento")}
+                className="gap-2"
+              >
+                <Wrench className="h-4 w-4" />
+                Mantenimiento
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
