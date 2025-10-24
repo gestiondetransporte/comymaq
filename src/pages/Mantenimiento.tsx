@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Wrench, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Wrench, Loader2, CheckCircle2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface Mantenimiento {
@@ -31,6 +32,8 @@ interface Mantenimiento {
   } | null;
   isProgramado?: boolean;
   horas_contrato?: number;
+  obra?: string | null;
+  ubicacion_obra?: string | null;
 }
 
 export default function Mantenimiento() {
@@ -47,6 +50,12 @@ export default function Mantenimiento() {
   const [descripcion, setDescripcion] = useState("");
   const [proximoServicioHoras, setProximoServicioHoras] = useState<number | "">("");
   
+  // Dialog states
+  const [selectedProgramado, setSelectedProgramado] = useState<Mantenimiento | null>(null);
+  const [showProgramadoDialog, setShowProgramadoDialog] = useState(false);
+  const [showUbicacionDialog, setShowUbicacionDialog] = useState(false);
+  const [selectedUbicacion, setSelectedUbicacion] = useState<{obra: string, ubicacion: string} | null>(null);
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -60,6 +69,8 @@ export default function Mantenimiento() {
 
   const fetchMantenimientos = async () => {
     try {
+      const inicioMes = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+      
       // Obtener mantenimientos registrados
       const { data: mantenimientosData, error: mantenimientosError } = await supabase
         .from('mantenimientos')
@@ -76,6 +87,16 @@ export default function Mantenimiento() {
 
       if (mantenimientosError) throw mantenimientosError;
 
+      // Obtener IDs de equipos que ya tuvieron mantenimiento preventivo este mes
+      const equiposConMantenimientoReciente = new Set(
+        (mantenimientosData || [])
+          .filter(m => 
+            m.tipo_servicio === 'preventivo' && 
+            m.fecha >= inicioMes
+          )
+          .map(m => m.equipo_id)
+      );
+
       // Obtener equipos con contratos activos que necesitan mantenimiento programado
       const { data: contratosActivos, error: contratosError } = await supabase
         .from('contratos')
@@ -83,12 +104,14 @@ export default function Mantenimiento() {
           id,
           equipo_id,
           horas_trabajo,
+          obra,
           equipos (
             id,
             numero_equipo,
             descripcion,
             marca,
-            modelo
+            modelo,
+            ubicacion_actual
           )
         `)
         .eq('status', 'activo')
@@ -97,24 +120,29 @@ export default function Mantenimiento() {
       if (contratosError) throw contratosError;
 
       // Crear registros virtuales de mantenimientos programados
-      const mantenimientosProgramados: Mantenimiento[] = (contratosActivos || []).map(contrato => ({
-        id: `programado-${contrato.equipo_id}`,
-        equipo_id: contrato.equipo_id,
-        fecha: new Date().toISOString().split('T')[0],
-        tipo_servicio: 'programado',
-        orden_servicio: null,
-        tecnico: null,
-        descripcion: `Mantenimiento preventivo requerido - ${contrato.horas_trabajo} horas acumuladas`,
-        proximo_servicio_horas: null,
-        equipos: contrato.equipos ? {
-          numero_equipo: contrato.equipos.numero_equipo,
-          descripcion: contrato.equipos.descripcion,
-          marca: contrato.equipos.marca,
-          modelo: contrato.equipos.modelo,
-        } : null,
-        isProgramado: true,
-        horas_contrato: contrato.horas_trabajo,
-      }));
+      // Excluir equipos que ya tuvieron mantenimiento preventivo este mes
+      const mantenimientosProgramados: Mantenimiento[] = (contratosActivos || [])
+        .filter(contrato => !equiposConMantenimientoReciente.has(contrato.equipo_id))
+        .map(contrato => ({
+          id: `programado-${contrato.equipo_id}`,
+          equipo_id: contrato.equipo_id,
+          fecha: new Date().toISOString().split('T')[0],
+          tipo_servicio: 'programado',
+          orden_servicio: null,
+          tecnico: null,
+          descripcion: `Mantenimiento preventivo requerido - ${contrato.horas_trabajo} horas acumuladas`,
+          proximo_servicio_horas: null,
+          equipos: contrato.equipos ? {
+            numero_equipo: contrato.equipos.numero_equipo,
+            descripcion: contrato.equipos.descripcion,
+            marca: contrato.equipos.marca,
+            modelo: contrato.equipos.modelo,
+          } : null,
+          isProgramado: true,
+          horas_contrato: contrato.horas_trabajo,
+          obra: contrato.obra,
+          ubicacion_obra: contrato.equipos?.ubicacion_actual,
+        }));
 
       // Combinar mantenimientos reales con programados
       const todosMantenimientos = [...mantenimientosProgramados, ...(mantenimientosData || [])];
@@ -270,6 +298,59 @@ export default function Mantenimiento() {
     return `${horas} hrs`;
   };
 
+  const handleMarcarRealizado = async () => {
+    if (!selectedProgramado) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('mantenimientos')
+        .insert({
+          equipo_id: selectedProgramado.equipo_id,
+          usuario_id: user?.id,
+          tipo_servicio: 'preventivo',
+          orden_servicio: null,
+          tecnico: null,
+          descripcion: `Mantenimiento preventivo realizado - ${selectedProgramado.horas_contrato} horas`,
+          fecha: new Date().toISOString().split('T')[0],
+          proximo_servicio_horas: (selectedProgramado.horas_contrato || 0) + 300,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Mantenimiento registrado",
+        description: "El mantenimiento programado se marcó como realizado",
+      });
+
+      setShowProgramadoDialog(false);
+      setSelectedProgramado(null);
+      fetchMantenimientos();
+    } catch (error) {
+      console.error('Error registrando mantenimiento:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo marcar como realizado",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerUbicacion = (obra: string | null, ubicacion: string | null) => {
+    if (obra && ubicacion) {
+      setSelectedUbicacion({ obra, ubicacion });
+      setShowUbicacionDialog(true);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Sin ubicación",
+        description: "No hay información de ubicación disponible para esta obra",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -418,10 +499,12 @@ export default function Mantenimiento() {
                     <TableHead>N° Equipo</TableHead>
                     <TableHead>Equipo</TableHead>
                     <TableHead>Tipo Servicio</TableHead>
+                    <TableHead>Obra</TableHead>
                     <TableHead>Orden</TableHead>
                     <TableHead>Técnico</TableHead>
                     <TableHead>Descripción</TableHead>
                     <TableHead>Próximo Servicio (Horas)</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -442,10 +525,37 @@ export default function Mantenimiento() {
                       <TableCell>
                         {getTipoServicioBadge(mantenimiento.tipo_servicio, mantenimiento.isProgramado, mantenimiento.horas_contrato)}
                       </TableCell>
+                      <TableCell>
+                        {mantenimiento.obra ? (
+                          <Button
+                            variant="link"
+                            className="h-auto p-0 text-blue-600 hover:text-blue-800"
+                            onClick={() => handleVerUbicacion(mantenimiento.obra, mantenimiento.ubicacion_obra)}
+                          >
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {mantenimiento.obra}
+                          </Button>
+                        ) : 'N/A'}
+                      </TableCell>
                       <TableCell>{mantenimiento.orden_servicio || 'N/A'}</TableCell>
                       <TableCell>{mantenimiento.tecnico || 'N/A'}</TableCell>
                       <TableCell className="max-w-xs truncate">{mantenimiento.descripcion}</TableCell>
                       <TableCell>{formatHoras(mantenimiento.proximo_servicio_horas)}</TableCell>
+                      <TableCell>
+                        {mantenimiento.isProgramado && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProgramado(mantenimiento);
+                              setShowProgramadoDialog(true);
+                            }}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Realizado
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -454,6 +564,122 @@ export default function Mantenimiento() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para marcar como realizado */}
+      <Dialog open={showProgramadoDialog} onOpenChange={setShowProgramadoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marcar Mantenimiento como Realizado</DialogTitle>
+            <DialogDescription>
+              ¿Deseas registrar este mantenimiento preventivo como realizado?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedProgramado && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Equipo</p>
+                  <p className="text-sm font-bold">
+                    #{selectedProgramado.equipos?.numero_equipo} - {selectedProgramado.equipos?.descripcion}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Horas Acumuladas</p>
+                  <p className="text-sm font-bold">{selectedProgramado.horas_contrato} hrs</p>
+                </div>
+                {selectedProgramado.obra && (
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Obra</p>
+                    <p className="text-sm font-bold">{selectedProgramado.obra}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="rounded-lg bg-blue-50 p-4">
+                <p className="text-sm text-blue-900">
+                  Se registrará un mantenimiento preventivo para hoy y se programará el próximo servicio a las{' '}
+                  <span className="font-bold">{(selectedProgramado.horas_contrato || 0) + 300} horas</span>.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowProgramadoDialog(false);
+                setSelectedProgramado(null);
+              }}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleMarcarRealizado} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Marcar como Realizado
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para ubicación de obra */}
+      <Dialog open={showUbicacionDialog} onOpenChange={setShowUbicacionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Ubicación de la Obra
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUbicacion && (
+            <div className="space-y-4 py-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Obra</p>
+                <p className="text-lg font-bold">{selectedUbicacion.obra}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Dirección / Ubicación</p>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm">{selectedUbicacion.ubicacion}</p>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    const encodedAddress = encodeURIComponent(selectedUbicacion.ubicacion);
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+                  }}
+                >
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Abrir en Google Maps
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setShowUbicacionDialog(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
