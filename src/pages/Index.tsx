@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, LayoutDashboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import QRScanner from "@/components/QRScanner";
 
@@ -13,6 +14,7 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const handleSearch = async (query?: string) => {
     const searchValue = query || searchQuery;
@@ -74,7 +76,18 @@ export default function Index() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 px-4">
-      <div className="text-center space-y-4 pt-4">
+      <div className="text-center space-y-4 pt-4 relative">
+        {isAdmin && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute right-0 top-4 md:top-0"
+            onClick={() => navigate("/dashboard")}
+            title="Ver Dashboard"
+          >
+            <LayoutDashboard className="h-5 w-5" />
+          </Button>
+        )}
         <h1 className="text-3xl md:text-4xl font-bold text-primary">Buscador de Equipo</h1>
         <p className="text-muted-foreground text-base md:text-lg">
           Ingresa el número de equipo para ver sus detalles
