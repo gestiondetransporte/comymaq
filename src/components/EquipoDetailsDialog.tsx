@@ -92,6 +92,9 @@ export function EquipoDetailsDialog({
     proximoMantenimiento: number;
   } | null>(null);
   
+  // Clientes list
+  const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -105,8 +108,24 @@ export function EquipoDetailsDialog({
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
+      fetchClientes();
     }
   }, [open, initialTab]);
+
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+    }
+  };
 
   const fetchMantenimientoInfo = async () => {
     if (!equipo) return;
@@ -647,12 +666,18 @@ export function EquipoDetailsDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="cliente">Cliente</Label>
-                  <Input
-                    id="cliente"
-                    value={cliente}
-                    onChange={(e) => setCliente(e.target.value)}
-                    placeholder="Nombre del cliente"
-                  />
+                  <Select value={cliente} onValueChange={setCliente}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((c) => (
+                        <SelectItem key={c.id} value={c.nombre}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

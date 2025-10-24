@@ -35,16 +35,22 @@ interface EntradaSalida {
 export default function EntradasSalidas() {
   const [equipoId, setEquipoId] = useState("");
   const [tipo, setTipo] = useState<"entrada" | "salida">("entrada");
+  const [cliente, setCliente] = useState("");
+  const [obra, setObra] = useState("");
+  const [chofer, setChofer] = useState("");
+  const [transporte, setTransporte] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [loading, setLoading] = useState(false);
   const [movimientos, setMovimientos] = useState<EntradaSalida[]>([]);
   const [filteredMovimientos, setFilteredMovimientos] = useState<EntradaSalida[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const { toast } = useToast();
   const { isOnline } = useOffline();
 
   useEffect(() => {
     fetchMovimientos();
+    fetchClientes();
   }, []);
 
   useEffect(() => {
@@ -74,6 +80,21 @@ export default function EntradasSalidas() {
         title: "Error",
         description: "No se pudieron cargar los movimientos",
       });
+    }
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
     }
   };
 
@@ -132,6 +153,10 @@ export default function EntradasSalidas() {
         equipo_id: equipoData.id,
         tipo,
         fecha: new Date().toISOString().split('T')[0],
+        cliente: cliente.trim() || null,
+        obra: obra.trim() || null,
+        chofer: chofer.trim() || null,
+        transporte: transporte.trim() || null,
         serie: equipoData.serie,
         modelo: equipoData.modelo,
         comentarios: observaciones.trim() || null,
@@ -167,6 +192,10 @@ export default function EntradasSalidas() {
 
       // Limpiar formulario
       setEquipoId("");
+      setCliente("");
+      setObra("");
+      setChofer("");
+      setTransporte("");
       setObservaciones("");
     } catch (error) {
       console.error('Error registrando movimiento:', error);
@@ -240,6 +269,52 @@ export default function EntradasSalidas() {
                   <SelectItem value="salida">Salida</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cliente">Cliente</Label>
+              <Select value={cliente} onValueChange={setCliente}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((c) => (
+                    <SelectItem key={c.id} value={c.nombre}>
+                      {c.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="obra">Obra</Label>
+              <Input
+                id="obra"
+                placeholder="Nombre de la obra..."
+                value={obra}
+                onChange={(e) => setObra(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="chofer">Chofer</Label>
+              <Input
+                id="chofer"
+                placeholder="Nombre del chofer..."
+                value={chofer}
+                onChange={(e) => setChofer(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transporte">Transporte</Label>
+              <Input
+                id="transporte"
+                placeholder="Tipo o placas del transporte..."
+                value={transporte}
+                onChange={(e) => setTransporte(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
