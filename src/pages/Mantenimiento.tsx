@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Wrench, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -45,6 +46,7 @@ export default function Mantenimiento() {
   const [proximoServicio, setProximoServicio] = useState("");
   
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchMantenimientos();
@@ -127,6 +129,7 @@ export default function Mantenimiento() {
 
       const mantenimiento = {
         equipo_id: equipoData.id,
+        usuario_id: user?.id,
         tipo_servicio: tipoServicio,
         orden_servicio: ordenServicio.trim() || null,
         tecnico: tecnico.trim() || null,

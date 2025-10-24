@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,7 @@ export default function EntradasSalidas() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
   const { isOnline } = useOffline();
 
   useEffect(() => {
@@ -151,6 +153,7 @@ export default function EntradasSalidas() {
 
       const movimiento = {
         equipo_id: equipoData.id,
+        created_by: user?.id,
         tipo,
         fecha: new Date().toISOString().split('T')[0],
         cliente: cliente.trim() || null,
