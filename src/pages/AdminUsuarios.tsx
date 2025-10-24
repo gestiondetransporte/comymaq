@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield } from "lucide-react";
+import { UserPlus, Trash2, Shield, Edit2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -21,6 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface UserWithRole {
   id: string;
@@ -38,6 +46,8 @@ export default function AdminUsuarios() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [newRole, setNewRole] = useState<'admin' | 'moderator' | 'user'>('user');
 
   useEffect(() => {
     if (isAdmin) {
@@ -58,7 +68,7 @@ export default function AdminUsuarios() {
           .from('user_roles')
           .select('role')
           .eq('user_id', profile.id)
-          .single();
+          .maybeSingle();
 
         return {
           ...profile,
@@ -119,6 +129,47 @@ export default function AdminUsuarios() {
 
     fetchUsers();
     setDeleteUserId(null);
+  };
+
+  const handleEditRole = (user: UserWithRole) => {
+    setEditingUser(user);
+    setNewRole(user.role);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!editingUser) return;
+
+    try {
+      // First, delete existing role
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', editingUser.id);
+
+      // Then insert new role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: editingUser.id,
+          role: newRole,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Rol actualizado",
+        description: `El rol de ${editingUser.email} ha sido actualizado a ${newRole}`,
+      });
+
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al actualizar rol",
+        description: error.message,
+      });
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -229,11 +280,20 @@ export default function AdminUsuarios() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditRole(user)}
+                        title="Cambiar rol"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeleteUserId(user.id)}
+                        title="Eliminar usuario"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -262,6 +322,40 @@ export default function AdminUsuarios() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambiar Rol de Usuario</DialogTitle>
+            <DialogDescription>
+              Selecciona el nuevo rol para {editingUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-role">Nuevo Rol</Label>
+              <Select value={newRole} onValueChange={(value: any) => setNewRole(value)}>
+                <SelectTrigger id="new-role">
+                  <SelectValue placeholder="Seleccionar rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">Usuario</SelectItem>
+                  <SelectItem value="moderator">Moderador</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateRole}>
+              Actualizar Rol
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
