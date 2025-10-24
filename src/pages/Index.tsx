@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import QRScanner from "@/components/QRScanner";
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,16 +14,17 @@ export default function Index() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const handleSearch = async (query?: string) => {
+    const searchValue = query || searchQuery;
+    if (!searchValue.trim()) return;
 
     setLoading(true);
     
+    // Search by numero_equipo or codigo_qr
     const { data, error } = await supabase
       .from('equipos')
       .select('*')
-      .eq('numero_equipo', searchQuery.trim())
+      .or(`numero_equipo.eq.${searchValue.trim()},codigo_qr.eq.${searchValue.trim()}`)
       .maybeSingle();
 
     setLoading(false);
@@ -40,12 +42,34 @@ export default function Index() {
       toast({
         variant: "destructive",
         title: "No encontrado",
-        description: `No se encontró equipo con ID: ${searchQuery}`,
+        description: `No se encontró equipo con código: ${searchValue}`,
       });
       return;
     }
 
     navigate(`/equipo/${data.id}`);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
+  const handleQRScan = (data: string) => {
+    setSearchQuery(data);
+    handleSearch(data);
+    toast({
+      title: "QR Escaneado",
+      description: `Buscando equipo: ${data}`,
+    });
+  };
+
+  const handleQRError = (error: string) => {
+    toast({
+      variant: "destructive",
+      title: "Error de escaneo",
+      description: error,
+    });
   };
 
   return (
@@ -61,13 +85,13 @@ export default function Index() {
         <CardHeader>
           <CardTitle>Buscar Equipo</CardTitle>
           <CardDescription>
-            Ingresa el código único de identificación del equipo (Ejemplo: 11-111-145)
+            Ingresa el número de equipo o escanea su código QR
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-4">
+          <form onSubmit={handleFormSubmit} className="flex gap-4">
             <Input
-              placeholder="Número de equipo..."
+              placeholder="Número de equipo o código QR..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"
@@ -76,6 +100,7 @@ export default function Index() {
               <Search className="mr-2 h-4 w-4" />
               {loading ? "Buscando..." : "Buscar"}
             </Button>
+            <QRScanner onScan={handleQRScan} onError={handleQRError} />
           </form>
         </CardContent>
       </Card>

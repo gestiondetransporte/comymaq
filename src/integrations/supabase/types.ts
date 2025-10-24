@@ -197,6 +197,7 @@ export type Database = {
           anio: number | null
           categoria: string | null
           clase: string | null
+          codigo_qr: string | null
           created_at: string
           descripcion: string
           id: string
@@ -211,6 +212,7 @@ export type Database = {
           anio?: number | null
           categoria?: string | null
           clase?: string | null
+          codigo_qr?: string | null
           created_at?: string
           descripcion: string
           id?: string
@@ -225,6 +227,7 @@ export type Database = {
           anio?: number | null
           categoria?: string | null
           clase?: string | null
+          codigo_qr?: string | null
           created_at?: string
           descripcion?: string
           id?: string
