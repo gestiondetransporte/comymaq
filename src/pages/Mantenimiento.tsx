@@ -3,7 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Wrench } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Wrench, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -30,7 +34,16 @@ export default function Mantenimiento() {
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [filteredMantenimientos, setFilteredMantenimientos] = useState<Mantenimiento[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  
+  // Form fields
+  const [numeroEquipo, setNumeroEquipo] = useState("");
+  const [tipoServicio, setTipoServicio] = useState<string>("preventivo");
+  const [ordenServicio, setOrdenServicio] = useState("");
+  const [tecnico, setTecnico] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [proximoServicio, setProximoServicio] = useState("");
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +78,90 @@ export default function Mantenimiento() {
         variant: "destructive",
         title: "Error",
         description: "No se pudieron cargar los mantenimientos",
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!numeroEquipo.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes ingresar un número de equipo",
+      });
+      return;
+    }
+
+    if (!descripcion.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "La descripción del servicio es obligatoria",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Buscar el equipo por número para obtener su UUID
+      const { data: equipoData, error: equipoError } = await supabase
+        .from('equipos')
+        .select('id, numero_equipo')
+        .eq('numero_equipo', numeroEquipo.trim())
+        .maybeSingle();
+
+      if (equipoError) throw equipoError;
+
+      if (!equipoData) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `No se encontró el equipo con número ${numeroEquipo}`,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const mantenimiento = {
+        equipo_id: equipoData.id,
+        tipo_servicio: tipoServicio,
+        orden_servicio: ordenServicio.trim() || null,
+        tecnico: tecnico.trim() || null,
+        descripcion: descripcion.trim(),
+        fecha: new Date().toISOString().split('T')[0],
+        proximo_servicio: proximoServicio || null,
+      };
+
+      const { error } = await supabase
+        .from('mantenimientos')
+        .insert(mantenimiento);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mantenimiento registrado",
+        description: `Servicio ${tipoServicio} registrado para equipo ${numeroEquipo}`,
+      });
+
+      // Limpiar formulario
+      setNumeroEquipo("");
+      setOrdenServicio("");
+      setTecnico("");
+      setDescripcion("");
+      setProximoServicio("");
+      setTipoServicio("preventivo");
+
+      // Recargar lista
+      fetchMantenimientos();
+    } catch (error) {
+      console.error('Error registrando mantenimiento:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo registrar el mantenimiento",
       });
     } finally {
       setLoading(false);
@@ -116,8 +213,104 @@ export default function Mantenimiento() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Mantenimiento</h1>
-        <p className="text-muted-foreground">Historial de mantenimiento y servicios de equipos</p>
+        <p className="text-muted-foreground">Registra y consulta el mantenimiento y reparaciones del equipo</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Registrar Mantenimiento o Reparación</CardTitle>
+          <CardDescription>
+            Registra servicios preventivos, correctivos y reparaciones
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="numero_equipo">Número de Equipo *</Label>
+                <Input
+                  id="numero_equipo"
+                  placeholder="Ej: 1, 2, 3..."
+                  value={numeroEquipo}
+                  onChange={(e) => setNumeroEquipo(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tipo_servicio">Tipo de Servicio *</Label>
+                <Select value={tipoServicio} onValueChange={setTipoServicio}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="preventivo">Preventivo</SelectItem>
+                    <SelectItem value="correctivo">Correctivo</SelectItem>
+                    <SelectItem value="revision">Revisión</SelectItem>
+                    <SelectItem value="reparacion">Reparación</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="orden_servicio">Orden de Servicio</Label>
+                <Input
+                  id="orden_servicio"
+                  placeholder="Número de orden"
+                  value={ordenServicio}
+                  onChange={(e) => setOrdenServicio(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tecnico">Técnico</Label>
+                <Input
+                  id="tecnico"
+                  placeholder="Nombre del técnico"
+                  value={tecnico}
+                  onChange={(e) => setTecnico(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="proximo_servicio">Próximo Servicio</Label>
+                <Input
+                  id="proximo_servicio"
+                  type="date"
+                  value={proximoServicio}
+                  onChange={(e) => setProximoServicio(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descripcion">Descripción del Servicio *</Label>
+              <Textarea
+                id="descripcion"
+                placeholder="Describe el servicio realizado, piezas reemplazadas, hallazgos..."
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                required
+                rows={4}
+              />
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <Wrench className="mr-2 h-4 w-4" />
+                  Registrar Mantenimiento
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -140,9 +333,7 @@ export default function Mantenimiento() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Cargando mantenimientos...</p>
-          ) : filteredMantenimientos.length === 0 ? (
+          {filteredMantenimientos.length === 0 ? (
             <div className="text-center py-8">
               <Wrench className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
