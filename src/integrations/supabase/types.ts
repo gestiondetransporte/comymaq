@@ -165,6 +165,8 @@ export type Database = {
           firma_aceptacion_url: string | null
           firma_liberacion_url: string | null
           fotografia_url: string | null
+          fotografia_url_2: string | null
+          fotografia_url_3: string | null
           id: string
           modelo: string | null
           obra: string | null
@@ -185,6 +187,8 @@ export type Database = {
           firma_aceptacion_url?: string | null
           firma_liberacion_url?: string | null
           fotografia_url?: string | null
+          fotografia_url_2?: string | null
+          fotografia_url_3?: string | null
           id?: string
           modelo?: string | null
           obra?: string | null
@@ -205,6 +209,8 @@ export type Database = {
           firma_aceptacion_url?: string | null
           firma_liberacion_url?: string | null
           fotografia_url?: string | null
+          fotografia_url_2?: string | null
+          fotografia_url_3?: string | null
           id?: string
           modelo?: string | null
           obra?: string | null

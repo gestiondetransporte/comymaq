@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, ArrowRightLeft, Wrench } from "lucide-react";
+import { Loader2, Save, ArrowRightLeft, Wrench, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Equipo {
@@ -77,6 +77,8 @@ export function EquipoDetailsDialog({
   const [chofer, setChofer] = useState("");
   const [transporte, setTransporte] = useState("");
   const [comentariosMovimiento, setComentariosMovimiento] = useState("");
+  const [imagenesMovimiento, setImagenesMovimiento] = useState<File[]>([]);
+  const [imagenesMovimientoPreview, setImagenesMovimientoPreview] = useState<string[]>([]);
   
   // Mantenimiento form
   const [tipoServicio, setTipoServicio] = useState("");
@@ -197,6 +199,39 @@ export function EquipoDetailsDialog({
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    const totalImages = imagenesMovimiento.length + newFiles.length;
+
+    if (totalImages > 3) {
+      toast({
+        variant: "destructive",
+        title: "Límite excedido",
+        description: "Solo puedes agregar hasta 3 imágenes",
+      });
+      return;
+    }
+
+    setImagenesMovimiento([...imagenesMovimiento, ...newFiles]);
+
+    // Generar previews
+    newFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagenesMovimientoPreview(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImagenesMovimiento(prev => prev.filter((_, i) => i !== index));
+    setImagenesMovimientoPreview(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpdateEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!equipo) return;
@@ -252,6 +287,26 @@ export function EquipoDetailsDialog({
 
     setLoading(true);
     try {
+      // Subir imágenes si hay
+      const imageUrls: string[] = [];
+      if (imagenesMovimiento.length > 0) {
+        for (let i = 0; i < imagenesMovimiento.length; i++) {
+          const file = imagenesMovimiento[i];
+          const fileName = `${Date.now()}-${i}-${file.name}`;
+          const { error: uploadError, data } = await supabase.storage
+            .from('fotografias')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('fotografias')
+            .getPublicUrl(fileName);
+
+          imageUrls.push(publicUrl);
+        }
+      }
+
       const { error } = await supabase
         .from("entradas_salidas")
         .insert({
@@ -268,6 +323,9 @@ export function EquipoDetailsDialog({
           chofer: chofer || null,
           transporte: transporte || null,
           comentarios: comentariosMovimiento || null,
+          fotografia_url: imageUrls[0] || null,
+          fotografia_url_2: imageUrls[1] || null,
+          fotografia_url_3: imageUrls[2] || null,
         });
 
       if (error) throw error;
@@ -285,6 +343,8 @@ export function EquipoDetailsDialog({
       setComentariosMovimiento("");
       setAlmacenOrigenId("");
       setAlmacenDestinoId("");
+      setImagenesMovimiento([]);
+      setImagenesMovimientoPreview([]);
       
       onUpdate();
     } catch (error) {
@@ -724,6 +784,40 @@ export function EquipoDetailsDialog({
                   placeholder="Observaciones adicionales..."
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imagenes_movimiento">Imágenes (hasta 3)</Label>
+                <Input
+                  id="imagenes_movimiento"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  disabled={imagenesMovimiento.length >= 3}
+                />
+                {imagenesMovimientoPreview.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {imagenesMovimientoPreview.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-md border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">

@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft } from "lucide-react";
+import { Search, ArrowRightLeft, Image as ImageIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,6 +28,9 @@ interface EntradaSalida {
   chofer: string | null;
   transporte: string | null;
   comentarios: string | null;
+  fotografia_url: string | null;
+  fotografia_url_2: string | null;
+  fotografia_url_3: string | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
@@ -49,6 +52,8 @@ export default function EntradasSalidas() {
   const [filteredMovimientos, setFilteredMovimientos] = useState<EntradaSalida[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [imagenes, setImagenes] = useState<File[]>([]);
+  const [imagenesPreview, setImagenesPreview] = useState<string[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -126,6 +131,39 @@ export default function EntradasSalidas() {
     setFilteredMovimientos(filtered);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    const totalImages = imagenes.length + newFiles.length;
+
+    if (totalImages > 3) {
+      toast({
+        variant: "destructive",
+        title: "Límite excedido",
+        description: "Solo puedes agregar hasta 3 imágenes",
+      });
+      return;
+    }
+
+    setImagenes([...imagenes, ...newFiles]);
+
+    // Generar previews
+    newFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagenesPreview(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImagenes(prev => prev.filter((_, i) => i !== index));
+    setImagenesPreview(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -160,6 +198,26 @@ export default function EntradasSalidas() {
         return;
       }
 
+      // Subir imágenes si hay
+      const imageUrls: string[] = [];
+      if (imagenes.length > 0 && isOnline) {
+        for (let i = 0; i < imagenes.length; i++) {
+          const file = imagenes[i];
+          const fileName = `${Date.now()}-${i}-${file.name}`;
+          const { error: uploadError, data } = await supabase.storage
+            .from('fotografias')
+            .upload(fileName, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('fotografias')
+            .getPublicUrl(fileName);
+
+          imageUrls.push(publicUrl);
+        }
+      }
+
       const movimiento = {
         equipo_id: equipoData.id,
         created_by: user?.id,
@@ -172,6 +230,9 @@ export default function EntradasSalidas() {
         serie: equipoData.serie,
         modelo: equipoData.modelo,
         comentarios: observaciones.trim() || null,
+        fotografia_url: imageUrls[0] || null,
+        fotografia_url_2: imageUrls[1] || null,
+        fotografia_url_3: imageUrls[2] || null,
       };
 
       if (isOnline) {
@@ -209,6 +270,8 @@ export default function EntradasSalidas() {
       setChofer("");
       setTransporte("");
       setObservaciones("");
+      setImagenes([]);
+      setImagenesPreview([]);
     } catch (error) {
       console.error('Error registrando movimiento:', error);
       toast({
@@ -339,6 +402,40 @@ export default function EntradasSalidas() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="imagenes">Imágenes (hasta 3)</Label>
+              <Input
+                id="imagenes"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                disabled={imagenes.length >= 3}
+              />
+              {imagenesPreview.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {imagenesPreview.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-md border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Registrando..." : "Registrar Movimiento"}
             </Button>
@@ -389,6 +486,7 @@ export default function EntradasSalidas() {
                     <TableHead>Obra</TableHead>
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
+                    <TableHead>Imágenes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -404,6 +502,29 @@ export default function EntradasSalidas() {
                       <TableCell>{movimiento.obra || 'N/A'}</TableCell>
                       <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
                       <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
+                      <TableCell>
+                        {(movimiento.fotografia_url || movimiento.fotografia_url_2 || movimiento.fotografia_url_3) ? (
+                          <div className="flex gap-1">
+                            {movimiento.fotografia_url && (
+                              <a href={movimiento.fotografia_url} target="_blank" rel="noopener noreferrer">
+                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
+                              </a>
+                            )}
+                            {movimiento.fotografia_url_2 && (
+                              <a href={movimiento.fotografia_url_2} target="_blank" rel="noopener noreferrer">
+                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
+                              </a>
+                            )}
+                            {movimiento.fotografia_url_3 && (
+                              <a href={movimiento.fotografia_url_3} target="_blank" rel="noopener noreferrer">
+                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
