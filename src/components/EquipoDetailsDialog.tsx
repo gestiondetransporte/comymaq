@@ -457,26 +457,28 @@ export function EquipoDetailsDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="detalles">
-              <Save className="h-4 w-4 mr-2" />
-              Detalles
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+            <TabsTrigger value="detalles" className="text-xs md:text-sm">
+              <Save className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden md:inline">Detalles</span>
             </TabsTrigger>
-            <TabsTrigger value="movimiento">
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              Entrada/Salida
+            <TabsTrigger value="movimiento" className="text-xs md:text-sm">
+              <ArrowRightLeft className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">E/S</span>
+              <span className="hidden md:inline sm:hidden">Entrada/Salida</span>
             </TabsTrigger>
-            <TabsTrigger value="mantenimiento">
-              <Wrench className="h-4 w-4 mr-2" />
-              Mantenimiento
+            <TabsTrigger value="mantenimiento" className="text-xs md:text-sm">
+              <Wrench className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden md:inline">Mantenimiento</span>
             </TabsTrigger>
-            <TabsTrigger value="archivos">
-              <FileText className="h-4 w-4 mr-2" />
-              Archivos
+            <TabsTrigger value="archivos" className="text-xs md:text-sm">
+              <FileText className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden md:inline">Archivos</span>
             </TabsTrigger>
-            <TabsTrigger value="qr">
-              <QrCode className="h-4 w-4 mr-2" />
-              Código QR
+            <TabsTrigger value="qr" className="text-xs md:text-sm">
+              <QrCode className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">QR</span>
+              <span className="hidden md:inline sm:hidden">Código QR</span>
             </TabsTrigger>
           </TabsList>
 
