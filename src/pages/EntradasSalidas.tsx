@@ -16,6 +16,8 @@ import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon } from "lucide-rea
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 interface FileWithPreview {
   file: File;
@@ -43,6 +45,8 @@ interface EntradaSalida {
   foto_tablero_url: string | null;
   foto_cargador_url: string | null;
   foto_extintor_url: string | null;
+  tiene_danos: boolean | null;
+  descripcion_danos: string | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
@@ -80,6 +84,8 @@ export default function EntradasSalidas() {
   const [fotoTablero, setFotoTablero] = useState<File | null>(null);
   const [fotoCargador, setFotoCargador] = useState<File | null>(null);
   const [fotoExtintor, setFotoExtintor] = useState<File | null>(null);
+  const [tieneDanos, setTieneDanos] = useState(false);
+  const [descripcionDanos, setDescripcionDanos] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -118,6 +124,8 @@ export default function EntradasSalidas() {
           foto_tablero_url,
           foto_cargador_url,
           foto_extintor_url,
+          tiene_danos,
+          descripcion_danos,
           equipos (
             numero_equipo,
             descripcion
@@ -352,6 +360,8 @@ export default function EntradasSalidas() {
         foto_tablero_url: fotoTableroUrl,
         foto_cargador_url: fotoCargadorUrl,
         foto_extintor_url: fotoExtintorUrl,
+        tiene_danos: tieneDanos,
+        descripcion_danos: tieneDanos && descripcionDanos.trim() ? descripcionDanos.trim() : null,
         almacen_origen_id: tipo === "traspaso" ? almacenOrigen : null,
         almacen_destino_id: tipo === "traspaso" ? almacenDestino : null,
       };
@@ -429,6 +439,8 @@ export default function EntradasSalidas() {
       setFotoTablero(null);
       setFotoCargador(null);
       setFotoExtintor(null);
+      setTieneDanos(false);
+      setDescripcionDanos("");
       setContratoInfo(null);
     } catch (error) {
       console.error('Error registrando movimiento:', error);
@@ -614,6 +626,33 @@ export default function EntradasSalidas() {
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="tieneDanos" className="text-base font-semibold">¿La unidad presenta daños?</Label>
+                  <p className="text-sm text-muted-foreground">Indica si el equipo tiene daños en esta entrada/salida</p>
+                </div>
+                <Switch
+                  id="tieneDanos"
+                  checked={tieneDanos}
+                  onCheckedChange={setTieneDanos}
+                />
+              </div>
+              
+              {tieneDanos && (
+                <div className="space-y-2">
+                  <Label htmlFor="descripcionDanos">Descripción de los daños</Label>
+                  <Textarea
+                    id="descripcionDanos"
+                    placeholder="Describe los daños encontrados en la unidad..."
+                    value={descripcionDanos}
+                    onChange={(e) => setDescripcionDanos(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">

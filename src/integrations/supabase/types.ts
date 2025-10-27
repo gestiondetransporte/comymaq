@@ -161,6 +161,7 @@ export type Database = {
           contrato_id: string | null
           created_at: string
           created_by: string | null
+          descripcion_danos: string | null
           equipo_id: string | null
           fecha: string
           firma_aceptacion_url: string | null
@@ -177,6 +178,7 @@ export type Database = {
           modelo: string | null
           obra: string | null
           serie: string | null
+          tiene_danos: boolean | null
           tipo: string
           transporte: string | null
         }
@@ -189,6 +191,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string
           created_by?: string | null
+          descripcion_danos?: string | null
           equipo_id?: string | null
           fecha?: string
           firma_aceptacion_url?: string | null
@@ -205,6 +208,7 @@ export type Database = {
           modelo?: string | null
           obra?: string | null
           serie?: string | null
+          tiene_danos?: boolean | null
           tipo: string
           transporte?: string | null
         }
@@ -217,6 +221,7 @@ export type Database = {
           contrato_id?: string | null
           created_at?: string
           created_by?: string | null
+          descripcion_danos?: string | null
           equipo_id?: string | null
           fecha?: string
           firma_aceptacion_url?: string | null
@@ -233,6 +238,7 @@ export type Database = {
           modelo?: string | null
           obra?: string | null
           serie?: string | null
+          tiene_danos?: boolean | null
           tipo?: string
           transporte?: string | null
         }
