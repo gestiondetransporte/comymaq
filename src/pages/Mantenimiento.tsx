@@ -15,6 +15,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
+interface Equipo {
+  id: string;
+  numero_equipo: string;
+  descripcion: string;
+  marca: string | null;
+  modelo: string | null;
+  serie: string | null;
+  tipo: string | null;
+}
+
 interface Mantenimiento {
   id: string;
   equipo_id: string;
@@ -41,9 +51,10 @@ export default function Mantenimiento() {
   const [filteredMantenimientos, setFilteredMantenimientos] = useState<Mantenimiento[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
   
   // Form fields
-  const [numeroEquipo, setNumeroEquipo] = useState("");
+  const [equipoSeleccionadoId, setEquipoSeleccionadoId] = useState("");
   const [tipoServicio, setTipoServicio] = useState<string>("preventivo");
   const [ordenServicio, setOrdenServicio] = useState("");
   const [tecnico, setTecnico] = useState("");
@@ -62,11 +73,31 @@ export default function Mantenimiento() {
 
   useEffect(() => {
     fetchMantenimientos();
+    fetchEquipos();
   }, []);
 
   useEffect(() => {
     filterMantenimientos();
   }, [searchQuery, mantenimientos]);
+
+  const fetchEquipos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipos')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo')
+        .order('numero_equipo', { ascending: true });
+
+      if (error) throw error;
+      setEquipos(data || []);
+    } catch (error) {
+      console.error('Error fetching equipos:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los equipos",
+      });
+    }
+  };
 
   const fetchMantenimientos = async () => {
     try {
@@ -161,11 +192,11 @@ export default function Mantenimiento() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!numeroEquipo.trim()) {
+    if (!equipoSeleccionadoId) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Debes ingresar un número de equipo",
+        description: "Debes seleccionar un equipo",
       });
       return;
     }
@@ -182,27 +213,10 @@ export default function Mantenimiento() {
     setLoading(true);
 
     try {
-      // Buscar el equipo por número para obtener su UUID
-      const { data: equipoData, error: equipoError } = await supabase
-        .from('equipos')
-        .select('id, numero_equipo')
-        .eq('numero_equipo', numeroEquipo.trim())
-        .maybeSingle();
-
-      if (equipoError) throw equipoError;
-
-      if (!equipoData) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `No se encontró el equipo con número ${numeroEquipo}`,
-        });
-        setLoading(false);
-        return;
-      }
-
+      const equipoSeleccionado = equipos.find(e => e.id === equipoSeleccionadoId);
+      
       const mantenimiento = {
-        equipo_id: equipoData.id,
+        equipo_id: equipoSeleccionadoId,
         usuario_id: user?.id,
         tipo_servicio: tipoServicio,
         orden_servicio: ordenServicio.trim() || null,
@@ -220,11 +234,11 @@ export default function Mantenimiento() {
 
       toast({
         title: "Mantenimiento registrado",
-        description: `Servicio ${tipoServicio} registrado para equipo ${numeroEquipo}`,
+        description: `Servicio ${tipoServicio} registrado para equipo ${equipoSeleccionado?.numero_equipo}`,
       });
 
       // Limpiar formulario
-      setNumeroEquipo("");
+      setEquipoSeleccionadoId("");
       setOrdenServicio("");
       setTecnico("");
       setDescripcion("");
@@ -378,17 +392,56 @@ export default function Mantenimiento() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="numero_equipo">Número de Equipo *</Label>
-                <Input
-                  id="numero_equipo"
-                  placeholder="Ej: 1, 2, 3..."
-                  value={numeroEquipo}
-                  onChange={(e) => setNumeroEquipo(e.target.value)}
-                  required
-                />
+                <Label htmlFor="equipo">Equipo *</Label>
+                <Select value={equipoSeleccionadoId} onValueChange={setEquipoSeleccionadoId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un equipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipos.map((equipo) => (
+                      <SelectItem key={equipo.id} value={equipo.id}>
+                        #{equipo.numero_equipo} - {equipo.descripcion}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              {equipoSeleccionadoId && (() => {
+                const equipoSeleccionado = equipos.find(e => e.id === equipoSeleccionadoId);
+                return equipoSeleccionado ? (
+                  <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                    <p className="text-sm font-medium">Información del Equipo</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Número:</span>
+                        <span className="ml-2 font-medium">#{equipoSeleccionado.numero_equipo}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Tipo:</span>
+                        <span className="ml-2 font-medium">{equipoSeleccionado.tipo || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Marca:</span>
+                        <span className="ml-2 font-medium">{equipoSeleccionado.marca || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Modelo:</span>
+                        <span className="ml-2 font-medium">{equipoSeleccionado.modelo || 'N/A'}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-muted-foreground">Serie:</span>
+                        <span className="ml-2 font-medium">{equipoSeleccionado.serie || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <div className="space-y-2">
                 <Label htmlFor="tipo_servicio">Tipo de Servicio *</Label>
