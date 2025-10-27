@@ -61,35 +61,16 @@ export default function Index() {
 
   const handleQRScan = async (data: string) => {
     try {
-      // Intentar parsear el JSON del QR generado
-      let equipoId: string | null = null;
-      let numeroEquipo: string | null = null;
-
-      try {
-        const qrData = JSON.parse(data);
-        if (qrData.equipo_id) {
-          equipoId = qrData.equipo_id;
-        }
-        if (qrData.numero_equipo) {
-          numeroEquipo = qrData.numero_equipo;
-        }
-      } catch (e) {
-        // Si no es JSON, asumir que es un número de equipo simple
-        numeroEquipo = data.trim();
-      }
+      const numeroEquipo = data.trim();
 
       setLoading(true);
 
-      // Buscar por ID o número de equipo
-      let query = supabase.from('equipos').select('*');
-      
-      if (equipoId) {
-        query = query.eq('id', equipoId);
-      } else if (numeroEquipo) {
-        query = query.eq('numero_equipo', numeroEquipo);
-      }
-
-      const { data: equipoData, error } = await query.maybeSingle();
+      // Buscar por número de equipo
+      const { data: equipoData, error } = await supabase
+        .from('equipos')
+        .select('*')
+        .eq('numero_equipo', numeroEquipo)
+        .maybeSingle();
 
       setLoading(false);
 
@@ -106,7 +87,7 @@ export default function Index() {
         toast({
           variant: "destructive",
           title: "No encontrado",
-          description: `No se encontró el equipo escaneado`,
+          description: `No se encontró equipo con número: ${numeroEquipo}`,
         });
         return;
       }
