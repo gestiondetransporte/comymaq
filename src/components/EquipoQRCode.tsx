@@ -25,11 +25,8 @@ export function EquipoQRCode({ numeroEquipo, descripcion, equipoId }: EquipoQRCo
     if (!canvasRef.current) return;
 
     try {
-      // Generar QR con información del equipo
-      const qrData = JSON.stringify({
-        numero_equipo: numeroEquipo,
-        equipo_id: equipoId,
-      });
+      // Generar QR solo con el número de equipo
+      const qrData = numeroEquipo;
 
       // Generar QR en el canvas
       await QRCode.toCanvas(canvasRef.current, qrData, {
