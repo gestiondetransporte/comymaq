@@ -21,10 +21,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, ArrowRightLeft, Wrench, FileText } from "lucide-react";
+import { Loader2, Save, ArrowRightLeft, Wrench, FileText, QrCode } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EquipoArchivosTab } from "./EquipoArchivosTab";
 import { MultipleFileUpload } from "./MultipleFileUpload";
+import { EquipoQRCode } from "./EquipoQRCode";
 
 interface FileWithPreview {
   file: File;
@@ -62,7 +63,7 @@ interface EquipoDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
-  initialTab?: "detalles" | "movimiento" | "mantenimiento" | "archivos";
+  initialTab?: "detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr";
 }
 
 export function EquipoDetailsDialog({
@@ -201,7 +202,7 @@ export function EquipoDetailsDialog({
   };
 
   const handleTabChange = (value: string) => {
-    if (value === "detalles" || value === "movimiento" || value === "mantenimiento" || value === "archivos") {
+    if (value === "detalles" || value === "movimiento" || value === "mantenimiento" || value === "archivos" || value === "qr") {
       setActiveTab(value);
     }
   };
@@ -456,7 +457,7 @@ export function EquipoDetailsDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="detalles">
               <Save className="h-4 w-4 mr-2" />
               Detalles
@@ -472,6 +473,10 @@ export function EquipoDetailsDialog({
             <TabsTrigger value="archivos">
               <FileText className="h-4 w-4 mr-2" />
               Archivos
+            </TabsTrigger>
+            <TabsTrigger value="qr">
+              <QrCode className="h-4 w-4 mr-2" />
+              Código QR
             </TabsTrigger>
           </TabsList>
 
@@ -910,6 +915,16 @@ export function EquipoDetailsDialog({
 
           <TabsContent value="archivos">
             {equipo && <EquipoArchivosTab equipoId={equipo.id} />}
+          </TabsContent>
+
+          <TabsContent value="qr">
+            {equipo && (
+              <EquipoQRCode
+                numeroEquipo={equipo.numero_equipo}
+                descripcion={equipo.descripcion}
+                equipoId={equipo.id}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

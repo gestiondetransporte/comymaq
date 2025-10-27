@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 
@@ -38,6 +38,7 @@ export default function Inventario() {
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -267,17 +268,32 @@ export default function Inventario() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedEquipo(equipo as any);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver detalles
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEquipo(equipo as any);
+                              setInitialTab("detalles");
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver detalles
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEquipo(equipo as any);
+                              setInitialTab("qr");
+                              setDialogOpen(true);
+                            }}
+                            title="Ver código QR"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -293,6 +309,7 @@ export default function Inventario() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onUpdate={fetchEquipos}
+        initialTab={initialTab}
       />
     </div>
   );
