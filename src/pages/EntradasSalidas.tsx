@@ -12,9 +12,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft, Image as ImageIcon, X } from "lucide-react";
+import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { MultipleFileUpload } from "@/components/MultipleFileUpload";
+
+interface FileWithPreview {
+  file: File;
+  preview?: string;
+  type: 'imagen' | 'documento';
+}
 
 interface EntradaSalida {
   id: string;
@@ -52,8 +59,7 @@ export default function EntradasSalidas() {
   const [filteredMovimientos, setFilteredMovimientos] = useState<EntradaSalida[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
-  const [imagenes, setImagenes] = useState<File[]>([]);
-  const [imagenesPreview, setImagenesPreview] = useState<string[]>([]);
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -131,39 +137,6 @@ export default function EntradasSalidas() {
     setFilteredMovimientos(filtered);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newFiles = Array.from(files);
-    const totalImages = imagenes.length + newFiles.length;
-
-    if (totalImages > 3) {
-      toast({
-        variant: "destructive",
-        title: "Límite excedido",
-        description: "Solo puedes agregar hasta 3 imágenes",
-      });
-      return;
-    }
-
-    setImagenes([...imagenes, ...newFiles]);
-
-    // Generar previews
-    newFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagenesPreview(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (index: number) => {
-    setImagenes(prev => prev.filter((_, i) => i !== index));
-    setImagenesPreview(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -200,9 +173,10 @@ export default function EntradasSalidas() {
 
       // Subir imágenes si hay
       const imageUrls: string[] = [];
-      if (imagenes.length > 0 && isOnline) {
-        for (let i = 0; i < imagenes.length; i++) {
-          const file = imagenes[i];
+      if (files.length > 0 && isOnline) {
+        for (let i = 0; i < files.length; i++) {
+          const fileWithPreview = files[i];
+          const file = fileWithPreview.file;
           const fileName = `${Date.now()}-${i}-${file.name}`;
           const { error: uploadError, data } = await supabase.storage
             .from('fotografias')
@@ -237,11 +211,29 @@ export default function EntradasSalidas() {
 
       if (isOnline) {
         // Si hay conexión, guardar directamente
-        const { error } = await supabase
+        const { data: insertData, error } = await supabase
           .from('entradas_salidas')
-          .insert(movimiento);
+          .insert(movimiento)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Guardar archivos adicionales en la tabla de archivos
+        if (files.length > 0 && insertData) {
+          const archivos = files.map((fileWithPreview, index) => ({
+            entrada_salida_id: insertData.id,
+            archivo_url: imageUrls[index],
+            tipo_archivo: fileWithPreview.type,
+            nombre_archivo: fileWithPreview.file.name,
+          }));
+
+          const { error: archivosError } = await supabase
+            .from('entradas_salidas_archivos')
+            .insert(archivos);
+
+          if (archivosError) console.error('Error saving archivos:', archivosError);
+        }
 
         toast({
           title: "Movimiento registrado",
@@ -270,8 +262,7 @@ export default function EntradasSalidas() {
       setChofer("");
       setTransporte("");
       setObservaciones("");
-      setImagenes([]);
-      setImagenesPreview([]);
+      setFiles([]);
     } catch (error) {
       console.error('Error registrando movimiento:', error);
       toast({
@@ -402,39 +393,14 @@ export default function EntradasSalidas() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="imagenes">Imágenes (hasta 3)</Label>
-              <Input
-                id="imagenes"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                disabled={imagenes.length >= 3}
-              />
-              {imagenesPreview.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {imagenesPreview.map((preview, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-md border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <MultipleFileUpload
+              files={files}
+              onFilesChange={setFiles}
+              maxFiles={10}
+              acceptImages={true}
+              acceptDocuments={true}
+              label="Archivos e Imágenes (hasta 10)"
+            />
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Registrando..." : "Registrar Movimiento"}

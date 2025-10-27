@@ -21,8 +21,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, ArrowRightLeft, Wrench, X } from "lucide-react";
+import { Loader2, Save, ArrowRightLeft, Wrench, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EquipoArchivosTab } from "./EquipoArchivosTab";
+import { MultipleFileUpload } from "./MultipleFileUpload";
+
+interface FileWithPreview {
+  file: File;
+  preview?: string;
+  type: 'imagen' | 'documento';
+}
 
 interface Equipo {
   id: string;
@@ -54,7 +62,7 @@ interface EquipoDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
-  initialTab?: "detalles" | "movimiento" | "mantenimiento";
+  initialTab?: "detalles" | "movimiento" | "mantenimiento" | "archivos";
 }
 
 export function EquipoDetailsDialog({
@@ -77,8 +85,7 @@ export function EquipoDetailsDialog({
   const [chofer, setChofer] = useState("");
   const [transporte, setTransporte] = useState("");
   const [comentariosMovimiento, setComentariosMovimiento] = useState("");
-  const [imagenesMovimiento, setImagenesMovimiento] = useState<File[]>([]);
-  const [imagenesMovimientoPreview, setImagenesMovimientoPreview] = useState<string[]>([]);
+  const [filesMovimiento, setFilesMovimiento] = useState<FileWithPreview[]>([]);
   
   // Mantenimiento form
   const [tipoServicio, setTipoServicio] = useState("");
@@ -194,43 +201,11 @@ export function EquipoDetailsDialog({
   };
 
   const handleTabChange = (value: string) => {
-    if (value === "detalles" || value === "movimiento" || value === "mantenimiento") {
+    if (value === "detalles" || value === "movimiento" || value === "mantenimiento" || value === "archivos") {
       setActiveTab(value);
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newFiles = Array.from(files);
-    const totalImages = imagenesMovimiento.length + newFiles.length;
-
-    if (totalImages > 3) {
-      toast({
-        variant: "destructive",
-        title: "Límite excedido",
-        description: "Solo puedes agregar hasta 3 imágenes",
-      });
-      return;
-    }
-
-    setImagenesMovimiento([...imagenesMovimiento, ...newFiles]);
-
-    // Generar previews
-    newFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagenesMovimientoPreview(prev => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (index: number) => {
-    setImagenesMovimiento(prev => prev.filter((_, i) => i !== index));
-    setImagenesMovimientoPreview(prev => prev.filter((_, i) => i !== index));
-  };
 
   const handleUpdateEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,13 +262,13 @@ export function EquipoDetailsDialog({
 
     setLoading(true);
     try {
-      // Subir imágenes si hay
       const imageUrls: string[] = [];
-      if (imagenesMovimiento.length > 0) {
-        for (let i = 0; i < imagenesMovimiento.length; i++) {
-          const file = imagenesMovimiento[i];
+      if (filesMovimiento.length > 0) {
+        for (let i = 0; i < filesMovimiento.length; i++) {
+          const fileWithPreview = filesMovimiento[i];
+          const file = fileWithPreview.file;
           const fileName = `${Date.now()}-${i}-${file.name}`;
-          const { error: uploadError, data } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('fotografias')
             .upload(fileName, file);
 
@@ -307,7 +282,7 @@ export function EquipoDetailsDialog({
         }
       }
 
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from("entradas_salidas")
         .insert({
           equipo_id: equipo.id,
@@ -326,9 +301,22 @@ export function EquipoDetailsDialog({
           fotografia_url: imageUrls[0] || null,
           fotografia_url_2: imageUrls[1] || null,
           fotografia_url_3: imageUrls[2] || null,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      if (filesMovimiento.length > 0 && insertData) {
+        const archivos = filesMovimiento.map((fw, index) => ({
+          entrada_salida_id: insertData.id,
+          archivo_url: imageUrls[index],
+          tipo_archivo: fw.type,
+          nombre_archivo: fw.file.name,
+        }));
+
+        await supabase.from('entradas_salidas_archivos').insert(archivos);
+      }
 
       toast({
         title: "Éxito",
@@ -343,8 +331,7 @@ export function EquipoDetailsDialog({
       setComentariosMovimiento("");
       setAlmacenOrigenId("");
       setAlmacenDestinoId("");
-      setImagenesMovimiento([]);
-      setImagenesMovimientoPreview([]);
+      setFilesMovimiento([]);
       
       onUpdate();
     } catch (error) {
@@ -469,7 +456,7 @@ export function EquipoDetailsDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="detalles">
               <Save className="h-4 w-4 mr-2" />
               Detalles
@@ -481,6 +468,10 @@ export function EquipoDetailsDialog({
             <TabsTrigger value="mantenimiento">
               <Wrench className="h-4 w-4 mr-2" />
               Mantenimiento
+            </TabsTrigger>
+            <TabsTrigger value="archivos">
+              <FileText className="h-4 w-4 mr-2" />
+              Archivos
             </TabsTrigger>
           </TabsList>
 
@@ -786,39 +777,14 @@ export function EquipoDetailsDialog({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="imagenes_movimiento">Imágenes (hasta 3)</Label>
-                <Input
-                  id="imagenes_movimiento"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  disabled={imagenesMovimiento.length >= 3}
-                />
-                {imagenesMovimientoPreview.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 mt-2">
-                    {imagenesMovimientoPreview.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md border"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <MultipleFileUpload
+                files={filesMovimiento}
+                onFilesChange={setFilesMovimiento}
+                maxFiles={10}
+                acceptImages={true}
+                acceptDocuments={true}
+                label="Archivos e Imágenes (hasta 10)"
+              />
 
               <div className="flex justify-end gap-2">
                 <Button
@@ -940,6 +906,10 @@ export function EquipoDetailsDialog({
                 </Button>
               </div>
             </form>
+          </TabsContent>
+
+          <TabsContent value="archivos">
+            {equipo && <EquipoArchivosTab equipoId={equipo.id} />}
           </TabsContent>
         </Tabs>
       </DialogContent>

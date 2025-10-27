@@ -242,6 +242,33 @@ export type Database = {
           },
         ]
       }
+      entradas_salidas_archivos: {
+        Row: {
+          archivo_url: string
+          created_at: string
+          entrada_salida_id: string
+          id: string
+          nombre_archivo: string | null
+          tipo_archivo: string
+        }
+        Insert: {
+          archivo_url: string
+          created_at?: string
+          entrada_salida_id: string
+          id?: string
+          nombre_archivo?: string | null
+          tipo_archivo: string
+        }
+        Update: {
+          archivo_url?: string
+          created_at?: string
+          entrada_salida_id?: string
+          id?: string
+          nombre_archivo?: string | null
+          tipo_archivo?: string
+        }
+        Relationships: []
+      }
       equipos: {
         Row: {
           almacen_id: string | null
@@ -330,6 +357,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      equipos_archivos: {
+        Row: {
+          archivo_url: string
+          created_at: string
+          descripcion: string | null
+          equipo_id: string
+          id: string
+          nombre_archivo: string | null
+          tipo_archivo: string
+        }
+        Insert: {
+          archivo_url: string
+          created_at?: string
+          descripcion?: string | null
+          equipo_id: string
+          id?: string
+          nombre_archivo?: string | null
+          tipo_archivo: string
+        }
+        Update: {
+          archivo_url?: string
+          created_at?: string
+          descripcion?: string | null
+          equipo_id?: string
+          id?: string
+          nombre_archivo?: string | null
+          tipo_archivo?: string
+        }
+        Relationships: []
       }
       mantenimientos: {
         Row: {

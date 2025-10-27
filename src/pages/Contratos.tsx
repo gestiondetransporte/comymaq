@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format, differenceInDays, isPast, isWithinInterval, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
+import { CSVContratosImport } from "@/components/CSVContratosImport";
 
 interface Contrato {
   id: string;
@@ -189,6 +190,8 @@ export default function Contratos() {
         <h1 className="text-3xl font-bold">Contratos</h1>
         <p className="text-muted-foreground">Gestión de contratos de renta de equipo</p>
       </div>
+
+      <CSVContratosImport onImportComplete={fetchContratos} />
 
       <Card>
         <CardHeader>
