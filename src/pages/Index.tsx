@@ -59,13 +59,74 @@ export default function Index() {
     handleSearch();
   };
 
-  const handleQRScan = (data: string) => {
-    setSearchQuery(data);
-    handleSearch(data);
-    toast({
-      title: "QR Escaneado",
-      description: `Buscando equipo: ${data}`,
-    });
+  const handleQRScan = async (data: string) => {
+    try {
+      // Intentar parsear el JSON del QR generado
+      let equipoId: string | null = null;
+      let numeroEquipo: string | null = null;
+
+      try {
+        const qrData = JSON.parse(data);
+        if (qrData.equipo_id) {
+          equipoId = qrData.equipo_id;
+        }
+        if (qrData.numero_equipo) {
+          numeroEquipo = qrData.numero_equipo;
+        }
+      } catch (e) {
+        // Si no es JSON, asumir que es un número de equipo simple
+        numeroEquipo = data.trim();
+      }
+
+      setLoading(true);
+
+      // Buscar por ID o número de equipo
+      let query = supabase.from('equipos').select('*');
+      
+      if (equipoId) {
+        query = query.eq('id', equipoId);
+      } else if (numeroEquipo) {
+        query = query.eq('numero_equipo', numeroEquipo);
+      }
+
+      const { data: equipoData, error } = await query.maybeSingle();
+
+      setLoading(false);
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al buscar el equipo",
+        });
+        return;
+      }
+
+      if (!equipoData) {
+        toast({
+          variant: "destructive",
+          title: "No encontrado",
+          description: `No se encontró el equipo escaneado`,
+        });
+        return;
+      }
+
+      // Navegar al inventario con el equipo seleccionado
+      navigate(`/inventario?equipo_id=${equipoData.id}`);
+      
+      toast({
+        title: "QR Escaneado",
+        description: `Equipo ${equipoData.numero_equipo} encontrado`,
+      });
+    } catch (error) {
+      console.error('Error processing QR:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al procesar el código QR",
+      });
+      setLoading(false);
+    }
   };
 
   const handleQRError = (error: string) => {

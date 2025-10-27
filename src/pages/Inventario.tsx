@@ -50,6 +50,24 @@ export default function Inventario() {
     filterEquipos();
   }, [searchQuery, equipos, typeFilter, disponibilidadFilter]);
 
+  // Verificar si hay un equipo_id en la URL (desde el QR scanner)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const equipoIdParam = params.get('equipo_id');
+    
+    if (equipoIdParam && equipos.length > 0) {
+      const equipo = equipos.find(e => e.id === equipoIdParam);
+      if (equipo) {
+        setSelectedEquipo(equipo);
+        setInitialTab("detalles");
+        setDialogOpen(true);
+        
+        // Limpiar el parámetro de la URL
+        window.history.replaceState({}, '', '/inventario');
+      }
+    }
+  }, [equipos]);
+
   const fetchEquipos = async () => {
     setLoading(true);
     
