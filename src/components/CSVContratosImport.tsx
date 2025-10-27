@@ -25,20 +25,38 @@ export function CSVContratosImport({ onImportComplete }: CSVContratosImportProps
 
   const parseCSV = (text: string): any[] => {
     const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+    if (lines.length < 5) return []; // El archivo tiene headers en la línea 4
 
-    const headers = lines[0].split(',').map(h => h.trim());
+    // Buscar la línea de headers (contiene "CONTRATO,CLIENTE")
+    let headerLineIndex = -1;
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      if (lines[i].includes('CONTRATO') && lines[i].includes('CLIENTE')) {
+        headerLineIndex = i;
+        break;
+      }
+    }
+
+    if (headerLineIndex === -1) return [];
+
+    const headers = lines[headerLineIndex].split(',').map(h => h.trim());
     const data = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+    // Procesar las filas de datos
+    for (let i = headerLineIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+
+      const values = line.split(',');
       const row: any = {};
       
       headers.forEach((header, index) => {
-        row[header] = values[index] || null;
+        row[header] = values[index] ? values[index].trim() : null;
       });
       
-      data.push(row);
+      // Solo agregar si tiene datos relevantes
+      if (row['CONTRATO'] || row['CLIENTE']) {
+        data.push(row);
+      }
     }
 
     return data;
@@ -71,23 +89,44 @@ export function CSVContratosImport({ onImportComplete }: CSVContratosImportProps
       }
 
       // Transform CSV data to database format
-      const contratos = rows.map(row => ({
-        folio_contrato: row.folio_contrato || row.folio || '',
-        numero_contrato: row.numero_contrato || null,
-        cliente: row.cliente || '',
-        obra: row.obra || null,
-        suma: row.suma ? parseFloat(row.suma) : null,
-        fecha_inicio: row.fecha_inicio || null,
-        fecha_vencimiento: row.fecha_vencimiento || null,
-        dias_contratado: row.dias_contratado ? parseInt(row.dias_contratado) : null,
-        status: row.status || 'activo',
-        vendedor: row.vendedor || null,
-        comprador: row.comprador || null,
-        dentro_fuera: row.dentro_fuera || null,
-        horas_trabajo: row.horas_trabajo ? parseInt(row.horas_trabajo) : null,
-        comentarios: row.comentarios || null,
-        direccion: row.direccion || null,
-      }));
+      const contratos = rows.map(row => {
+        // Convertir fecha de formato "lunes, 27 de octubre de 2025" a formato ISO
+        const parseFecha = (fechaStr: string) => {
+          if (!fechaStr) return null;
+          
+          // Si ya está en formato ISO o estándar, intentar parsear directamente
+          const cleanDate = fechaStr.replace(/[^\d\-\/]/g, '').trim();
+          if (cleanDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return cleanDate;
+          }
+          
+          // Si tiene formato DD/MM/YY
+          if (cleanDate.match(/^\d{2}\/\d{2}\/\d{2}$/)) {
+            const [day, month, year] = cleanDate.split('/');
+            return `20${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          }
+          
+          return null;
+        };
+
+        return {
+          folio_contrato: row['CONTRATO'] || row.folio_contrato || '',
+          numero_contrato: row['NUMERO DE EQUIPO'] || row.numero_contrato || null,
+          cliente: row['CLIENTE'] || row.cliente || '',
+          obra: row['OBRA'] || row.obra || null,
+          suma: row['SUMA'] ? parseFloat(String(row['SUMA']).replace(/[^0-9.-]/g, '')) : null,
+          fecha_inicio: parseFecha(row['FECHA INICIO DE PERIODO'] || row.fecha_inicio),
+          fecha_vencimiento: parseFecha(row['FECHA DE VENCIMIENTO'] || row.fecha_vencimiento),
+          dias_contratado: row['DIAS CONTRATADO'] ? parseInt(String(row['DIAS CONTRATADO'])) : null,
+          status: 'activo',
+          vendedor: row['VENDEDOR'] || row.vendedor || null,
+          comprador: row['COMPRADOR'] || row.comprador || null,
+          dentro_fuera: row['DENTRO O FUERA'] || row.dentro_fuera || null,
+          horas_trabajo: row['HORAS'] ? parseInt(String(row['HORAS'])) : null,
+          comentarios: row['COMENTARIOS'] || row.comentarios || null,
+          direccion: row['OBRA'] || row.direccion || null,
+        };
+      }).filter(c => c.folio_contrato && c.cliente); // Solo contratos con folio y cliente
 
       // Usar upsert para insertar o actualizar contratos existentes
       const { error } = await supabase
