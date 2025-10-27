@@ -38,10 +38,21 @@ interface EntradaSalida {
   fotografia_url: string | null;
   fotografia_url_2: string | null;
   fotografia_url_3: string | null;
+  foto_odometro_url: string | null;
+  foto_calca_url: string | null;
+  foto_tablero_url: string | null;
+  foto_cargador_url: string | null;
+  foto_extintor_url: string | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
   } | null;
+}
+
+interface ContratoInfo {
+  cliente: string;
+  numero_contrato: string;
+  folio_contrato: string;
 }
 
 export default function EntradasSalidas() {
@@ -63,6 +74,12 @@ export default function EntradasSalidas() {
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
+  const [fotoOdometro, setFotoOdometro] = useState<File | null>(null);
+  const [fotoCalca, setFotoCalca] = useState<File | null>(null);
+  const [fotoTablero, setFotoTablero] = useState<File | null>(null);
+  const [fotoCargador, setFotoCargador] = useState<File | null>(null);
+  const [fotoExtintor, setFotoExtintor] = useState<File | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -96,6 +113,11 @@ export default function EntradasSalidas() {
           fotografia_url,
           fotografia_url_2,
           fotografia_url_3,
+          foto_odometro_url,
+          foto_calca_url,
+          foto_tablero_url,
+          foto_cargador_url,
+          foto_extintor_url,
           equipos (
             numero_equipo,
             descripcion
@@ -153,6 +175,57 @@ export default function EntradasSalidas() {
       console.error('Error fetching almacenes:', error);
     }
   };
+
+  const fetchUltimoContrato = async (numeroEquipo: string) => {
+    if (!numeroEquipo.trim()) {
+      setContratoInfo(null);
+      return;
+    }
+
+    try {
+      const { data: equipoData, error: equipoError } = await supabase
+        .from('equipos')
+        .select('id')
+        .eq('numero_equipo', numeroEquipo.trim())
+        .maybeSingle();
+
+      if (equipoError || !equipoData) {
+        setContratoInfo(null);
+        return;
+      }
+
+      const { data: contratoData, error: contratoError } = await supabase
+        .from('contratos')
+        .select('cliente, numero_contrato, folio_contrato')
+        .eq('equipo_id', equipoData.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (contratoError || !contratoData) {
+        setContratoInfo(null);
+        return;
+      }
+
+      setContratoInfo(contratoData);
+      // Auto-rellenar el cliente si existe
+      if (contratoData.cliente) {
+        setCliente(contratoData.cliente);
+      }
+    } catch (error) {
+      console.error('Error fetching último contrato:', error);
+      setContratoInfo(null);
+    }
+  };
+
+  // Efecto para buscar el último contrato cuando cambia el número de equipo
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchUltimoContrato(equipoId);
+    }, 500); // Debounce de 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [equipoId]);
 
   const filterMovimientos = () => {
     let filtered = [...movimientos];
@@ -214,7 +287,7 @@ export default function EntradasSalidas() {
         return;
       }
 
-      // Subir imágenes si hay
+      // Subir imágenes generales si hay
       const imageUrls: string[] = [];
       if (files.length > 0 && isOnline) {
         for (let i = 0; i < files.length; i++) {
@@ -235,6 +308,30 @@ export default function EntradasSalidas() {
         }
       }
 
+      // Subir fotos específicas
+      const uploadSpecificPhoto = async (file: File | null, prefix: string): Promise<string | null> => {
+        if (!file || !isOnline) return null;
+        
+        const fileName = `${prefix}-${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('fotografias')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('fotografias')
+          .getPublicUrl(fileName);
+
+        return publicUrl;
+      };
+
+      const fotoOdometroUrl = await uploadSpecificPhoto(fotoOdometro, 'odometro');
+      const fotoCalcaUrl = await uploadSpecificPhoto(fotoCalca, 'calca');
+      const fotoTableroUrl = await uploadSpecificPhoto(fotoTablero, 'tablero');
+      const fotoCargadorUrl = await uploadSpecificPhoto(fotoCargador, 'cargador');
+      const fotoExtintorUrl = await uploadSpecificPhoto(fotoExtintor, 'extintor');
+
       const movimiento = {
         equipo_id: equipoData.id,
         created_by: user?.id,
@@ -250,6 +347,11 @@ export default function EntradasSalidas() {
         fotografia_url: imageUrls[0] || null,
         fotografia_url_2: imageUrls[1] || null,
         fotografia_url_3: imageUrls[2] || null,
+        foto_odometro_url: fotoOdometroUrl,
+        foto_calca_url: fotoCalcaUrl,
+        foto_tablero_url: fotoTableroUrl,
+        foto_cargador_url: fotoCargadorUrl,
+        foto_extintor_url: fotoExtintorUrl,
         almacen_origen_id: tipo === "traspaso" ? almacenOrigen : null,
         almacen_destino_id: tipo === "traspaso" ? almacenDestino : null,
       };
@@ -322,6 +424,12 @@ export default function EntradasSalidas() {
       setAlmacenOrigen("");
       setAlmacenDestino("");
       setFiles([]);
+      setFotoOdometro(null);
+      setFotoCalca(null);
+      setFotoTablero(null);
+      setFotoCargador(null);
+      setFotoExtintor(null);
+      setContratoInfo(null);
     } catch (error) {
       console.error('Error registrando movimiento:', error);
       toast({
@@ -383,6 +491,24 @@ export default function EntradasSalidas() {
                 required
               />
             </div>
+
+            {contratoInfo && (
+              <Card className="bg-muted/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Último Contrato</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cliente:</span>
+                    <span className="font-medium">{contratoInfo.cliente}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Número de Contrato:</span>
+                    <span className="font-medium">{contratoInfo.numero_contrato || contratoInfo.folio_contrato}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo de Movimiento</Label>
@@ -490,13 +616,74 @@ export default function EntradasSalidas() {
               />
             </div>
 
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Fotos Específicas del Equipo</Label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fotoOdometro">Foto Odómetro</Label>
+                  <Input
+                    id="fotoOdometro"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoOdometro(e.target.files?.[0] || null)}
+                  />
+                  {fotoOdometro && <p className="text-xs text-muted-foreground">{fotoOdometro.name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fotoCalca">Foto de Calca</Label>
+                  <Input
+                    id="fotoCalca"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoCalca(e.target.files?.[0] || null)}
+                  />
+                  {fotoCalca && <p className="text-xs text-muted-foreground">{fotoCalca.name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fotoTablero">Foto de Tablero</Label>
+                  <Input
+                    id="fotoTablero"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoTablero(e.target.files?.[0] || null)}
+                  />
+                  {fotoTablero && <p className="text-xs text-muted-foreground">{fotoTablero.name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fotoCargador">Foto de Cargador</Label>
+                  <Input
+                    id="fotoCargador"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoCargador(e.target.files?.[0] || null)}
+                  />
+                  {fotoCargador && <p className="text-xs text-muted-foreground">{fotoCargador.name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fotoExtintor">Foto de Extintor</Label>
+                  <Input
+                    id="fotoExtintor"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoExtintor(e.target.files?.[0] || null)}
+                  />
+                  {fotoExtintor && <p className="text-xs text-muted-foreground">{fotoExtintor.name}</p>}
+                </div>
+              </div>
+            </div>
+
             <MultipleFileUpload
               files={files}
               onFilesChange={setFiles}
               maxFiles={10}
               acceptImages={true}
               acceptDocuments={true}
-              label="Archivos e Imágenes (hasta 10)"
+              label="Archivos e Imágenes Adicionales (hasta 10)"
             />
 
             <Button type="submit" disabled={loading} className="w-full">

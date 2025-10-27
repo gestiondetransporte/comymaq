@@ -158,12 +158,18 @@ export type Database = {
           chofer: string | null
           cliente: string | null
           comentarios: string | null
+          contrato_id: string | null
           created_at: string
           created_by: string | null
           equipo_id: string | null
           fecha: string
           firma_aceptacion_url: string | null
           firma_liberacion_url: string | null
+          foto_calca_url: string | null
+          foto_cargador_url: string | null
+          foto_extintor_url: string | null
+          foto_odometro_url: string | null
+          foto_tablero_url: string | null
           fotografia_url: string | null
           fotografia_url_2: string | null
           fotografia_url_3: string | null
@@ -180,12 +186,18 @@ export type Database = {
           chofer?: string | null
           cliente?: string | null
           comentarios?: string | null
+          contrato_id?: string | null
           created_at?: string
           created_by?: string | null
           equipo_id?: string | null
           fecha?: string
           firma_aceptacion_url?: string | null
           firma_liberacion_url?: string | null
+          foto_calca_url?: string | null
+          foto_cargador_url?: string | null
+          foto_extintor_url?: string | null
+          foto_odometro_url?: string | null
+          foto_tablero_url?: string | null
           fotografia_url?: string | null
           fotografia_url_2?: string | null
           fotografia_url_3?: string | null
@@ -202,12 +214,18 @@ export type Database = {
           chofer?: string | null
           cliente?: string | null
           comentarios?: string | null
+          contrato_id?: string | null
           created_at?: string
           created_by?: string | null
           equipo_id?: string | null
           fecha?: string
           firma_aceptacion_url?: string | null
           firma_liberacion_url?: string | null
+          foto_calca_url?: string | null
+          foto_cargador_url?: string | null
+          foto_extintor_url?: string | null
+          foto_odometro_url?: string | null
+          foto_tablero_url?: string | null
           fotografia_url?: string | null
           fotografia_url_2?: string | null
           fotografia_url_3?: string | null
@@ -231,6 +249,13 @@ export type Database = {
             columns: ["almacen_origen_id"]
             isOneToOne: false
             referencedRelation: "almacenes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entradas_salidas_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
           {
