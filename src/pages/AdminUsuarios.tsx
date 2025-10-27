@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Trash2, Shield, Edit2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import { z } from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+const passwordSchema = z.string()
+  .min(12, "La contraseña debe tener al menos 12 caracteres")
+  .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+  .regex(/[a-z]/, "Debe contener al menos una minúscula")
+  .regex(/[0-9]/, "Debe contener al menos un número")
+  .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial (!@#$%^&*)");
 
 interface UserWithRole {
   id: string;
@@ -83,6 +91,21 @@ export default function AdminUsuarios() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Validate password strength
+    try {
+      passwordSchema.parse(password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "Contraseña inválida",
+          description: error.errors[0].message,
+        });
+        setLoading(false);
+        return;
+      }
+    }
 
     const { error } = await createUser(email, password, role);
 
@@ -234,8 +257,11 @@ export default function AdminUsuarios() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={12}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 12 caracteres con mayúsculas, minúsculas, números y caracteres especiales
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Rol</Label>
