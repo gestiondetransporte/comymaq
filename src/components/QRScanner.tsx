@@ -1,11 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Camera, Upload, X } from "lucide-react";
+import { Camera, X, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface QRScannerProps {
   onScan: (data: string) => void;
@@ -13,144 +11,167 @@ interface QRScannerProps {
 }
 
 export default function QRScanner({ onScan, onError }: QRScannerProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
-  const handleCameraClick = () => {
-    // Trigger file input click which will open camera on mobile
-    fileInputRef.current?.click();
-  };
+  useEffect(() => {
+    return () => {
+      stopScanning();
+    };
+  }, []);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsProcessing(true);
-
+  const requestCameraPermission = async () => {
     try {
-      // Create object URL for preview
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-
-      // Decode QR from image
-      const reader = new BrowserMultiFormatReader();
-      const result = await reader.decodeFromImageUrl(imageUrl);
-
-      if (result) {
-        const qrText = result.getText();
-        console.log('QR Code detected:', qrText);
-        
-        onScan(qrText);
-        
-        toast({
-          title: 'QR Escaneado',
-          description: 'Código QR detectado exitosamente',
-        });
-
-        // Clean up
-        URL.revokeObjectURL(imageUrl);
-        setSelectedImage(null);
-        
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      } else {
-        throw new Error('No QR code found');
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      setHasPermission(true);
+      return stream;
     } catch (error) {
-      console.error('Error scanning QR:', error);
+      console.error('Error requesting camera permission:', error);
+      setHasPermission(false);
       
       toast({
         variant: 'destructive',
-        title: 'No se detectó QR',
-        description: 'No se encontró un código QR en la imagen. Asegúrate de que el código QR esté visible y bien iluminado.',
+        title: 'Permiso denegado',
+        description: 'Por favor, permite el acceso a la cámara para escanear códigos QR.',
       });
       
-      onError?.('No se pudo detectar el código QR');
-      
-      // Clean up on error
-      if (selectedImage) {
-        URL.revokeObjectURL(selectedImage);
-        setSelectedImage(null);
-      }
-    } finally {
-      setIsProcessing(false);
+      onError?.('Permiso de cámara denegado');
+      return null;
     }
   };
 
-  const handleCancel = () => {
-    if (selectedImage) {
-      URL.revokeObjectURL(selectedImage);
-      setSelectedImage(null);
+  const startScanning = async () => {
+    try {
+      setIsScanning(true);
+      
+      const stream = await requestCameraPermission();
+      if (!stream) {
+        setIsScanning(false);
+        return;
+      }
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+
+      const codeReader = new BrowserMultiFormatReader();
+      codeReaderRef.current = codeReader;
+
+      codeReader.decodeFromVideoDevice(
+        undefined,
+        videoRef.current!,
+        (result, error) => {
+          if (result) {
+            const qrText = result.getText();
+            console.log('QR Code detected:', qrText);
+            
+            onScan(qrText);
+            
+            toast({
+              title: 'QR Escaneado',
+              description: 'Código QR detectado exitosamente',
+            });
+
+            stopScanning();
+          }
+          
+          if (error && !(error.name === 'NotFoundException')) {
+            console.error('QR scanning error:', error);
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error starting scanner:', error);
+      
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo iniciar el escáner. Verifica los permisos de la cámara.',
+      });
+      
+      onError?.('Error al iniciar el escáner');
+      setIsScanning(false);
     }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  };
+
+  const stopScanning = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    codeReaderRef.current = null;
+    setIsScanning(false);
   };
 
   return (
     <div className="space-y-4">
-      {/* Hidden file input that triggers camera on mobile */}
-      <Input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        className="hidden"
-      />
-
-      {!selectedImage ? (
+      {!isScanning ? (
         <Button
           type="button"
           variant="outline"
-          onClick={handleCameraClick}
-          disabled={isProcessing}
+          onClick={startScanning}
           className="gap-2 w-full h-12 md:h-10 md:w-auto"
         >
           <Camera className="h-5 w-5 md:h-4 md:w-4" />
-          {isProcessing ? 'Procesando...' : 'Escanear QR'}
+          Escanear QR en Tiempo Real
         </Button>
       ) : (
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-2">
-              <Label>Imagen capturada</Label>
-              <div className="relative rounded-lg overflow-hidden border">
-                <img
-                  src={selectedImage}
-                  alt="Captured"
-                  className="w-full h-auto"
-                />
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Escaneando código QR...</p>
+                <Video className="h-4 w-4 text-primary animate-pulse" />
               </div>
+              <div className="relative rounded-lg overflow-hidden border bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-auto min-h-[300px] object-cover"
+                />
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-[20%] border-2 border-primary/50 rounded-lg">
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Coloca el código QR dentro del marco para escanearlo
+              </p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                className="flex-1"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCameraClick}
-                className="flex-1"
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Tomar otra
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={stopScanning}
+              className="w-full"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancelar
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {isProcessing && (
-        <div className="text-center text-sm text-muted-foreground">
-          Analizando código QR...
+      {hasPermission === false && (
+        <div className="text-center text-sm text-destructive">
+          No se pudo acceder a la cámara. Verifica los permisos en tu navegador.
         </div>
       )}
     </div>
