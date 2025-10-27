@@ -20,6 +20,7 @@ import Clientes from "./pages/Clientes";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
 
 const queryClient = new QueryClient();
 
@@ -144,6 +145,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <OfflineIndicator />
+            <InstallPWAPrompt />
             <AppRoutes />
           </TooltipProvider>
         </AuthProvider>

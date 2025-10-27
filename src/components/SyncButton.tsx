@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -18,9 +18,14 @@ export function SyncButton() {
   };
 
   // Update count on mount and when online status changes
-  useState(() => {
+  useEffect(() => {
     updatePendingCount();
-  });
+    
+    // Actualizar periódicamente cada 5 segundos
+    const interval = setInterval(updatePendingCount, 5000);
+    
+    return () => clearInterval(interval);
+  }, [isOnline]);
 
   const handleSync = async () => {
     if (!isOnline) {

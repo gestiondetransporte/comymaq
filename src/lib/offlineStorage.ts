@@ -42,6 +42,7 @@ export async function syncPendingChanges(): Promise<{ success: number; failed: n
   const pending = await getPendingSyncs();
   let success = 0;
   let failed = 0;
+  const failedSyncs: PendingSync[] = [];
 
   for (const sync of pending) {
     try {
@@ -60,10 +61,14 @@ export async function syncPendingChanges(): Promise<{ success: number; failed: n
     } catch (error) {
       console.error('Sync error:', error);
       failed++;
+      failedSyncs.push(sync);
     }
   }
 
-  if (failed === 0) {
+  // Solo mantener los syncs fallidos
+  if (failed > 0) {
+    await localforage.setItem(PENDING_SYNCS_KEY, failedSyncs);
+  } else {
     await clearPendingSyncs();
   }
 
