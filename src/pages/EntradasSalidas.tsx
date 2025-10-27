@@ -48,7 +48,9 @@ export default function EntradasSalidas() {
   const [searchParams] = useSearchParams();
   const equipoIdParam = searchParams.get('equipo_id');
   const [equipoId, setEquipoId] = useState("");
-  const [tipo, setTipo] = useState<"entrada" | "salida">("entrada");
+  const [tipo, setTipo] = useState<"entrada" | "salida" | "traspaso">("entrada");
+  const [almacenOrigen, setAlmacenOrigen] = useState("");
+  const [almacenDestino, setAlmacenDestino] = useState("");
   const [cliente, setCliente] = useState("");
   const [obra, setObra] = useState("");
   const [chofer, setChofer] = useState("");
@@ -59,6 +61,7 @@ export default function EntradasSalidas() {
   const [filteredMovimientos, setFilteredMovimientos] = useState<EntradaSalida[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -67,6 +70,7 @@ export default function EntradasSalidas() {
   useEffect(() => {
     fetchMovimientos();
     fetchClientes();
+    fetchAlmacenes();
   }, []);
 
   useEffect(() => {
@@ -120,6 +124,21 @@ export default function EntradasSalidas() {
     }
   };
 
+  const fetchAlmacenes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('almacenes')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+
+      setAlmacenes(data || []);
+    } catch (error) {
+      console.error('Error fetching almacenes:', error);
+    }
+  };
+
   const filterMovimientos = () => {
     let filtered = [...movimientos];
 
@@ -149,13 +168,22 @@ export default function EntradasSalidas() {
       return;
     }
 
+    if (tipo === "traspaso" && (!almacenOrigen || !almacenDestino)) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes seleccionar almacén origen y destino para traspasos",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Primero buscar el equipo por número para obtener su UUID
       const { data: equipoData, error: equipoError } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, serie, modelo')
+        .select('id, numero_equipo, serie, modelo, almacen_id')
         .eq('numero_equipo', equipoId.trim())
         .maybeSingle();
 
@@ -207,6 +235,8 @@ export default function EntradasSalidas() {
         fotografia_url: imageUrls[0] || null,
         fotografia_url_2: imageUrls[1] || null,
         fotografia_url_3: imageUrls[2] || null,
+        almacen_origen_id: tipo === "traspaso" ? almacenOrigen : null,
+        almacen_destino_id: tipo === "traspaso" ? almacenDestino : null,
       };
 
       if (isOnline) {
@@ -218,6 +248,16 @@ export default function EntradasSalidas() {
           .single();
 
         if (error) throw error;
+
+        // Si es traspaso, actualizar el almacen_id del equipo
+        if (tipo === "traspaso") {
+          const { error: updateError } = await supabase
+            .from('equipos')
+            .update({ almacen_id: almacenDestino })
+            .eq('id', equipoData.id);
+
+          if (updateError) throw updateError;
+        }
 
         // Guardar archivos adicionales en la tabla de archivos
         if (files.length > 0 && insertData) {
@@ -237,7 +277,9 @@ export default function EntradasSalidas() {
 
         toast({
           title: "Movimiento registrado",
-          description: `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente para equipo ${equipoId}`,
+          description: tipo === "traspaso" 
+            ? `Traspaso registrado exitosamente para equipo ${equipoId}`
+            : `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente para equipo ${equipoId}`,
         });
         
         fetchMovimientos();
@@ -262,6 +304,8 @@ export default function EntradasSalidas() {
       setChofer("");
       setTransporte("");
       setObservaciones("");
+      setAlmacenOrigen("");
+      setAlmacenDestino("");
       setFiles([]);
     } catch (error) {
       console.error('Error registrando movimiento:', error);
@@ -276,9 +320,10 @@ export default function EntradasSalidas() {
   };
 
   const getTipoBadge = (tipo: string) => {
-    return tipo === "entrada" 
-      ? <Badge variant="default" className="bg-green-600 hover:bg-green-700">Entrada</Badge>
-      : <Badge variant="destructive">Salida</Badge>;
+    if (tipo === "entrada") return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Entrada</Badge>;
+    if (tipo === "salida") return <Badge variant="destructive">Salida</Badge>;
+    if (tipo === "traspaso") return <Badge variant="secondary" className="bg-blue-600 hover:bg-blue-700">Traspaso</Badge>;
+    return <Badge variant="outline">{tipo}</Badge>;
   };
 
   const formatDate = (date: string | null) => {
@@ -326,16 +371,53 @@ export default function EntradasSalidas() {
 
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo de Movimiento</Label>
-              <Select value={tipo} onValueChange={(value: "entrada" | "salida") => setTipo(value)}>
+              <Select value={tipo} onValueChange={(value: "entrada" | "salida" | "traspaso") => setTipo(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="entrada">Entrada</SelectItem>
                   <SelectItem value="salida">Salida</SelectItem>
+                  <SelectItem value="traspaso">Traspaso entre Almacenes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {tipo === "traspaso" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="almacenOrigen">Almacén Origen</Label>
+                  <Select value={almacenOrigen} onValueChange={setAlmacenOrigen}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar almacén origen..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {almacenes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="almacenDestino">Almacén Destino</Label>
+                  <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar almacén destino..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {almacenes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="cliente">Cliente</Label>

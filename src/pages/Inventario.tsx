@@ -5,10 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { Search, Eye, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
+
+interface Almacen {
+  id: string;
+  nombre: string;
+  ubicacion: string | null;
+}
 
 interface Equipo {
   id: string;
@@ -21,21 +28,26 @@ interface Equipo {
   estado: string | null;
   categoria: string | null;
   clase: string | null;
+  almacen_id: string | null;
+  almacenes?: Almacen | null;
   contrato_activo?: {
     id: string;
     folio_contrato: string;
     cliente: string;
     status: string;
   } | null;
+  enMantenimiento?: boolean;
 }
 
 export default function Inventario() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [filteredEquipos, setFilteredEquipos] = useState<Equipo[]>([]);
+  const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("TODOS");
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
+  const [almacenFilter, setAlmacenFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
@@ -44,11 +56,12 @@ export default function Inventario() {
 
   useEffect(() => {
     fetchEquipos();
+    fetchAlmacenes();
   }, []);
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
@@ -68,13 +81,34 @@ export default function Inventario() {
     }
   }, [equipos]);
 
+  const fetchAlmacenes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('almacenes')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+      setAlmacenes(data || []);
+    } catch (error) {
+      console.error('Error fetching almacenes:', error);
+    }
+  };
+
   const fetchEquipos = async () => {
     setLoading(true);
     
-    // Fetch equipos
+    // Fetch equipos con almacenes
     const { data: equiposData, error: equiposError } = await supabase
       .from('equipos')
-      .select('*')
+      .select(`
+        *,
+        almacenes (
+          id,
+          nombre,
+          ubicacion
+        )
+      `)
       .order('numero_equipo', { ascending: true });
 
     if (equiposError) {
@@ -93,15 +127,29 @@ export default function Inventario() {
       .select('id, equipo_id, folio_contrato, cliente, status')
       .eq('status', 'activo');
 
+    // Fetch mantenimientos recientes (últimos 7 días)
+    const fechaLimite = new Date();
+    fechaLimite.setDate(fechaLimite.getDate() - 7);
+    const { data: mantenimientos } = await supabase
+      .from('mantenimientos')
+      .select('equipo_id')
+      .gte('fecha', fechaLimite.toISOString().split('T')[0]);
+
     // Create a map of equipo_id to contrato
     const contratosMap = new Map(
       contratosData?.map(c => [c.equipo_id, c]) || []
     );
 
+    // Create set of equipos en mantenimiento
+    const equiposEnMantenimiento = new Set(
+      mantenimientos?.map(m => m.equipo_id) || []
+    );
+
     // Merge data
     const equiposWithContratos = equiposData.map(equipo => ({
       ...equipo,
-      contrato_activo: contratosMap.get(equipo.id) || null
+      contrato_activo: contratosMap.get(equipo.id) || null,
+      enMantenimiento: equiposEnMantenimiento.has(equipo.id),
     }));
 
     setEquipos(equiposWithContratos);
@@ -121,6 +169,15 @@ export default function Inventario() {
       filtered = filtered.filter(e => !e.contrato_activo);
     } else if (disponibilidadFilter === "RENTADO") {
       filtered = filtered.filter(e => e.contrato_activo);
+    }
+
+    // Filter by almacén
+    if (almacenFilter !== "TODOS") {
+      if (almacenFilter === "TALLER") {
+        filtered = filtered.filter(e => e.enMantenimiento);
+      } else {
+        filtered = filtered.filter(e => e.almacen_id === almacenFilter);
+      }
     }
 
     // Filter by search query
@@ -235,6 +292,36 @@ export default function Inventario() {
                 </Button>
               </div>
             </div>
+            <div className="mt-4">
+              <Label className="mb-2 block text-sm font-medium">Filtrar por Almacén</Label>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={almacenFilter === "TODOS" ? "default" : "outline"}
+                  onClick={() => setAlmacenFilter("TODOS")}
+                  size="sm"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={almacenFilter === "TALLER" ? "default" : "outline"}
+                  onClick={() => setAlmacenFilter("TALLER")}
+                  size="sm"
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  Taller
+                </Button>
+                {almacenes.map((almacen) => (
+                  <Button
+                    key={almacen.id}
+                    variant={almacenFilter === almacen.id ? "default" : "outline"}
+                    onClick={() => setAlmacenFilter(almacen.id)}
+                    size="sm"
+                  >
+                    {almacen.nombre}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -251,6 +338,7 @@ export default function Inventario() {
                   <TableHead>Modelo</TableHead>
                   <TableHead>Serie</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Almacén</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -259,7 +347,7 @@ export default function Inventario() {
               <TableBody>
                 {filteredEquipos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
@@ -272,6 +360,17 @@ export default function Inventario() {
                       <TableCell>{equipo.modelo || "N/A"}</TableCell>
                       <TableCell className="font-mono text-sm">{equipo.serie || "N/A"}</TableCell>
                       <TableCell>{getTipoBadge(equipo.tipo)}</TableCell>
+                      <TableCell>
+                        {equipo.enMantenimiento ? (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                            Taller
+                          </Badge>
+                        ) : equipo.almacenes ? (
+                          <Badge variant="outline">{equipo.almacenes.nombre}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">Sin asignar</span>
+                        )}
+                      </TableCell>
                       <TableCell>{getDisponibilidadBadge(equipo.contrato_activo)}</TableCell>
                       <TableCell>
                         {equipo.contrato_activo ? (
