@@ -82,7 +82,20 @@ export default function EntradasSalidas() {
       let query = supabase
         .from('entradas_salidas')
         .select(`
-          *,
+          id,
+          equipo_id,
+          tipo,
+          fecha,
+          cliente,
+          obra,
+          serie,
+          modelo,
+          chofer,
+          transporte,
+          comentarios,
+          fotografia_url,
+          fotografia_url_2,
+          fotografia_url_3,
           equipos (
             numero_equipo,
             descripcion
@@ -94,7 +107,9 @@ export default function EntradasSalidas() {
         query = query.eq('equipo_id', equipoIdParam);
       }
 
-      const { data, error } = await query.order('fecha', { ascending: false });
+      const { data, error } = await query
+        .order('fecha', { ascending: false })
+        .limit(100); // Limitar a últimos 100 registros
 
       if (error) throw error;
 

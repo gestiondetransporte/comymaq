@@ -98,18 +98,29 @@ export default function Inventario() {
   const fetchEquipos = async () => {
     setLoading(true);
     
-    // Fetch equipos con almacenes
+    // Fetch solo campos necesarios (no SELECT *)
     const { data: equiposData, error: equiposError } = await supabase
       .from('equipos')
       .select(`
-        *,
+        id,
+        numero_equipo,
+        descripcion,
+        marca,
+        modelo,
+        serie,
+        tipo,
+        estado,
+        categoria,
+        clase,
+        almacen_id,
         almacenes (
           id,
           nombre,
           ubicacion
         )
       `)
-      .order('numero_equipo', { ascending: true });
+      .order('numero_equipo', { ascending: true })
+      .limit(500); // Límite de registros
 
     if (equiposError) {
       toast({
@@ -121,19 +132,21 @@ export default function Inventario() {
       return;
     }
 
-    // Fetch all active contracts
+    // Fetch solo contratos activos necesarios
     const { data: contratosData } = await supabase
       .from('contratos')
       .select('id, equipo_id, folio_contrato, cliente, status')
-      .eq('status', 'activo');
+      .eq('status', 'activo')
+      .limit(500);
 
-    // Fetch mantenimientos recientes (últimos 7 días)
+    // Fetch solo equipos con mantenimiento reciente (últimos 7 días)
     const fechaLimite = new Date();
     fechaLimite.setDate(fechaLimite.getDate() - 7);
     const { data: mantenimientos } = await supabase
       .from('mantenimientos')
       .select('equipo_id')
-      .gte('fecha', fechaLimite.toISOString().split('T')[0]);
+      .gte('fecha', fechaLimite.toISOString().split('T')[0])
+      .limit(500);
 
     // Create a map of equipo_id to contrato
     const contratosMap = new Map(

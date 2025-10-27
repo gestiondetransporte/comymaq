@@ -88,10 +88,33 @@ export default function Equipos() {
   const fetchEquipo = async () => {
     setLoading(true);
 
-    // Fetch equipo details
+    // Fetch solo campos necesarios del equipo
     const { data: equipoData, error: equipoError } = await supabase
       .from('equipos')
-      .select('*')
+      .select(`
+        id,
+        numero_equipo,
+        descripcion,
+        modelo,
+        marca,
+        anio,
+        serie,
+        clase,
+        categoria,
+        tipo,
+        estado,
+        proveedor,
+        precio_lista,
+        precio_real_cliente,
+        costo_proveedor_mxn,
+        costo_proveedor_usd,
+        ganancia,
+        tipo_negocio,
+        asegurado,
+        ubicacion_actual,
+        almacen_id,
+        codigo_qr
+      `)
       .eq('id', id)
       .single();
 
@@ -117,19 +140,20 @@ export default function Equipos() {
 
     setContrato(contratoData);
 
-    // Fetch maintenance history
+    // Fetch solo últimos 20 mantenimientos
     const { data: mantenimientosData } = await supabase
       .from('mantenimientos')
-      .select('*')
+      .select('id, fecha, tipo_servicio, tecnico, descripcion, proximo_servicio_horas')
       .eq('equipo_id', id)
-      .order('fecha', { ascending: false });
+      .order('fecha', { ascending: false })
+      .limit(20);
 
     setMantenimientos(mantenimientosData || []);
 
-    // Fetch recent entries and exits (last 5)
+    // Fetch solo últimas 5 entradas/salidas con campos mínimos
     const { data: entradasSalidasData } = await supabase
       .from('entradas_salidas')
-      .select('*')
+      .select('id, fecha, tipo, cliente, obra, chofer, transporte, comentarios')
       .eq('equipo_id', id)
       .order('fecha', { ascending: false })
       .limit(5);
