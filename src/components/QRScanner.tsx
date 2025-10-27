@@ -35,10 +35,26 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const requestCameraPermission = async () => {
     if (isNative) {
       try {
+        // Primero verificar el estado actual
+        const status = await CapCamera.checkPermissions();
+        console.log('Camera permission status:', status);
+        
+        if (status.camera === 'granted') {
+          return true;
+        }
+        
+        // Si no está granted, solicitar permiso
         const permission = await CapCamera.requestPermissions({ permissions: ['camera'] });
+        console.log('Camera permission after request:', permission);
+        
         return permission.camera === 'granted';
       } catch (error) {
         console.error('Error requesting camera permission:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error de permisos',
+          description: 'Hubo un error al solicitar permisos de cámara. Por favor, verifica la configuración de tu dispositivo.',
+        });
         return false;
       }
     }
@@ -47,17 +63,8 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
 
   const scanWithNativeCamera = async () => {
     try {
-      const hasPermission = await requestCameraPermission();
+      console.log('Starting native camera scan...');
       
-      if (!hasPermission) {
-        toast({
-          variant: 'destructive',
-          title: 'Permiso denegado',
-          description: 'Se necesita acceso a la cámara para escanear códigos QR',
-        });
-        return;
-      }
-
       const image = await CapCamera.getPhoto({
         quality: 90,
         allowEditing: false,
@@ -65,28 +72,60 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         source: CameraSource.Camera,
       });
 
+      console.log('Photo captured:', image);
+
       if (image.webPath) {
         // Use ZXing to decode QR from the captured image
         const reader = new BrowserMultiFormatReader();
         const result = await reader.decodeFromImageUrl(image.webPath);
         
+        console.log('QR decode result:', result);
+        
         if (result) {
           onScan(result.getText());
-          setIsOpen(false);
           toast({
             title: 'QR Escaneado',
             description: 'Código QR detectado exitosamente',
           });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'No se detectó QR',
+            description: 'No se encontró un código QR en la imagen. Inténtalo de nuevo.',
+          });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error scanning with native camera:', error);
+      
+      // Si el usuario canceló, no mostrar error
+      if (error.message && error.message.includes('cancel')) {
+        return;
+      }
+      
+      toast({
+        variant: 'destructive',
+        title: 'Error al escanear',
+        description: 'No se pudo escanear el código QR. Por favor, inténtalo de nuevo.',
+      });
       onError?.('Error al escanear con la cámara nativa');
     }
   };
 
   const handleOpenScanner = async () => {
     if (isNative) {
+      // Verificar permisos primero antes de abrir la cámara
+      const hasPermission = await requestCameraPermission();
+      
+      if (!hasPermission) {
+        toast({
+          variant: 'destructive',
+          title: 'Permiso requerido',
+          description: 'Por favor, permite el acceso a la cámara en la configuración de tu dispositivo para escanear códigos QR',
+        });
+        return;
+      }
+      
       await scanWithNativeCamera();
     } else {
       setIsOpen(true);

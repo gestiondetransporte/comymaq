@@ -89,15 +89,19 @@ export function CSVContratosImport({ onImportComplete }: CSVContratosImportProps
         direccion: row.direccion || null,
       }));
 
+      // Usar upsert para insertar o actualizar contratos existentes
       const { error } = await supabase
         .from('contratos')
-        .insert(contratos);
+        .upsert(contratos, {
+          onConflict: 'folio_contrato',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: `Se importaron ${contratos.length} contratos correctamente`,
+        description: `Se procesaron ${contratos.length} contratos correctamente (insertados o actualizados)`,
       });
 
       setFile(null);
@@ -140,6 +144,7 @@ CONT-001,001,Cliente Ejemplo,Obra Ejemplo,50000,2024-01-01,2024-12-31,365,activo
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             El archivo debe incluir las columnas: folio_contrato, cliente, fecha_inicio, fecha_vencimiento, suma, etc.
+            Los contratos existentes con el mismo folio_contrato serán actualizados.
           </AlertDescription>
         </Alert>
 
