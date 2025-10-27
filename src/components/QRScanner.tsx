@@ -16,6 +16,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const hasScannedRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
 
   const startScanning = async () => {
     try {
+      hasScannedRef.current = false;
       setIsScanning(true);
       
       const stream = await requestCameraPermission();
@@ -69,18 +71,13 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         undefined,
         videoRef.current!,
         (result, error) => {
-          if (result) {
+          if (result && !hasScannedRef.current) {
+            hasScannedRef.current = true;
             const qrText = result.getText();
             console.log('QR Code detected:', qrText);
             
-            onScan(qrText);
-            
-            toast({
-              title: 'QR Escaneado',
-              description: 'Código QR detectado exitosamente',
-            });
-
             stopScanning();
+            onScan(qrText);
           }
           
           if (error && !(error.name === 'NotFoundException')) {
