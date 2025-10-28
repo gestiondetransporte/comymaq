@@ -65,7 +65,7 @@ export default function Contratos() {
         .from('contratos')
         .select(`
           *,
-          equipos (
+          equipos:equipo_id (
             numero_equipo,
             descripcion
           )
