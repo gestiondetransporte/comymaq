@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
+import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -61,9 +62,9 @@ function AppRoutes() {
       <Route
         path="/contratos"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Contratos />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route
@@ -85,9 +86,9 @@ function AppRoutes() {
       <Route
         path="/almacenes"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Almacenes />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route
@@ -101,17 +102,17 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Dashboard />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route
         path="/admin/usuarios"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminUsuarios />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route
@@ -125,9 +126,9 @@ function AppRoutes() {
       <Route
         path="/clientes"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Clientes />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

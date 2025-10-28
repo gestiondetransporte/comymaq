@@ -257,28 +257,6 @@ export default function Configuracion() {
           </Card>
         </div>
 
-        {/* Información adicional */}
-        <Card className="mt-6 bg-primary/10 border-primary/20">
-          <CardContent className="pt-6 space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">¿Cómo probar en dispositivos reales?</h3>
-              <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                <li>Exporta el proyecto a GitHub usando el botón en la parte superior</li>
-                <li>Clona el repositorio en tu computadora</li>
-                <li>Instala las dependencias: <code className="bg-muted px-1 rounded">npm install</code></li>
-                <li>Agrega la plataforma: <code className="bg-muted px-1 rounded">npx cap add android</code> o <code className="bg-muted px-1 rounded">npx cap add ios</code></li>
-                <li>Compila: <code className="bg-muted px-1 rounded">npm run build && npx cap sync</code></li>
-                <li>Abre en IDE nativo: <code className="bg-muted px-1 rounded">npx cap open android</code> o <code className="bg-muted px-1 rounded">npx cap open ios</code></li>
-              </ol>
-            </div>
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                <strong>Nota:</strong> Las notificaciones push requieren configuración adicional en Firebase (Android) y APNs (iOS).
-                La ubicación y la cámara funcionan automáticamente en dispositivos móviles.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
   );
 }
