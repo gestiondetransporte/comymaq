@@ -17,6 +17,7 @@ import Inventario from "./pages/Inventario";
 import AdminUsuarios from "./pages/AdminUsuarios";
 import Configuracion from "./pages/Configuracion";
 import Clientes from "./pages/Clientes";
+import ReporteInventario from "./pages/ReporteInventario";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -128,6 +129,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <Clientes />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/reporte-inventario"
+        element={
+          <AdminRoute>
+            <ReporteInventario />
           </AdminRoute>
         }
       />

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings } from "lucide-react";
+import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings, FileBarChart } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -30,6 +30,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: "/clientes", label: "Clientes", icon: Shield },
     { path: "/almacenes", label: "Almacenes", icon: Package },
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/reporte-inventario", label: "Reporte Inventario", icon: FileBarChart },
     { path: "/admin/usuarios", label: "Usuarios", icon: Shield },
   ];
 
