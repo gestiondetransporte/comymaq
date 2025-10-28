@@ -3,11 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useOffline } from '@/hooks/useOffline';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getPendingSyncs, syncPendingChanges } from '@/lib/offlineStorage';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
 import { 
   Wifi, 
   WifiOff, 
@@ -16,8 +20,16 @@ import {
   Camera, 
   RefreshCw,
   Check,
-  X
+  X,
+  Lock
 } from 'lucide-react';
+
+const passwordSchema = z.string()
+  .min(12, "La contraseña debe tener al menos 12 caracteres")
+  .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+  .regex(/[a-z]/, "Debe contener al menos una minúscula")
+  .regex(/[0-9]/, "Debe contener al menos un número")
+  .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial (!@#$%^&*)");
 
 export default function Configuracion() {
   const { isOnline, isOffline } = useOffline();
@@ -25,6 +37,10 @@ export default function Configuracion() {
   const { hasPermission: hasPushPermission, isNative: isPushNative, requestPermissions: requestPushPermissions, sendLocalNotification } = usePushNotifications();
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,6 +98,86 @@ export default function Configuracion() {
     );
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validar que las contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Las contraseñas nuevas no coinciden",
+      });
+      return;
+    }
+
+    // Validar fortaleza de la contraseña
+    try {
+      passwordSchema.parse(newPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "Contraseña inválida",
+          description: error.errors[0].message,
+        });
+        return;
+      }
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      // Primero verificar la contraseña actual re-autenticando
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        throw new Error("Usuario no encontrado");
+      }
+
+      // Intentar iniciar sesión con la contraseña actual para verificarla
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "La contraseña actual es incorrecta",
+        });
+        setIsChangingPassword(false);
+        return;
+      }
+
+      // Actualizar la contraseña
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña ha sido cambiada exitosamente",
+      });
+
+      // Limpiar formulario
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al cambiar contraseña",
+        description: error.message || "No se pudo actualizar la contraseña",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-4xl">
         <div className="mb-6">
@@ -125,6 +221,73 @@ export default function Configuracion() {
                 {isSyncing ? 'Sincronizando...' : 'Sincronizar ahora'}
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        <Separator className="my-6" />
+
+        {/* Cambiar Contraseña */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Cambiar Contraseña
+            </CardTitle>
+            <CardDescription>
+              Actualiza tu contraseña para mantener tu cuenta segura
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Contraseña Actual</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  placeholder="Ingresa tu contraseña actual"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nueva Contraseña</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={12}
+                  placeholder="Ingresa tu nueva contraseña"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 12 caracteres con mayúsculas, minúsculas, números y caracteres especiales
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar Nueva Contraseña</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={12}
+                  placeholder="Confirma tu nueva contraseña"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className="w-full"
+              >
+                {isChangingPassword ? 'Actualizando...' : 'Cambiar Contraseña'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
