@@ -116,15 +116,17 @@ export default function ReporteInventario() {
       // Calcular totales por categoría y clase para segmentos
       const totalPorCategoria: Record<string, number> = {};
       const totalPorClase: Record<string, number> = {};
+      let totalGeneral = 0;
 
       Object.values(grouped).forEach((item) => {
         totalPorCategoria[item.categoria] = (totalPorCategoria[item.categoria] || 0) + item.cantidad;
         totalPorClase[item.clase] = (totalPorClase[item.clase] || 0) + item.cantidad;
+        totalGeneral += item.cantidad;
       });
 
       // Calcular porcentajes
       const reportArray = Object.values(grouped).map((item) => {
-        const general = item.cantidad > 0 ? ((item.dentro + item.disponible) / item.cantidad) * 100 : 0;
+        const general = totalGeneral > 0 ? (item.cantidad / totalGeneral) * 100 : 0;
         const segmento_renta = item.cantidad > 0 ? (item.dentro / item.cantidad) * 100 : 0;
         const segmento_disponible = item.cantidad > 0 ? (item.disponible / item.cantidad) * 100 : 0;
         const segmento_taller = item.cantidad > 0 ? (item.taller / item.cantidad) * 100 : 0;
