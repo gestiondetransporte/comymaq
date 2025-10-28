@@ -33,6 +33,10 @@ interface Contrato {
   equipo_id: string | null;
   ubicacion_gps: string | null;
   direccion: string | null;
+  equipos?: {
+    numero_equipo: string;
+    descripcion: string;
+  } | null;
 }
 
 export default function Contratos() {
@@ -58,7 +62,13 @@ export default function Contratos() {
     try {
       const { data, error } = await supabase
         .from('contratos')
-        .select('*')
+        .select(`
+          *,
+          equipos (
+            numero_equipo,
+            descripcion
+          )
+        `)
         .order('fecha_inicio', { ascending: false });
 
       if (error) throw error;
@@ -252,6 +262,7 @@ export default function Contratos() {
                   <TableRow>
                     <TableHead>Folio</TableHead>
                     <TableHead>Cliente</TableHead>
+                    <TableHead>Equipo</TableHead>
                     <TableHead>Obra</TableHead>
                     <TableHead>Suma</TableHead>
                     <TableHead>Fecha Inicio</TableHead>
@@ -272,6 +283,16 @@ export default function Contratos() {
                       <TableRow key={contrato.id}>
                         <TableCell className="font-medium">{contrato.folio_contrato}</TableCell>
                         <TableCell>{contrato.cliente}</TableCell>
+                        <TableCell>
+                          {contrato.equipos ? (
+                            <div className="text-sm">
+                              <div className="font-medium">{contrato.equipos.numero_equipo}</div>
+                              <div className="text-muted-foreground">{contrato.equipos.descripcion}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Sin asignar</span>
+                          )}
+                        </TableCell>
                         <TableCell>{contrato.obra || 'N/A'}</TableCell>
                         <TableCell>{formatCurrency(contrato.suma)}</TableCell>
                         <TableCell>{formatDate(contrato.fecha_inicio)}</TableCell>

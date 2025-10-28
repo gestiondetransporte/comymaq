@@ -74,10 +74,14 @@ export function ContratoDetailsDialog({
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [equipos, setEquipos] = useState<Array<{ id: string; numero_equipo: string; descripcion: string }>>([]);
   const { toast } = useToast();
   const { getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
+    if (open) {
+      fetchEquipos();
+    }
     if (contrato) {
       setFormData(contrato);
     } else if (isCreating) {
@@ -88,6 +92,20 @@ export function ContratoDetailsDialog({
       });
     }
   }, [contrato, isCreating, open]);
+
+  const fetchEquipos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipos')
+        .select('id, numero_equipo, descripcion')
+        .order('numero_equipo');
+      
+      if (error) throw error;
+      setEquipos(data || []);
+    } catch (error) {
+      console.error('Error fetching equipos:', error);
+    }
+  };
 
   // Auto-calculate fecha_vencimiento based on fecha_inicio + dias_contratado
   useEffect(() => {
@@ -154,6 +172,7 @@ export function ContratoDetailsDialog({
             dentro_fuera: formData.dentro_fuera || null,
             horas_trabajo: formData.horas_trabajo || null,
             comentarios: formData.comentarios || null,
+            equipo_id: formData.equipo_id || null,
             ubicacion_gps: formData.ubicacion_gps || null,
             direccion: formData.direccion || null,
           });
@@ -183,6 +202,7 @@ export function ContratoDetailsDialog({
             dentro_fuera: formData.dentro_fuera || null,
             horas_trabajo: formData.horas_trabajo || null,
             comentarios: formData.comentarios || null,
+            equipo_id: formData.equipo_id || null,
             ubicacion_gps: formData.ubicacion_gps || null,
             direccion: formData.direccion || null,
           })
@@ -420,6 +440,28 @@ export function ContratoDetailsDialog({
                   setFormData({ ...formData, horas_trabajo: parseInt(e.target.value) || null })
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="equipo_id">Equipo Asignado</Label>
+              <Select
+                value={formData.equipo_id || ""}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, equipo_id: value || null })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar equipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin asignar</SelectItem>
+                  {equipos.map((equipo) => (
+                    <SelectItem key={equipo.id} value={equipo.id}>
+                      {equipo.numero_equipo} - {equipo.descripcion}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
