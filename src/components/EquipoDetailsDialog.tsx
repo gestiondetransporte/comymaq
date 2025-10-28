@@ -105,6 +105,7 @@ export function EquipoDetailsDialog({
   
   // Clientes list
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -121,6 +122,7 @@ export function EquipoDetailsDialog({
     if (open) {
       setActiveTab(initialTab);
       fetchClientes();
+      fetchAlmacenes();
     }
   }, [open, initialTab]);
 
@@ -136,6 +138,21 @@ export function EquipoDetailsDialog({
       setClientes(data || []);
     } catch (error) {
       console.error('Error fetching clientes:', error);
+    }
+  };
+
+  const fetchAlmacenes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('almacenes')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+
+      setAlmacenes(data || []);
+    } catch (error) {
+      console.error('Error fetching almacenes:', error);
     }
   };
 
@@ -235,6 +252,7 @@ export function EquipoDetailsDialog({
           tipo_negocio: formData.tipo_negocio,
           asegurado: formData.asegurado,
           ubicacion_actual: formData.ubicacion_actual,
+          almacen_id: formData.almacen_id || null,
         })
         .eq("id", equipo.id);
 
@@ -623,6 +641,28 @@ export function EquipoDetailsDialog({
                       setFormData({ ...formData, ubicacion_actual: e.target.value })
                     }
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="almacen">Almacén</Label>
+                  <Select
+                    value={formData.almacen_id || ""}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, almacen_id: value || null })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar almacén..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin asignar</SelectItem>
+                      {almacenes.map((almacen) => (
+                        <SelectItem key={almacen.id} value={almacen.id}>
+                          {almacen.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
