@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { FileBarChart, Package, Wrench, TrendingUp, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 interface InventoryReport {
   categoria: string;
@@ -209,7 +209,7 @@ export default function ReporteInventario() {
     ]);
 
     // Agregar tabla
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [[
         'Cat',
         'Clase',
