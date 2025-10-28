@@ -4,9 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileBarChart, Package, Wrench, TrendingUp } from "lucide-react";
+import { FileBarChart, Package, Wrench, TrendingUp, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 interface InventoryReport {
   categoria: string;
@@ -171,6 +174,96 @@ export default function ReporteInventario() {
     return filteredData[index].categoria !== filteredData[index - 1].categoria;
   };
 
+  // Función para descargar el reporte en PDF
+  const downloadPDF = () => {
+    const doc = new jsPDF('landscape');
+    
+    // Título
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Reporte de Inventario de Equipos', 14, 20);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Disponibilidad y Taller', 14, 28);
+
+    // Resumen
+    doc.setFontSize(10);
+    doc.text(`Total de Equipos: ${totalCantidad}`, 14, 38);
+    doc.text(`Total en Taller: ${totalTaller}`, 80, 38);
+    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 146, 38);
+
+    // Preparar datos de la tabla
+    const tableData = filteredData.map(row => [
+      row.categoria,
+      row.clase,
+      row.descripcion,
+      row.cantidad.toString(),
+      row.dentro.toString(),
+      row.disponible.toString(),
+      row.taller.toString(),
+      `${row.general}%`,
+      `${row.segmento_renta}%`,
+      `${row.segmento_disponible}%`,
+      `${row.segmento_taller}%`,
+      `${row.segmento_clase}%`,
+    ]);
+
+    // Agregar tabla
+    (doc as any).autoTable({
+      head: [[
+        'Cat',
+        'Clase',
+        'Descripción',
+        'Cant',
+        'Dentro',
+        'Disp',
+        'Taller',
+        'General',
+        'S.Renta',
+        'S.Disp',
+        'S.Taller',
+        'S.Clase'
+      ]],
+      body: tableData,
+      startY: 45,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 15 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 15, halign: 'right' },
+        4: { cellWidth: 15, halign: 'right' },
+        5: { cellWidth: 15, halign: 'right', textColor: [22, 163, 74] },
+        6: { cellWidth: 15, halign: 'right', textColor: [220, 38, 38] },
+        7: { cellWidth: 20, halign: 'right' },
+        8: { cellWidth: 20, halign: 'right' },
+        9: { cellWidth: 20, halign: 'right' },
+        10: { cellWidth: 20, halign: 'right' },
+        11: { cellWidth: 20, halign: 'right' },
+      },
+      didParseCell: (data: any) => {
+        // Resaltar inicio de nueva categoría
+        const rowIndex = data.row.index;
+        if (rowIndex > 0 && filteredData[rowIndex]) {
+          if (isNewCategory(rowIndex)) {
+            data.cell.styles.fillColor = [243, 244, 246];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    // Guardar PDF
+    const fecha = new Date().toISOString().split('T')[0];
+    doc.save(`reporte-inventario-${fecha}.pdf`);
+
+    toast({
+      title: "PDF Generado",
+      description: "El reporte se ha descargado correctamente",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -184,12 +277,18 @@ export default function ReporteInventario() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <FileBarChart className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Reporte de Inventario de Equipos</h1>
-          <p className="text-muted-foreground">Disponibilidad y Taller</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FileBarChart className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold">Reporte de Inventario de Equipos</h1>
+            <p className="text-muted-foreground">Disponibilidad y Taller</p>
+          </div>
         </div>
+        <Button onClick={downloadPDF} variant="default">
+          <Download className="mr-2 h-4 w-4" />
+          Descargar PDF
+        </Button>
       </div>
 
       {/* Tarjetas de Resumen */}

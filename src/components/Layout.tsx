@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings, FileBarChart } from "lucide-react";
+import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings, FileBarChart, ChevronDown } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SyncButton } from "@/components/SyncButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -132,21 +140,33 @@ export default function Layout({ children }: LayoutProps) {
             {isAdmin && (
               <>
                 <div className="h-6 w-px bg-border mx-2" />
-                {adminNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Button
-                      key={item.path}
-                      variant={isActive ? "default" : "ghost"}
-                      onClick={() => navigate(item.path)}
-                      size="sm"
-                    >
-                      <Icon className="mr-2 h-4 w-4" />
-                      {item.label}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Administración
+                      <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
-                  );
-                })}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Opciones de Administración</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {adminNavItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <DropdownMenuItem
+                          key={item.path}
+                          onClick={() => navigate(item.path)}
+                          className={isActive ? "bg-muted" : ""}
+                        >
+                          <Icon className="mr-2 h-4 w-4" />
+                          {item.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
