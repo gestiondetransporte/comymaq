@@ -119,25 +119,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: { message: 'No se pudo crear el usuario' } };
       }
 
-      // Assign role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newUser.id,
-          role: role,
-        });
-
-      if (roleError) {
-        console.error('Error assigning role:', roleError);
-        return { error: roleError };
-      }
-
-      // Restore the admin's session
+      // Restore the admin's session before assigning the role
       if (currentSession) {
         await supabase.auth.setSession({
           access_token: currentSession.access_token,
           refresh_token: currentSession.refresh_token,
         });
+      }
+
+      // Assign role using the secure function
+      const { error: roleError } = await supabase.rpc('admin_create_user_role', {
+        _user_id: newUser.id,
+        _role: role,
+      });
+
+      if (roleError) {
+        console.error('Error assigning role:', roleError);
+        return { error: roleError };
       }
 
       return { error: null };
