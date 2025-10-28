@@ -13,6 +13,7 @@ import { es } from "date-fns/locale";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 import { CSVContratosImport } from "@/components/CSVContratosImport";
 import { CSVEquipoContratoImport } from "@/components/CSVEquipoContratoImport";
+import { ExcelContratosImport } from "@/components/ExcelContratosImport";
 
 interface Contrato {
   id: string;
@@ -202,6 +203,7 @@ export default function Contratos() {
         <p className="text-muted-foreground">Gestión de contratos de renta de equipo</p>
       </div>
 
+          <ExcelContratosImport onImportComplete={fetchContratos} />
           <CSVEquipoContratoImport onImportComplete={fetchContratos} />
           <CSVContratosImport onImportComplete={fetchContratos} />
 
