@@ -93,6 +93,7 @@ export default function EntradasSalidas() {
   const [filtroCliente, setFiltroCliente] = useState<string>("todos");
   const [filtroFechaDesde, setFiltroFechaDesde] = useState<string>("");
   const [filtroFechaHasta, setFiltroFechaHasta] = useState<string>("");
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -101,6 +102,15 @@ export default function EntradasSalidas() {
     fetchMovimientos();
     fetchClientes();
     fetchAlmacenes();
+  }, []);
+
+  // Actualizar la hora cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -378,7 +388,7 @@ export default function EntradasSalidas() {
         equipo_id: equipoData.id,
         created_by: user?.id,
         tipo,
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: new Date().toISOString(),
         cliente: cliente.trim() || null,
         obra: obra.trim() || null,
         chofer: chofer.trim() || null,
@@ -520,9 +530,19 @@ export default function EntradasSalidas() {
                 Registra las entradas y salidas de equipo del almacén
               </CardDescription>
             </div>
-            <Badge variant={isOnline ? "default" : "secondary"}>
-              {isOnline ? "En línea" : "Modo offline"}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-sm font-medium">
+                  {format(currentDateTime, "dd/MMM/yyyy", { locale: es })}
+                </div>
+                <div className="text-lg font-bold tabular-nums">
+                  {format(currentDateTime, "HH:mm:ss", { locale: es })}
+                </div>
+              </div>
+              <Badge variant={isOnline ? "default" : "secondary"}>
+                {isOnline ? "En línea" : "Modo offline"}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
