@@ -18,6 +18,7 @@ import { es } from "date-fns/locale";
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { EntradaSalidaDetailsDialog } from "@/components/EntradaSalidaDetailsDialog";
 
 interface FileWithPreview {
   file: File;
@@ -86,6 +87,12 @@ export default function EntradasSalidas() {
   const [fotoExtintor, setFotoExtintor] = useState<File | null>(null);
   const [tieneDanos, setTieneDanos] = useState(false);
   const [descripcionDanos, setDescripcionDanos] = useState("");
+  const [selectedMovimientoId, setSelectedMovimientoId] = useState<string | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [filtroTipo, setFiltroTipo] = useState<string>("todos");
+  const [filtroCliente, setFiltroCliente] = useState<string>("todos");
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState<string>("");
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOffline();
@@ -98,7 +105,7 @@ export default function EntradasSalidas() {
 
   useEffect(() => {
     filterMovimientos();
-  }, [searchQuery, movimientos]);
+  }, [searchQuery, movimientos, filtroTipo, filtroCliente, filtroFechaDesde, filtroFechaHasta]);
 
   const fetchMovimientos = async () => {
     try {
@@ -238,6 +245,7 @@ export default function EntradasSalidas() {
   const filterMovimientos = () => {
     let filtered = [...movimientos];
 
+    // Filtro de búsqueda de texto
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(m =>
@@ -247,6 +255,32 @@ export default function EntradasSalidas() {
         m.obra?.toLowerCase().includes(query) ||
         m.tipo?.toLowerCase().includes(query)
       );
+    }
+
+    // Filtro por tipo
+    if (filtroTipo !== "todos") {
+      filtered = filtered.filter(m => m.tipo === filtroTipo);
+    }
+
+    // Filtro por cliente
+    if (filtroCliente !== "todos") {
+      filtered = filtered.filter(m => m.cliente === filtroCliente);
+    }
+
+    // Filtro por fecha desde
+    if (filtroFechaDesde) {
+      filtered = filtered.filter(m => {
+        if (!m.fecha) return false;
+        return new Date(m.fecha) >= new Date(filtroFechaDesde);
+      });
+    }
+
+    // Filtro por fecha hasta
+    if (filtroFechaHasta) {
+      filtered = filtered.filter(m => {
+        if (!m.fecha) return false;
+        return new Date(m.fecha) <= new Date(filtroFechaHasta);
+      });
     }
 
     setFilteredMovimientos(filtered);
@@ -734,22 +768,94 @@ export default function EntradasSalidas() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle>Historial de Movimientos</CardTitle>
-              <CardDescription>
-                {filteredMovimientos.length} de {movimientos.length} registros
-              </CardDescription>
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle>Historial de Movimientos</CardTitle>
+                <CardDescription>
+                  {filteredMovimientos.length} de {movimientos.length} registros
+                </CardDescription>
+              </div>
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por equipo, cliente, obra..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por equipo, cliente, obra..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+
+            {/* Filtros Avanzados */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
+              <div className="space-y-2">
+                <Label htmlFor="filtroTipo">Tipo</Label>
+                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                  <SelectTrigger id="filtroTipo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="entrada">Entrada</SelectItem>
+                    <SelectItem value="salida">Salida</SelectItem>
+                    <SelectItem value="traspaso">Traspaso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filtroCliente">Cliente</Label>
+                <Select value={filtroCliente} onValueChange={setFiltroCliente}>
+                  <SelectTrigger id="filtroCliente">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {Array.from(new Set(movimientos.map(m => m.cliente).filter(Boolean))).map((cliente) => (
+                      <SelectItem key={cliente} value={cliente!}>
+                        {cliente}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filtroFechaDesde">Desde</Label>
+                <Input
+                  id="filtroFechaDesde"
+                  type="date"
+                  value={filtroFechaDesde}
+                  onChange={(e) => setFiltroFechaDesde(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="filtroFechaHasta">Hasta</Label>
+                <Input
+                  id="filtroFechaHasta"
+                  type="date"
+                  value={filtroFechaHasta}
+                  onChange={(e) => setFiltroFechaHasta(e.target.value)}
+                />
+              </div>
             </div>
+
+            {(filtroTipo !== "todos" || filtroCliente !== "todos" || filtroFechaDesde || filtroFechaHasta) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFiltroTipo("todos");
+                  setFiltroCliente("todos");
+                  setFiltroFechaDesde("");
+                  setFiltroFechaHasta("");
+                }}
+              >
+                Limpiar Filtros
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -776,6 +882,7 @@ export default function EntradasSalidas() {
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
                     <TableHead>Imágenes</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -814,6 +921,18 @@ export default function EntradasSalidas() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedMovimientoId(movimiento.id);
+                            setDetailsDialogOpen(true);
+                          }}
+                        >
+                          Ver Detalle
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -822,6 +941,12 @@ export default function EntradasSalidas() {
           )}
         </CardContent>
       </Card>
+
+      <EntradaSalidaDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        movimientoId={selectedMovimientoId}
+      />
     </div>
   );
 }
