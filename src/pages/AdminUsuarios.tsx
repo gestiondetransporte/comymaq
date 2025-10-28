@@ -195,62 +195,6 @@ export default function AdminUsuarios() {
     }
   };
 
-  const handleBulkCreateUsers = async () => {
-    setLoading(true);
-    
-    const usersToCreate = [
-      { email: 'luis@comymaq.com', password: 'Luis1234567!' },
-      { email: 'jonathan@comymaq.com', password: 'Jonathan1234567!' },
-      { email: 'juan.m@comymaq.com', password: 'Juan1234567!' },
-      { email: 'juan.c@comymaq.com', password: 'Juan1234567!' },
-      { email: 'jose.h@comymaq.com', password: 'jose1234567!' },
-      { email: 'daniel@comymaq.com', password: 'Daniel1234567!' },
-      { email: 'maria.l@comymaq.com', password: 'Maria1234567!' },
-    ];
-
-    let created = 0;
-    let failed = 0;
-    const errors: string[] = [];
-
-    for (const userData of usersToCreate) {
-      // Check if user already exists
-      const existingUser = users.find(u => u.email === userData.email);
-      if (existingUser) {
-        continue; // Skip existing users
-      }
-
-      const { error } = await createUser(userData.email, userData.password, 'user');
-      
-      if (error) {
-        failed++;
-        errors.push(`${userData.email}: ${error.message}`);
-      } else {
-        created++;
-      }
-      
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    if (created > 0) {
-      toast({
-        title: "Usuarios creados",
-        description: `Se crearon ${created} usuarios exitosamente${failed > 0 ? ` (${failed} fallidos)` : ''}`,
-      });
-      fetchUsers();
-    }
-
-    if (failed > 0) {
-      toast({
-        variant: "destructive",
-        title: "Algunos usuarios no se pudieron crear",
-        description: errors.join(', '),
-      });
-    }
-
-    setLoading(false);
-  };
-
   const getRoleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       admin: "destructive",
@@ -291,24 +235,6 @@ export default function AdminUsuarios() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 p-4 bg-muted rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Crear usuarios predefinidos</h3>
-                <p className="text-sm text-muted-foreground">
-                  Crear todos los usuarios de Comymaq que aún no existen
-                </p>
-              </div>
-              <Button 
-                onClick={handleBulkCreateUsers} 
-                disabled={loading}
-                variant="secondary"
-              >
-                {loading ? "Creando..." : "Crear Usuarios Faltantes"}
-              </Button>
-            </div>
-          </div>
-          
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
