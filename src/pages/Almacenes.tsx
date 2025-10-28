@@ -7,14 +7,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Warehouse } from "lucide-react";
+import { Plus, Pencil, Trash2, Warehouse, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlmacenEquiposDialog } from "@/components/AlmacenEquiposDialog";
+import { Badge } from "@/components/ui/badge";
 
 interface Almacen {
   id: string;
   nombre: string;
   ubicacion: string | null;
   created_at: string;
+  equipos_count?: number;
 }
 
 export default function Almacenes() {
@@ -25,6 +28,8 @@ export default function Almacenes() {
   const [selectedAlmacen, setSelectedAlmacen] = useState<Almacen | null>(null);
   const [nombre, setNombre] = useState("");
   const [ubicacion, setUbicacion] = useState("");
+  const [equiposDialogOpen, setEquiposDialogOpen] = useState(false);
+  const [selectedAlmacenForEquipos, setSelectedAlmacenForEquipos] = useState<Almacen | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,13 +38,35 @@ export default function Almacenes() {
 
   const fetchAlmacenes = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: almacenesData, error: almacenesError } = await supabase
         .from('almacenes')
         .select('*')
         .order('nombre', { ascending: true });
 
-      if (error) throw error;
-      setAlmacenes(data || []);
+      if (almacenesError) throw almacenesError;
+
+      // Obtener el conteo de equipos por almacén
+      if (almacenesData && almacenesData.length > 0) {
+        const almacenesConConteo = await Promise.all(
+          almacenesData.map(async (almacen) => {
+            const { count, error: countError } = await supabase
+              .from('equipos')
+              .select('*', { count: 'exact', head: true })
+              .eq('almacen_id', almacen.id);
+
+            if (countError) {
+              console.error('Error counting equipos:', countError);
+              return { ...almacen, equipos_count: 0 };
+            }
+
+            return { ...almacen, equipos_count: count || 0 };
+          })
+        );
+
+        setAlmacenes(almacenesConConteo);
+      } else {
+        setAlmacenes([]);
+      }
     } catch (error) {
       console.error('Error fetching almacenes:', error);
       toast({
@@ -186,6 +213,7 @@ export default function Almacenes() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Ubicación</TableHead>
+                    <TableHead>Equipos</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -194,8 +222,26 @@ export default function Almacenes() {
                     <TableRow key={almacen.id}>
                       <TableCell className="font-medium">{almacen.nombre}</TableCell>
                       <TableCell>{almacen.ubicacion || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="gap-1">
+                          <Package className="h-3 w-3" />
+                          {almacen.equipos_count || 0}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedAlmacenForEquipos(almacen);
+                              setEquiposDialogOpen(true);
+                            }}
+                            className="gap-1"
+                          >
+                            <Package className="h-4 w-4" />
+                            Ver Equipos
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -282,6 +328,13 @@ export default function Almacenes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlmacenEquiposDialog
+        open={equiposDialogOpen}
+        onOpenChange={setEquiposDialogOpen}
+        almacenId={selectedAlmacenForEquipos?.id || null}
+        almacenNombre={selectedAlmacenForEquipos?.nombre || null}
+      />
     </div>
   );
 }
