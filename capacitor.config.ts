@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.81259e17de1246949e58a115feb9395a',
+  appId: 'com.comymaq.app',
   appName: 'COMYMAQ',
   webDir: 'dist',
   server: {
