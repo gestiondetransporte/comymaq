@@ -719,6 +719,7 @@ export default function EntradasSalidas() {
                     id="fotoOdometro"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => setFotoOdometro(e.target.files?.[0] || null)}
                   />
                   {fotoOdometro && <p className="text-xs text-muted-foreground">{fotoOdometro.name}</p>}
@@ -730,6 +731,7 @@ export default function EntradasSalidas() {
                     id="fotoCalca"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => setFotoCalca(e.target.files?.[0] || null)}
                   />
                   {fotoCalca && <p className="text-xs text-muted-foreground">{fotoCalca.name}</p>}
@@ -741,6 +743,7 @@ export default function EntradasSalidas() {
                     id="fotoTablero"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => setFotoTablero(e.target.files?.[0] || null)}
                   />
                   {fotoTablero && <p className="text-xs text-muted-foreground">{fotoTablero.name}</p>}
@@ -752,6 +755,7 @@ export default function EntradasSalidas() {
                     id="fotoCargador"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => setFotoCargador(e.target.files?.[0] || null)}
                   />
                   {fotoCargador && <p className="text-xs text-muted-foreground">{fotoCargador.name}</p>}
@@ -763,6 +767,7 @@ export default function EntradasSalidas() {
                     id="fotoExtintor"
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={(e) => setFotoExtintor(e.target.files?.[0] || null)}
                   />
                   {fotoExtintor && <p className="text-xs text-muted-foreground">{fotoExtintor.name}</p>}
