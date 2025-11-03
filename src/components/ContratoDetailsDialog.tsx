@@ -445,16 +445,16 @@ export function ContratoDetailsDialog({
             <div className="space-y-2">
               <Label htmlFor="equipo_id">Equipo Asignado</Label>
               <Select
-                value={formData.equipo_id || ""}
+                value={formData.equipo_id || "none"}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, equipo_id: value || null })
+                  setFormData({ ...formData, equipo_id: value === "none" ? null : value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar equipo..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {equipos.map((equipo) => (
                     <SelectItem key={equipo.id} value={equipo.id}>
                       {equipo.numero_equipo} - {equipo.descripcion}
