@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings, FileBarChart, ChevronDown, ClipboardCheck } from "lucide-react";
+import { LogOut, Menu, Search, FileText, Truck, Wrench, Package, List, LayoutDashboard, Shield, Settings, FileBarChart, ChevronDown, ClipboardCheck, Home, Users, Building2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import comymaqLogo from "@/assets/comymaq-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,22 +33,31 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { path: "/", label: "Buscador", icon: Search },
-    { path: "/inventario", label: "Inventario", icon: List },
-    { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
-    { path: "/inspeccion-taller", label: "Inspección Taller", icon: ClipboardCheck },
-    { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
-    { path: "/configuracion", label: "Configuración", icon: Settings },
-  ];
+  const menuCategories = {
+    operaciones: [
+      { path: "/", label: "Buscador", icon: Search },
+      { path: "/inventario", label: "Inventario", icon: List },
+      { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
+      { path: "/inspeccion-taller", label: "Inspección Taller", icon: ClipboardCheck },
+    ],
+    gestion: [
+      { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
+      { path: "/configuracion", label: "Configuración", icon: Settings },
+    ],
+    administracion: [
+      { path: "/contratos", label: "Contratos", icon: FileText },
+      { path: "/clientes", label: "Clientes", icon: Users },
+      { path: "/almacenes", label: "Almacenes", icon: Building2 },
+      { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/reporte-inventario", label: "Reporte Inventario", icon: FileBarChart },
+      { path: "/admin/usuarios", label: "Usuarios", icon: Shield },
+    ],
+  };
 
-  const adminNavItems = [
-    { path: "/contratos", label: "Contratos", icon: FileText },
-    { path: "/clientes", label: "Clientes", icon: Shield },
-    { path: "/almacenes", label: "Almacenes", icon: Package },
-    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/reporte-inventario", label: "Reporte Inventario", icon: FileBarChart },
-    { path: "/admin/usuarios", label: "Usuarios", icon: Shield },
+  const allNavItems = [
+    ...menuCategories.operaciones,
+    ...menuCategories.gestion,
+    ...(isAdmin ? menuCategories.administracion : []),
   ];
 
   const handleNavigation = (path: string) => {
@@ -50,42 +67,73 @@ export default function Layout({ children }: LayoutProps) {
 
   const NavLinks = () => (
     <>
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = location.pathname === item.path;
-        return (
-          <Button
-            key={item.path}
-            variant={isActive ? "default" : "ghost"}
-            onClick={() => handleNavigation(item.path)}
-            className="w-full justify-start"
-          >
-            <Icon className="mr-2 h-4 w-4" />
-            {item.label}
-          </Button>
-        );
-      })}
+      <div className="mb-2">
+        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+          OPERACIONES
+        </p>
+        {menuCategories.operaciones.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Button
+              key={item.path}
+              variant={isActive ? "default" : "ghost"}
+              onClick={() => handleNavigation(item.path)}
+              className="w-full justify-start"
+            >
+              <Icon className="mr-2 h-4 w-4" />
+              {item.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      <div className="my-2 border-t" />
+
+      <div className="mb-2">
+        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+          GESTIÓN
+        </p>
+        {menuCategories.gestion.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
+            <Button
+              key={item.path}
+              variant={isActive ? "default" : "ghost"}
+              onClick={() => handleNavigation(item.path)}
+              className="w-full justify-start"
+            >
+              <Icon className="mr-2 h-4 w-4" />
+              {item.label}
+            </Button>
+          );
+        })}
+      </div>
+
       {isAdmin && (
         <>
           <div className="my-2 border-t" />
-          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
-            ADMINISTRACIÓN
-          </p>
-          {adminNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Button
-                key={item.path}
-                variant={isActive ? "default" : "ghost"}
-                onClick={() => handleNavigation(item.path)}
-                className="w-full justify-start"
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </Button>
-            );
-          })}
+          <div className="mb-2">
+            <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+              ADMINISTRACIÓN
+            </p>
+            {menuCategories.administracion.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Button
+                  key={item.path}
+                  variant={isActive ? "default" : "ghost"}
+                  onClick={() => handleNavigation(item.path)}
+                  className="w-full justify-start"
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </div>
         </>
       )}
     </>
@@ -123,53 +171,107 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActive ? "default" : "ghost"}
-                  onClick={() => navigate(item.path)}
-                  size="sm"
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {item.label}
-                </Button>
-              );
-            })}
-            {isAdmin && (
-              <>
-                <div className="h-6 w-px bg-border mx-2" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Administración
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Opciones de Administración</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {adminNavItems.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = location.pathname === item.path;
-                      return (
-                        <DropdownMenuItem
-                          key={item.path}
-                          onClick={() => navigate(item.path)}
-                          className={isActive ? "bg-muted" : ""}
-                        >
-                          <Icon className="mr-2 h-4 w-4" />
-                          {item.label}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
+            <Button
+              variant={location.pathname === "/" ? "default" : "ghost"}
+              onClick={() => navigate("/")}
+              size="sm"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Inicio
+            </Button>
+
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Operaciones</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                      {menuCategories.operaciones.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <li key={item.path}>
+                            <NavigationMenuLink asChild>
+                              <button
+                                onClick={() => navigate(item.path)}
+                                className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground w-full text-left ${
+                                  isActive ? "bg-accent" : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4" />
+                                  <div className="text-sm font-medium leading-none">{item.label}</div>
+                                </div>
+                              </button>
+                            </NavigationMenuLink>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Gestión</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4">
+                      {menuCategories.gestion.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <li key={item.path}>
+                            <NavigationMenuLink asChild>
+                              <button
+                                onClick={() => navigate(item.path)}
+                                className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground w-full text-left ${
+                                  isActive ? "bg-accent" : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4" />
+                                  <div className="text-sm font-medium leading-none">{item.label}</div>
+                                </div>
+                              </button>
+                            </NavigationMenuLink>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {isAdmin && (
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Administración</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                        {menuCategories.administracion.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.path;
+                          return (
+                            <li key={item.path}>
+                              <NavigationMenuLink asChild>
+                                <button
+                                  onClick={() => navigate(item.path)}
+                                  className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground w-full text-left ${
+                                    isActive ? "bg-accent" : ""
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Icon className="h-4 w-4" />
+                                    <div className="text-sm font-medium leading-none">{item.label}</div>
+                                  </div>
+                                </button>
+                              </NavigationMenuLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                )}
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
 
           <div className="flex items-center gap-2">
