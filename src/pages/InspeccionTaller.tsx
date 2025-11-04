@@ -8,13 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus } from "lucide-react";
+import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
+import { MultipleFileUpload } from "@/components/MultipleFileUpload";
+import { Camera as CapCamera, CameraResultType, CameraSource } from "@capacitor/camera";
+
+interface FileWithPreview {
+  file: File;
+  preview?: string;
+  type: 'imagen' | 'documento' | 'video';
+}
 
 interface EquipoEnTaller {
   id: string;
@@ -49,6 +57,7 @@ export default function InspeccionTaller() {
   const [descripcionDanos, setDescripcionDanos] = useState("");
   const [almacenDestino, setAlmacenDestino] = useState("");
   const [tecnico, setTecnico] = useState("");
+  const [archivos, setArchivos] = useState<FileWithPreview[]>([]);
   
   // Manual inspection states
   const [showManualInspeccionDialog, setShowManualInspeccionDialog] = useState(false);
@@ -186,8 +195,43 @@ export default function InspeccionTaller() {
     setAlmacenDestino("");
     setTecnico("");
     setCambiarEstado(esManual);
+    setArchivos([]);
     if (esManual) {
       setShowManualInspeccionDialog(false);
+    }
+  };
+
+  const tomarFoto = async () => {
+    try {
+      const image = await CapCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera
+      });
+
+      if (image.webPath) {
+        const response = await fetch(image.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `foto_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setArchivos(prev => [...prev, {
+            file,
+            preview: reader.result as string,
+            type: 'imagen'
+          }]);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error('Error al tomar foto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo tomar la foto",
+        variant: "destructive",
+      });
     }
   };
 
@@ -229,7 +273,7 @@ export default function InspeccionTaller() {
         tieneDanos ? `\n\n⚠️ DAÑOS ENCONTRADOS:\n${descripcionDanos}` : '\n\n✓ Sin daños encontrados'
       }`;
 
-      const { error: mantenimientoError } = await supabase
+      const { data: mantenimientoData, error: mantenimientoError } = await supabase
         .from('mantenimientos')
         .insert({
           equipo_id: selectedEquipo.id,
@@ -238,9 +282,40 @@ export default function InspeccionTaller() {
           tecnico: tecnico.trim() || null,
           descripcion: descripcionCompleta,
           fecha: new Date().toISOString().split('T')[0],
-        });
+        })
+        .select()
+        .single();
 
       if (mantenimientoError) throw mantenimientoError;
+
+      // Subir archivos si existen
+      if (archivos.length > 0 && mantenimientoData) {
+        for (const archivo of archivos) {
+          const fileExt = archivo.file.name.split('.').pop();
+          const fileName = `${mantenimientoData.id}_${Date.now()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('fotografias')
+            .upload(filePath, archivo.file);
+
+          if (uploadError) {
+            console.error('Error al subir archivo:', uploadError);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('fotografias')
+            .getPublicUrl(filePath);
+
+          await supabase.from('mantenimientos_archivos').insert({
+            mantenimiento_id: mantenimientoData.id,
+            archivo_url: publicUrl,
+            tipo_archivo: archivo.type,
+            nombre_archivo: archivo.file.name,
+          });
+        }
+      }
 
       // 2. Actualizar el equipo solo si es inspección manual con cambio de estado
       if (cambiarEstado && almacenDestino) {
@@ -476,6 +551,29 @@ export default function InspeccionTaller() {
                     value={observacionesInspeccion}
                     onChange={(e) => setObservacionesInspeccion(e.target.value)}
                     rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Fotografías y Videos</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={tomarFoto}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      Tomar Foto
+                    </Button>
+                  </div>
+                  <MultipleFileUpload
+                    files={archivos}
+                    onFilesChange={setArchivos}
+                    maxFiles={20}
+                    acceptImages={true}
+                    acceptDocuments={false}
+                    label="Archivos adicionales (videos e imágenes)"
                   />
                 </div>
 

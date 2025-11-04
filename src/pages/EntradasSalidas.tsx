@@ -23,7 +23,7 @@ import { EntradaSalidaDetailsDialog } from "@/components/EntradaSalidaDetailsDia
 interface FileWithPreview {
   file: File;
   preview?: string;
-  type: 'imagen' | 'documento';
+  type: 'imagen' | 'documento' | 'video';
 }
 
 interface EntradaSalida {

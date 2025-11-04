@@ -21,7 +21,7 @@ interface EquipoArchivo {
 interface FileWithPreview {
   file: File;
   preview?: string;
-  type: 'imagen' | 'documento';
+  type: 'imagen' | 'documento' | 'video';
 }
 
 interface EquipoArchivosTabProps {

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 interface FileWithPreview {
   file: File;
   preview?: string;
-  type: 'imagen' | 'documento';
+  type: 'imagen' | 'documento' | 'video';
 }
 
 interface MultipleFileUploadProps {
@@ -44,9 +44,10 @@ export function MultipleFileUpload({
     
     newFiles.forEach(file => {
       const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
       const fileWithPreview: FileWithPreview = {
         file,
-        type: isImage ? 'imagen' : 'documento'
+        type: isImage ? 'imagen' : (isVideo ? 'video' : 'documento')
       };
 
       if (isImage) {
@@ -74,6 +75,7 @@ export function MultipleFileUpload({
     const accepts = [];
     if (acceptImages) accepts.push('image/*');
     if (acceptDocuments) accepts.push('.pdf,.doc,.docx,.xls,.xlsx');
+    accepts.push('video/*');
     return accepts.join(',');
   };
 
@@ -98,6 +100,23 @@ export function MultipleFileUpload({
                     src={fileWithPreview.preview}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-24 object-cover rounded-md"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeFile(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : fileWithPreview.type === 'video' ? (
+                <div className="relative">
+                  <video
+                    src={URL.createObjectURL(fileWithPreview.file)}
+                    className="w-full h-24 object-cover rounded-md"
+                    controls
                   />
                   <Button
                     type="button"

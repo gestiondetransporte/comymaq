@@ -469,6 +469,33 @@ export type Database = {
           },
         ]
       }
+      mantenimientos_archivos: {
+        Row: {
+          archivo_url: string
+          created_at: string
+          id: string
+          mantenimiento_id: string
+          nombre_archivo: string | null
+          tipo_archivo: string
+        }
+        Insert: {
+          archivo_url: string
+          created_at?: string
+          id?: string
+          mantenimiento_id: string
+          nombre_archivo?: string | null
+          tipo_archivo: string
+        }
+        Update: {
+          archivo_url?: string
+          created_at?: string
+          id?: string
+          mantenimiento_id?: string
+          nombre_archivo?: string | null
+          tipo_archivo?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
