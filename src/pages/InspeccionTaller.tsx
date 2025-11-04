@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package } from "lucide-react";
+import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,17 +50,29 @@ export default function InspeccionTaller() {
   const [almacenDestino, setAlmacenDestino] = useState("");
   const [tecnico, setTecnico] = useState("");
   
+  // Manual inspection states
+  const [showManualInspeccionDialog, setShowManualInspeccionDialog] = useState(false);
+  const [todosEquipos, setTodosEquipos] = useState<EquipoEnTaller[]>([]);
+  const [searchManualEquipo, setSearchManualEquipo] = useState("");
+  const [filteredManualEquipos, setFilteredManualEquipos] = useState<EquipoEnTaller[]>([]);
+  const [cambiarEstado, setCambiarEstado] = useState(false);
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchEquiposEnTaller();
     fetchAlmacenes();
+    fetchTodosEquipos();
   }, []);
 
   useEffect(() => {
     filterEquipos();
   }, [searchQuery, equiposEnTaller]);
+
+  useEffect(() => {
+    filterManualEquipos();
+  }, [searchManualEquipo, todosEquipos]);
 
   const fetchAlmacenes = async () => {
     try {
@@ -117,6 +129,20 @@ export default function InspeccionTaller() {
     }
   };
 
+  const fetchTodosEquipos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipos')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
+        .order('numero_equipo', { ascending: true });
+
+      if (error) throw error;
+      setTodosEquipos((data || []).map(e => ({ ...e, fecha_entrada: null })));
+    } catch (error) {
+      console.error('Error fetching todos los equipos:', error);
+    }
+  };
+
   const filterEquipos = () => {
     let filtered = [...equiposEnTaller];
 
@@ -134,7 +160,24 @@ export default function InspeccionTaller() {
     setFilteredEquipos(filtered);
   };
 
-  const handleIniciarInspeccion = (equipo: EquipoEnTaller) => {
+  const filterManualEquipos = () => {
+    let filtered = [...todosEquipos];
+
+    if (searchManualEquipo.trim()) {
+      const query = searchManualEquipo.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.numero_equipo?.toLowerCase().includes(query) ||
+        e.descripcion?.toLowerCase().includes(query) ||
+        e.marca?.toLowerCase().includes(query) ||
+        e.modelo?.toLowerCase().includes(query) ||
+        e.serie?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredManualEquipos(filtered);
+  };
+
+  const handleIniciarInspeccion = (equipo: EquipoEnTaller, esManual = false) => {
     setSelectedEquipo(equipo);
     setShowInspeccionDialog(true);
     setObservacionesInspeccion("");
@@ -142,12 +185,16 @@ export default function InspeccionTaller() {
     setDescripcionDanos("");
     setAlmacenDestino("");
     setTecnico("");
+    setCambiarEstado(esManual);
+    if (esManual) {
+      setShowManualInspeccionDialog(false);
+    }
   };
 
   const handleLiberarEquipo = async () => {
     if (!selectedEquipo) return;
     
-    if (!almacenDestino) {
+    if (cambiarEstado && !almacenDestino) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -177,7 +224,8 @@ export default function InspeccionTaller() {
     setLoading(true);
     try {
       // 1. Registrar el mantenimiento de inspección
-      const descripcionCompleta = `INSPECCIÓN DE RECIBO - ${observacionesInspeccion}${
+      const tipoInspeccion = cambiarEstado ? 'INSPECCIÓN MANUAL' : 'INSPECCIÓN DE RECIBO';
+      const descripcionCompleta = `${tipoInspeccion} - ${observacionesInspeccion}${
         tieneDanos ? `\n\n⚠️ DAÑOS ENCONTRADOS:\n${descripcionDanos}` : '\n\n✓ Sin daños encontrados'
       }`;
 
@@ -194,33 +242,52 @@ export default function InspeccionTaller() {
 
       if (mantenimientoError) throw mantenimientoError;
 
-      // 2. Actualizar el equipo: estado a disponible y asignar almacén
-      const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
-      const { error: equipoError } = await supabase
-        .from('equipos')
-        .update({ 
-          estado: 'disponible',
-          ubicacion_actual: `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`,
-          almacen_id: almacenDestino
-        })
-        .eq('id', selectedEquipo.id);
+      // 2. Actualizar el equipo solo si es inspección manual con cambio de estado
+      if (cambiarEstado && almacenDestino) {
+        const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
+        const { error: equipoError } = await supabase
+          .from('equipos')
+          .update({ 
+            estado: 'disponible',
+            ubicacion_actual: `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`,
+            almacen_id: almacenDestino
+          })
+          .eq('id', selectedEquipo.id);
 
-      if (equipoError) throw equipoError;
+        if (equipoError) throw equipoError;
+      } else if (!cambiarEstado) {
+        // Inspección de recibo: siempre actualiza a disponible
+        const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
+        const { error: equipoError } = await supabase
+          .from('equipos')
+          .update({ 
+            estado: 'disponible',
+            ubicacion_actual: `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`,
+            almacen_id: almacenDestino
+          })
+          .eq('id', selectedEquipo.id);
+
+        if (equipoError) throw equipoError;
+      }
 
       toast({
-        title: "Equipo liberado",
-        description: `El equipo #${selectedEquipo.numero_equipo} ha sido inspeccionado y liberado a ${almacenSeleccionado?.nombre}`,
+        title: cambiarEstado ? "Inspección registrada" : "Equipo liberado",
+        description: cambiarEstado 
+          ? `Se ha registrado la inspección del equipo #${selectedEquipo.numero_equipo}`
+          : `El equipo #${selectedEquipo.numero_equipo} ha sido inspeccionado y liberado`,
       });
 
       setShowInspeccionDialog(false);
       setSelectedEquipo(null);
+      setCambiarEstado(false);
       fetchEquiposEnTaller();
+      fetchTodosEquipos();
     } catch (error) {
       console.error('Error liberando equipo:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo liberar el equipo",
+        description: "No se pudo completar la inspección",
       });
     } finally {
       setLoading(false);
@@ -261,10 +328,18 @@ export default function InspeccionTaller() {
       {/* Search */}
       <Card>
         <CardHeader>
-          <CardTitle>Equipos en Taller</CardTitle>
-          <CardDescription>
-            Equipos recibidos pendientes de inspección y liberación
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Equipos en Taller</CardTitle>
+              <CardDescription>
+                Equipos recibidos pendientes de inspección y liberación
+              </CardDescription>
+            </div>
+            <Button onClick={() => setShowManualInspeccionDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Inspección Manual
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-4">
@@ -429,21 +504,41 @@ export default function InspeccionTaller() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="almacen_destino">Almacén de Destino *</Label>
-                  <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el almacén donde se ubicará el equipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {almacenes.map((almacen) => (
-                        <SelectItem key={almacen.id} value={almacen.id}>
-                          {almacen.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {cambiarEstado && (
+                  <div className="space-y-2">
+                    <Label htmlFor="almacen_destino">Almacén de Destino (opcional)</Label>
+                    <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona el almacén si deseas cambiar ubicación" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {almacenes.map((almacen) => (
+                          <SelectItem key={almacen.id} value={almacen.id}>
+                            {almacen.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {!cambiarEstado && (
+                  <div className="space-y-2">
+                    <Label htmlFor="almacen_destino">Almacén de Destino *</Label>
+                    <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona el almacén donde se ubicará el equipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {almacenes.map((almacen) => (
+                          <SelectItem key={almacen.id} value={almacen.id}>
+                            {almacen.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -460,7 +555,100 @@ export default function InspeccionTaller() {
               onClick={handleLiberarEquipo}
               disabled={loading}
             >
-              {loading ? "Liberando..." : "Liberar Equipo a Inventario"}
+              {loading 
+                ? "Guardando..." 
+                : cambiarEstado 
+                  ? "Registrar Inspección" 
+                  : "Liberar Equipo a Inventario"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Selección de Equipo para Inspección Manual */}
+      <Dialog open={showManualInspeccionDialog} onOpenChange={setShowManualInspeccionDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Seleccionar Equipo para Inspección Manual</DialogTitle>
+            <DialogDescription>
+              Busca y selecciona el equipo que deseas inspeccionar
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por número, descripción, marca, modelo o serie..."
+                value={searchManualEquipo}
+                onChange={(e) => setSearchManualEquipo(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+
+            <div className="border rounded-lg max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Equipo</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Marca/Modelo</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Ubicación</TableHead>
+                    <TableHead className="text-right">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredManualEquipos.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No se encontraron equipos
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredManualEquipos.map((equipo) => (
+                      <TableRow key={equipo.id}>
+                        <TableCell className="font-medium">#{equipo.numero_equipo}</TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            <p className="font-medium">{equipo.descripcion}</p>
+                            <p className="text-sm text-muted-foreground">{equipo.tipo || 'Sin tipo'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p>{equipo.marca || 'N/A'}</p>
+                            <p className="text-muted-foreground">{equipo.modelo || 'N/A'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {equipo.estado || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{equipo.ubicacion_actual || 'N/A'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            onClick={() => handleIniciarInspeccion(equipo, true)}
+                          >
+                            Inspeccionar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowManualInspeccionDialog(false)}
+            >
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
