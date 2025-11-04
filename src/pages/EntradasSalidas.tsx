@@ -420,6 +420,19 @@ export default function EntradasSalidas() {
 
         if (error) throw error;
 
+        // Si es entrada, enviar equipo a taller para inspección
+        if (tipo === "entrada") {
+          const { error: updateError } = await supabase
+            .from('equipos')
+            .update({ 
+              ubicacion_actual: 'Taller - Pendiente de Inspección',
+              estado: 'en_inspeccion'
+            })
+            .eq('id', equipoData.id);
+
+          if (updateError) throw updateError;
+        }
+
         // Si es traspaso, actualizar el almacen_id del equipo
         if (tipo === "traspaso") {
           const { error: updateError } = await supabase
