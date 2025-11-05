@@ -12,13 +12,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon } from "lucide-react";
+import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { EntradaSalidaDetailsDialog } from "@/components/EntradaSalidaDetailsDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FileWithPreview {
   file: File;
@@ -94,8 +104,10 @@ export default function EntradasSalidas() {
   const [filtroFechaDesde, setFiltroFechaDesde] = useState<string>("");
   const [filtroFechaHasta, setFiltroFechaHasta] = useState<string>("");
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [movimientoToDelete, setMovimientoToDelete] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { isOnline } = useOffline();
 
   useEffect(() => {
@@ -524,6 +536,36 @@ export default function EntradasSalidas() {
       return format(new Date(date), 'dd/MMM/yyyy HH:mm', { locale: es });
     } catch {
       return 'N/A';
+    }
+  };
+
+  const handleDeleteMovimiento = async () => {
+    if (!movimientoToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('entradas_salidas')
+        .delete()
+        .eq('id', movimientoToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Registro eliminado",
+        description: "El movimiento ha sido eliminado exitosamente",
+      });
+
+      fetchMovimientos();
+    } catch (error) {
+      console.error('Error deleting movimiento:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el movimiento",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setMovimientoToDelete(null);
     }
   };
 
@@ -960,16 +1002,30 @@ export default function EntradasSalidas() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedMovimientoId(movimiento.id);
-                            setDetailsDialogOpen(true);
-                          }}
-                        >
-                          Ver Detalle
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMovimientoId(movimiento.id);
+                              setDetailsDialogOpen(true);
+                            }}
+                          >
+                            Ver Detalle
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setMovimientoToDelete(movimiento.id);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -985,6 +1041,24 @@ export default function EntradasSalidas() {
         onOpenChange={setDetailsDialogOpen}
         movimientoId={selectedMovimientoId}
       />
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el registro de entrada/salida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMovimiento}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
