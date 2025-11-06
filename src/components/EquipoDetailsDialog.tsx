@@ -424,8 +424,8 @@ export function EquipoDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
@@ -474,8 +474,8 @@ export function EquipoDetailsDialog({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 flex-shrink-0">
             <TabsTrigger value="detalles" className="text-xs md:text-sm">
               <Save className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
               <span className="hidden md:inline">Detalles</span>
@@ -500,7 +500,7 @@ export function EquipoDetailsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="detalles" className="space-y-4">
+          <TabsContent value="detalles" className="space-y-4 overflow-y-auto flex-1 mt-4">
             <form onSubmit={handleUpdateEquipo} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -747,7 +747,7 @@ export function EquipoDetailsDialog({
             </form>
           </TabsContent>
 
-          <TabsContent value="movimiento" className="space-y-4">
+          <TabsContent value="movimiento" className="space-y-4 overflow-y-auto flex-1 mt-4">
             <form onSubmit={handleRegistrarMovimiento} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -859,7 +859,7 @@ export function EquipoDetailsDialog({
             </form>
           </TabsContent>
 
-          <TabsContent value="mantenimiento" className="space-y-4">
+          <TabsContent value="mantenimiento" className="space-y-4 overflow-y-auto flex-1 mt-4">
             <form onSubmit={handleRegistrarMantenimiento} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -955,11 +955,11 @@ export function EquipoDetailsDialog({
             </form>
           </TabsContent>
 
-          <TabsContent value="archivos">
+          <TabsContent value="archivos" className="overflow-y-auto flex-1 mt-4">
             {equipo && <EquipoArchivosTab equipoId={equipo.id} />}
           </TabsContent>
 
-          <TabsContent value="qr">
+          <TabsContent value="qr" className="overflow-y-auto flex-1 mt-4">
             {equipo && (
               <EquipoQRCode
                 numeroEquipo={equipo.numero_equipo}
