@@ -646,16 +646,16 @@ export function EquipoDetailsDialog({
                 <div className="space-y-2">
                   <Label htmlFor="almacen">Almacén</Label>
                   <Select
-                    value={formData.almacen_id || ""}
+                    value={formData.almacen_id || "none"}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, almacen_id: value || null })
+                      setFormData({ ...formData, almacen_id: value === "none" ? null : value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar almacén..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin asignar</SelectItem>
+                      <SelectItem value="none">Sin asignar</SelectItem>
                       {almacenes.map((almacen) => (
                         <SelectItem key={almacen.id} value={almacen.id}>
                           {almacen.nombre}
