@@ -44,6 +44,7 @@ export default function Inventario() {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [filteredEquipos, setFilteredEquipos] = useState<Equipo[]>([]);
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
+  const [tiposNegocio, setTiposNegocio] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("TODOS");
@@ -169,6 +170,17 @@ export default function Inventario() {
     }));
 
     setEquipos(equiposWithContratos);
+    
+    // Extract unique tipos de negocio
+    const uniqueTiposNegocio = Array.from(
+      new Set(
+        equiposWithContratos
+          .map(e => e.tipo_negocio)
+          .filter(tipo => tipo !== null && tipo !== '')
+      )
+    ).sort();
+    setTiposNegocio(uniqueTiposNegocio);
+    
     setLoading(false);
   };
 
@@ -353,20 +365,16 @@ export default function Inventario() {
                 >
                   Todos
                 </Button>
-                <Button
-                  variant={tipoNegocioFilter === "RENTA" ? "default" : "outline"}
-                  onClick={() => setTipoNegocioFilter("RENTA")}
-                  size="sm"
-                >
-                  Renta
-                </Button>
-                <Button
-                  variant={tipoNegocioFilter === "VENTA" ? "default" : "outline"}
-                  onClick={() => setTipoNegocioFilter("VENTA")}
-                  size="sm"
-                >
-                  Venta
-                </Button>
+                {tiposNegocio.map((tipo) => (
+                  <Button
+                    key={tipo}
+                    variant={tipoNegocioFilter === tipo ? "default" : "outline"}
+                    onClick={() => setTipoNegocioFilter(tipo)}
+                    size="sm"
+                  >
+                    {tipo}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
