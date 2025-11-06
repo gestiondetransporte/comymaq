@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Wrench, Loader2, CheckCircle2, MapPin } from "lucide-react";
+import { Search, Wrench, Loader2, CheckCircle2, MapPin, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,14 @@ interface Equipo {
   modelo: string | null;
   serie: string | null;
   tipo: string | null;
+  tipo_negocio: string | null;
+  categoria: string | null;
+  clase: string | null;
+  anio: number | null;
+  proveedor: string | null;
+  precio_lista: number | null;
+  ubicacion_actual: string | null;
+  estado: string | null;
 }
 
 interface Mantenimiento {
@@ -34,11 +42,15 @@ interface Mantenimiento {
   tecnico: string | null;
   descripcion: string;
   proximo_servicio_horas: number | null;
+  id_interno: string | null;
+  tipo_negocio: string | null;
+  snapshot_equipo: any | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
     marca: string | null;
     modelo: string | null;
+    tipo_negocio: string | null;
   } | null;
   isProgramado?: boolean;
   horas_contrato?: number;
@@ -52,6 +64,15 @@ export default function Mantenimiento() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
+  
+  // Advanced filters
+  const [tipoServicioFilter, setTipoServicioFilter] = useState<string>("TODOS");
+  const [tecnicoFilter, setTecnicoFilter] = useState<string>("TODOS");
+  const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
+  const [fechaInicio, setFechaInicio] = useState<string>("");
+  const [fechaFin, setFechaFin] = useState<string>("");
+  const [tecnicos, setTecnicos] = useState<string[]>([]);
+  const [tiposNegocio, setTiposNegocio] = useState<string[]>([]);
   
   // Form fields
   const [equipoSeleccionadoId, setEquipoSeleccionadoId] = useState("");
@@ -67,6 +88,8 @@ export default function Mantenimiento() {
   const [showUbicacionDialog, setShowUbicacionDialog] = useState(false);
   const [selectedUbicacion, setSelectedUbicacion] = useState<{obra: string, ubicacion: string} | null>(null);
   const [proximoServicioManual, setProximoServicioManual] = useState<number>(0);
+  const [equiposProximosServicio, setEquiposProximosServicio] = useState<any[]>([]);
+  const [showAlertasServicio, setShowAlertasServicio] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -74,17 +97,18 @@ export default function Mantenimiento() {
   useEffect(() => {
     fetchMantenimientos();
     fetchEquipos();
+    checkProximosServicios();
   }, []);
 
   useEffect(() => {
     filterMantenimientos();
-  }, [searchQuery, mantenimientos]);
+  }, [searchQuery, mantenimientos, tipoServicioFilter, tecnicoFilter, tipoNegocioFilter, fechaInicio, fechaFin]);
 
   const fetchEquipos = async () => {
     try {
       const { data, error } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, tipo_negocio, categoria, clase, anio, proveedor, precio_lista, ubicacion_actual, estado')
         .order('numero_equipo', { ascending: true });
 
       if (error) throw error;
@@ -96,6 +120,70 @@ export default function Mantenimiento() {
         title: "Error",
         description: "No se pudieron cargar los equipos",
       });
+    }
+  };
+
+  const checkProximosServicios = async () => {
+    try {
+      // Obtener equipos con contratos activos y sus últimos mantenimientos
+      const { data: contratosData, error } = await supabase
+        .from('contratos')
+        .select(`
+          id,
+          equipo_id,
+          horas_trabajo,
+          obra,
+          equipos (
+            numero_equipo,
+            descripcion,
+            tipo_negocio
+          )
+        `)
+        .eq('status', 'activo');
+
+      if (error) throw error;
+
+      // Obtener últimos mantenimientos de cada equipo
+      const { data: mantenimientosData } = await supabase
+        .from('mantenimientos')
+        .select('equipo_id, proximo_servicio_horas, fecha')
+        .order('fecha', { ascending: false });
+
+      // Buscar equipos que están cerca de su próximo servicio (± 50 horas)
+      const alertas: any[] = [];
+      
+      contratosData?.forEach(contrato => {
+        const ultimoMantenimiento = mantenimientosData?.find(
+          m => m.equipo_id === contrato.equipo_id && m.proximo_servicio_horas
+        );
+        
+        if (ultimoMantenimiento && ultimoMantenimiento.proximo_servicio_horas) {
+          const horasActuales = contrato.horas_trabajo;
+          const horasProximoServicio = ultimoMantenimiento.proximo_servicio_horas;
+          const diferencia = horasProximoServicio - horasActuales;
+          
+          // Alerta si quedan 50 horas o menos, o si ya se pasó
+          if (diferencia <= 50 && diferencia >= -50) {
+            alertas.push({
+              equipo_id: contrato.equipo_id,
+              numero_equipo: contrato.equipos?.numero_equipo,
+              descripcion: contrato.equipos?.descripcion,
+              tipo_negocio: contrato.equipos?.tipo_negocio,
+              obra: contrato.obra,
+              horas_actuales: horasActuales,
+              horas_proximo_servicio: horasProximoServicio,
+              diferencia: diferencia,
+            });
+          }
+        }
+      });
+      
+      setEquiposProximosServicio(alertas);
+      if (alertas.length > 0) {
+        setShowAlertasServicio(true);
+      }
+    } catch (error) {
+      console.error('Error checking proximos servicios:', error);
     }
   };
 
@@ -112,7 +200,8 @@ export default function Mantenimiento() {
             numero_equipo,
             descripcion,
             marca,
-            modelo
+            modelo,
+            tipo_negocio
           )
         `)
         .order('fecha', { ascending: false });
@@ -164,11 +253,15 @@ export default function Mantenimiento() {
           tecnico: null,
           descripcion: `Mantenimiento preventivo requerido - ${contrato.horas_trabajo} horas acumuladas`,
           proximo_servicio_horas: null,
+          id_interno: null,
+          tipo_negocio: null,
+          snapshot_equipo: null,
           equipos: contrato.equipos ? {
             numero_equipo: contrato.equipos.numero_equipo,
             descripcion: contrato.equipos.descripcion,
             marca: contrato.equipos.marca,
             modelo: contrato.equipos.modelo,
+            tipo_negocio: null,
           } : null,
           isProgramado: true,
           horas_contrato: contrato.horas_trabajo,
@@ -179,6 +272,25 @@ export default function Mantenimiento() {
       // Combinar mantenimientos reales con programados
       const todosMantenimientos = [...mantenimientosProgramados, ...(mantenimientosData || [])];
       setMantenimientos(todosMantenimientos);
+      
+      // Extraer técnicos y tipos de negocio únicos para filtros
+      const uniqueTecnicos = Array.from(
+        new Set(
+          (mantenimientosData || [])
+            .map(m => m.tecnico)
+            .filter(t => t !== null && t !== '')
+        )
+      ).sort();
+      setTecnicos(uniqueTecnicos as string[]);
+      
+      const uniqueTiposNegocio = Array.from(
+        new Set(
+          (mantenimientosData || [])
+            .map(m => m.tipo_negocio)
+            .filter(t => t !== null && t !== '')
+        )
+      ).sort();
+      setTiposNegocio(uniqueTiposNegocio as string[]);
     } catch (error) {
       console.error('Error fetching mantenimientos:', error);
       toast({
@@ -215,6 +327,29 @@ export default function Mantenimiento() {
     try {
       const equipoSeleccionado = equipos.find(e => e.id === equipoSeleccionadoId);
       
+      if (!equipoSeleccionado) {
+        throw new Error("Equipo no encontrado");
+      }
+      
+      // Crear snapshot completo del equipo
+      const snapshot = {
+        numero_equipo: equipoSeleccionado.numero_equipo,
+        descripcion: equipoSeleccionado.descripcion,
+        marca: equipoSeleccionado.marca,
+        modelo: equipoSeleccionado.modelo,
+        serie: equipoSeleccionado.serie,
+        tipo: equipoSeleccionado.tipo,
+        tipo_negocio: equipoSeleccionado.tipo_negocio,
+        categoria: equipoSeleccionado.categoria,
+        clase: equipoSeleccionado.clase,
+        anio: equipoSeleccionado.anio,
+        proveedor: equipoSeleccionado.proveedor,
+        precio_lista: equipoSeleccionado.precio_lista,
+        ubicacion_actual: equipoSeleccionado.ubicacion_actual,
+        estado: equipoSeleccionado.estado,
+        fecha_snapshot: new Date().toISOString(),
+      };
+      
       const mantenimiento = {
         equipo_id: equipoSeleccionadoId,
         usuario_id: user?.id,
@@ -224,6 +359,8 @@ export default function Mantenimiento() {
         descripcion: descripcion.trim(),
         fecha: new Date().toISOString().split('T')[0],
         proximo_servicio_horas: proximoServicioHoras || null,
+        tipo_negocio: equipoSeleccionado.tipo_negocio,
+        snapshot_equipo: snapshot,
       };
 
       const { error } = await supabase
@@ -262,6 +399,7 @@ export default function Mantenimiento() {
   const filterMantenimientos = () => {
     let filtered = [...mantenimientos];
 
+    // Filtro por búsqueda de texto
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(m =>
@@ -269,8 +407,34 @@ export default function Mantenimiento() {
         m.equipos?.descripcion?.toLowerCase().includes(query) ||
         m.tipo_servicio?.toLowerCase().includes(query) ||
         m.tecnico?.toLowerCase().includes(query) ||
-        m.orden_servicio?.toLowerCase().includes(query)
+        m.orden_servicio?.toLowerCase().includes(query) ||
+        m.id_interno?.toLowerCase().includes(query)
       );
+    }
+
+    // Filtro por tipo de servicio
+    if (tipoServicioFilter !== "TODOS") {
+      filtered = filtered.filter(m => 
+        m.isProgramado ? tipoServicioFilter === "programado" : m.tipo_servicio === tipoServicioFilter
+      );
+    }
+
+    // Filtro por técnico
+    if (tecnicoFilter !== "TODOS") {
+      filtered = filtered.filter(m => m.tecnico === tecnicoFilter);
+    }
+
+    // Filtro por tipo de negocio
+    if (tipoNegocioFilter !== "TODOS") {
+      filtered = filtered.filter(m => m.tipo_negocio === tipoNegocioFilter);
+    }
+
+    // Filtro por rango de fechas
+    if (fechaInicio) {
+      filtered = filtered.filter(m => m.fecha >= fechaInicio);
+    }
+    if (fechaFin) {
+      filtered = filtered.filter(m => m.fecha <= fechaFin);
     }
 
     setFilteredMantenimientos(filtered);
@@ -383,6 +547,83 @@ export default function Mantenimiento() {
         <p className="text-muted-foreground">Registra y consulta el mantenimiento y reparaciones del equipo</p>
       </div>
 
+      {/* Alertas de Próximos Servicios */}
+      {equiposProximosServicio.length > 0 && (
+        <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-yellow-600" />
+                <CardTitle className="text-yellow-900 dark:text-yellow-100">
+                  Alertas de Mantenimiento
+                </CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAlertasServicio(!showAlertasServicio)}
+              >
+                {showAlertasServicio ? 'Ocultar' : 'Mostrar'} ({equiposProximosServicio.length})
+              </Button>
+            </div>
+            <CardDescription className="text-yellow-800 dark:text-yellow-200">
+              Equipos que requieren o están cerca de su próximo servicio
+            </CardDescription>
+          </CardHeader>
+          {showAlertasServicio && (
+            <CardContent>
+              <div className="space-y-2">
+                {equiposProximosServicio.map((equipo) => (
+                  <div
+                    key={equipo.equipo_id}
+                    className={`p-3 rounded-lg border ${
+                      equipo.diferencia < 0
+                        ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900'
+                        : 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold">
+                            #{equipo.numero_equipo}
+                          </span>
+                          {equipo.tipo_negocio && (
+                            <Badge variant="outline" className="text-xs">
+                              {equipo.tipo_negocio}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium">{equipo.descripcion}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Obra: {equipo.obra || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Horas actuales</p>
+                        <p className="text-lg font-bold">{equipo.horas_actuales}h</p>
+                        <p className="text-xs text-muted-foreground">
+                          Próximo servicio: {equipo.horas_proximo_servicio}h
+                        </p>
+                        {equipo.diferencia < 0 ? (
+                          <Badge variant="destructive" className="mt-1">
+                            Vencido ({Math.abs(equipo.diferencia)}h)
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="mt-1">
+                            Faltan {equipo.diferencia}h
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Registrar Mantenimiento o Reparación</CardTitle>
@@ -431,9 +672,15 @@ export default function Mantenimiento() {
                         <span className="text-muted-foreground">Modelo:</span>
                         <span className="ml-2 font-medium">{equipoSeleccionado.modelo || 'N/A'}</span>
                       </div>
-                      <div className="col-span-2">
+                      <div>
                         <span className="text-muted-foreground">Serie:</span>
                         <span className="ml-2 font-medium">{equipoSeleccionado.serie || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Tipo de Negocio:</span>
+                        <span className="ml-2 font-medium">
+                          <Badge variant="outline">{equipoSeleccionado.tipo_negocio || 'N/A'}</Badge>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -526,21 +773,119 @@ export default function Mantenimiento() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle>Historial de Mantenimientos</CardTitle>
-              <CardDescription>
-                {filteredMantenimientos.length} de {mantenimientos.length} registros
-              </CardDescription>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle>Historial de Mantenimientos</CardTitle>
+                <CardDescription>
+                  {filteredMantenimientos.length} de {mantenimientos.length} registros
+                </CardDescription>
+              </div>
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por equipo, técnico, ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por equipo, técnico, tipo..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+            
+            {/* Filtros avanzados */}
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium">Filtros Avanzados</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Filtro por tipo de servicio */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Tipo de Servicio</Label>
+                  <Select value={tipoServicioFilter} onValueChange={setTipoServicioFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODOS">Todos</SelectItem>
+                      <SelectItem value="preventivo">Preventivo</SelectItem>
+                      <SelectItem value="correctivo">Correctivo</SelectItem>
+                      <SelectItem value="revision">Revisión</SelectItem>
+                      <SelectItem value="reparacion">Reparación</SelectItem>
+                      <SelectItem value="programado">Programado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Filtro por técnico */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Técnico</Label>
+                  <Select value={tecnicoFilter} onValueChange={setTecnicoFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODOS">Todos</SelectItem>
+                      {tecnicos.map((tec) => (
+                        <SelectItem key={tec} value={tec}>{tec}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Filtro por tipo de negocio */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Tipo de Negocio</Label>
+                  <Select value={tipoNegocioFilter} onValueChange={setTipoNegocioFilter}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODOS">Todos</SelectItem>
+                      {tiposNegocio.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              {/* Filtros por fecha */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">Fecha Inicio</Label>
+                  <Input
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Fecha Fin</Label>
+                  <Input
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+              
+              {/* Botón para limpiar filtros */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTipoServicioFilter("TODOS");
+                  setTecnicoFilter("TODOS");
+                  setTipoNegocioFilter("TODOS");
+                  setFechaInicio("");
+                  setFechaFin("");
+                  setSearchQuery("");
+                }}
+                className="w-full md:w-auto"
+              >
+                Limpiar Filtros
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -559,9 +904,11 @@ export default function Mantenimiento() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>ID Interno</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead>N° Equipo</TableHead>
                     <TableHead>Equipo</TableHead>
+                    <TableHead>Tipo Negocio</TableHead>
                     <TableHead>Tipo Servicio</TableHead>
                     <TableHead>Obra</TableHead>
                     <TableHead>Orden</TableHead>
@@ -574,17 +921,30 @@ export default function Mantenimiento() {
                 <TableBody>
                   {filteredMantenimientos.map((mantenimiento) => (
                     <TableRow key={mantenimiento.id} className={mantenimiento.isProgramado ? "bg-yellow-500/5" : ""}>
+                      <TableCell className="font-mono text-xs">
+                        {mantenimiento.id_interno || (mantenimiento.isProgramado ? 'PROGRAMADO' : 'N/A')}
+                      </TableCell>
                       <TableCell>{formatDate(mantenimiento.fecha)}</TableCell>
                       <TableCell className="font-medium">
-                        {mantenimiento.equipos?.numero_equipo || 'N/A'}
+                        {mantenimiento.equipos?.numero_equipo || mantenimiento.snapshot_equipo?.numero_equipo || 'N/A'}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <p className="font-medium">{mantenimiento.equipos?.descripcion || 'N/A'}</p>
+                          <p className="font-medium">
+                            {mantenimiento.equipos?.descripcion || mantenimiento.snapshot_equipo?.descripcion || 'N/A'}
+                          </p>
                           <p className="text-muted-foreground text-xs">
-                            {mantenimiento.equipos?.marca} {mantenimiento.equipos?.modelo}
+                            {mantenimiento.equipos?.marca || mantenimiento.snapshot_equipo?.marca}{' '}
+                            {mantenimiento.equipos?.modelo || mantenimiento.snapshot_equipo?.modelo}
                           </p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {mantenimiento.tipo_negocio || mantenimiento.equipos?.tipo_negocio || mantenimiento.snapshot_equipo?.tipo_negocio ? (
+                          <Badge variant="outline" className="text-xs">
+                            {mantenimiento.tipo_negocio || mantenimiento.equipos?.tipo_negocio || mantenimiento.snapshot_equipo?.tipo_negocio}
+                          </Badge>
+                        ) : 'N/A'}
                       </TableCell>
                       <TableCell>
                         {getTipoServicioBadge(mantenimiento.tipo_servicio, mantenimiento.isProgramado, mantenimiento.horas_contrato)}

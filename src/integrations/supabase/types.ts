@@ -427,9 +427,12 @@ export type Database = {
           fecha: string
           firma_aceptacion_url: string | null
           id: string
+          id_interno: string | null
           orden_servicio: string | null
           proximo_servicio_horas: number | null
+          snapshot_equipo: Json | null
           tecnico: string | null
+          tipo_negocio: string | null
           tipo_servicio: string
           usuario_id: string | null
         }
@@ -440,9 +443,12 @@ export type Database = {
           fecha?: string
           firma_aceptacion_url?: string | null
           id?: string
+          id_interno?: string | null
           orden_servicio?: string | null
           proximo_servicio_horas?: number | null
+          snapshot_equipo?: Json | null
           tecnico?: string | null
+          tipo_negocio?: string | null
           tipo_servicio: string
           usuario_id?: string | null
         }
@@ -453,9 +459,12 @@ export type Database = {
           fecha?: string
           firma_aceptacion_url?: string | null
           id?: string
+          id_interno?: string | null
           orden_servicio?: string | null
           proximo_servicio_horas?: number | null
+          snapshot_equipo?: Json | null
           tecnico?: string | null
+          tipo_negocio?: string | null
           tipo_servicio?: string
           usuario_id?: string | null
         }
@@ -550,6 +559,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_mantenimiento_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
