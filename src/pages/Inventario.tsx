@@ -29,6 +29,7 @@ interface Equipo {
   categoria: string | null;
   clase: string | null;
   almacen_id: string | null;
+  tipo_negocio: string | null;
   almacenes?: Almacen | null;
   contrato_activo?: {
     id: string;
@@ -48,6 +49,7 @@ export default function Inventario() {
   const [typeFilter, setTypeFilter] = useState<string>("TODOS");
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
   const [almacenFilter, setAlmacenFilter] = useState<string>("TODOS");
+  const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
@@ -61,7 +63,7 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
@@ -113,6 +115,7 @@ export default function Inventario() {
         categoria,
         clase,
         almacen_id,
+        tipo_negocio,
         almacenes (
           id,
           nombre,
@@ -191,6 +194,11 @@ export default function Inventario() {
       } else {
         filtered = filtered.filter(e => e.almacen_id === almacenFilter);
       }
+    }
+
+    // Filter by tipo de negocio
+    if (tipoNegocioFilter !== "TODOS") {
+      filtered = filtered.filter(e => e.tipo_negocio === tipoNegocioFilter);
     }
 
     // Filter by search query
@@ -333,6 +341,32 @@ export default function Inventario() {
                     {almacen.nombre}
                   </Button>
                 ))}
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label className="mb-2 block text-sm font-medium">Filtrar por Tipo de Negocio</Label>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={tipoNegocioFilter === "TODOS" ? "default" : "outline"}
+                  onClick={() => setTipoNegocioFilter("TODOS")}
+                  size="sm"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={tipoNegocioFilter === "RENTA" ? "default" : "outline"}
+                  onClick={() => setTipoNegocioFilter("RENTA")}
+                  size="sm"
+                >
+                  Renta
+                </Button>
+                <Button
+                  variant={tipoNegocioFilter === "VENTA" ? "default" : "outline"}
+                  onClick={() => setTipoNegocioFilter("VENTA")}
+                  size="sm"
+                >
+                  Venta
+                </Button>
               </div>
             </div>
           </div>
