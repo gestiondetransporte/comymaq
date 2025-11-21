@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, QrCode } from "lucide-react";
+import { Search, Eye, QrCode, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
+import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
 
 interface Almacen {
   id: string;
@@ -53,6 +54,7 @@ export default function Inventario() {
   const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -252,11 +254,17 @@ export default function Inventario() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Inventario de Equipos</h1>
-        <p className="text-muted-foreground">
-          Total de equipos: {filteredEquipos.length} de {equipos.length}
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Inventario de Equipos</h1>
+          <p className="text-muted-foreground">
+            Total de equipos: {filteredEquipos.length} de {equipos.length}
+          </p>
+        </div>
+        <Button onClick={() => setAddDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar Equipo
+        </Button>
       </div>
 
       <Card>
@@ -482,6 +490,12 @@ export default function Inventario() {
         onOpenChange={setDialogOpen}
         onUpdate={fetchEquipos}
         initialTab={initialTab}
+      />
+
+      <AgregarEquipoDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSuccess={fetchEquipos}
       />
     </div>
   );
