@@ -3,12 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Download, Search, Calculator } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { FileText, Download, Calculator, History, RefreshCw } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,10 +37,24 @@ interface ModeloConfig {
   foto_url: string | null;
 }
 
+interface CotizacionHistorial {
+  id: string;
+  cliente_nombre: string;
+  equipo_descripcion: string;
+  equipo_modelo: string | null;
+  dias_renta: number;
+  subtotal: number;
+  total_con_iva: number;
+  vendedor: string | null;
+  created_at: string;
+}
+
 export default function Cotizaciones() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
+  const [historial, setHistorial] = useState<CotizacionHistorial[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
   
   // Form state
   const [selectedClienteId, setSelectedClienteId] = useState('');
@@ -58,11 +74,13 @@ export default function Cotizaciones() {
   
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchClientes();
     fetchEquipos();
     fetchModelosConfig();
+    fetchHistorial();
   }, []);
 
   const fetchClientes = async () => {
@@ -86,6 +104,59 @@ export default function Cotizaciones() {
       .from('modelos_configuracion')
       .select('modelo, precio_lista, foto_url');
     if (!error && data) setModelosConfig(data);
+  };
+
+  const fetchHistorial = async () => {
+    setLoadingHistorial(true);
+    try {
+      const { data, error } = await supabase
+        .from('cotizaciones')
+        .select('id, cliente_nombre, equipo_descripcion, equipo_modelo, dias_renta, subtotal, total_con_iva, vendedor, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (!error && data) setHistorial(data);
+    } catch (error) {
+      console.error('Error fetching historial:', error);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const saveCotizacion = async () => {
+    if (!selectedCliente || !selectedEquipo || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('cotizaciones')
+        .insert({
+          cliente_id: selectedClienteId,
+          equipo_id: selectedEquipoId,
+          created_by: user.id,
+          cliente_nombre: selectedCliente.nombre,
+          atencion,
+          telefono,
+          correo,
+          equipo_descripcion: selectedEquipo.descripcion,
+          equipo_modelo: selectedEquipo.modelo,
+          equipo_marca: selectedEquipo.marca,
+          dias_renta: dias,
+          precio_base: precioBase,
+          entrega_recoleccion: entregaRecoleccion,
+          seguro_percent: seguroPercent,
+          subtotal: subtotal,
+          total_con_iva: subtotal * 1.16,
+          vendedor,
+          vendedor_correo: vendedorCorreo,
+          vendedor_telefono: vendedorTelefono,
+        });
+
+      if (error) throw error;
+      
+      fetchHistorial(); // Refresh history
+    } catch (error: any) {
+      console.error('Error saving cotizacion:', error);
+    }
   };
 
   const handleClienteChange = (clienteId: string) => {
@@ -350,6 +421,9 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       const fileName = `Cotizacion_${selectedCliente.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
+      // Save to database
+      await saveCotizacion();
+
       toast({ title: "PDF generado", description: `Cotización guardada como ${fileName}` });
     } catch (error: any) {
       console.error('Error generating PDF:', error);
@@ -357,6 +431,16 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDateShort = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -371,8 +455,21 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Form */}
+      <Tabs defaultValue="nueva" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="nueva" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Nueva Cotización
+          </TabsTrigger>
+          <TabsTrigger value="historial" className="gap-2">
+            <History className="h-4 w-4" />
+            Historial ({historial.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="nueva">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Form */}
         <Card>
           <CardHeader>
             <CardTitle>Datos de la Cotización</CardTitle>
@@ -586,6 +683,73 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
           </CardContent>
         </Card>
       </div>
+    </TabsContent>
+
+    <TabsContent value="historial">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historial de Cotizaciones
+            </CardTitle>
+            <CardDescription>Últimas 50 cotizaciones generadas</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchHistorial} disabled={loadingHistorial}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loadingHistorial ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loadingHistorial ? (
+            <div className="text-center py-8 text-muted-foreground">Cargando historial...</div>
+          ) : historial.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay cotizaciones en el historial</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Equipo</TableHead>
+                  <TableHead>Modelo</TableHead>
+                  <TableHead className="text-center">Días</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Vendedor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historial.map((cot) => (
+                  <TableRow key={cot.id}>
+                    <TableCell className="text-sm">
+                      {formatDateShort(cot.created_at)}
+                    </TableCell>
+                    <TableCell className="font-medium">{cot.cliente_nombre}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={cot.equipo_descripcion}>
+                      {cot.equipo_descripcion}
+                    </TableCell>
+                    <TableCell>
+                      {cot.equipo_modelo && <Badge variant="outline">{cot.equipo_modelo}</Badge>}
+                    </TableCell>
+                    <TableCell className="text-center">{cot.dias_renta}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(cot.total_con_iva)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {cot.vendedor?.split(' ').slice(0, 2).join(' ') || '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+      </Tabs>
     </div>
   );
 }
