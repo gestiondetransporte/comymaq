@@ -76,6 +76,7 @@ export function EquipoDetailsDialog({
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState<Partial<Equipo>>({});
   const [loading, setLoading] = useState(false);
+  const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
   
   // Entrada/Salida form
   const [movimientoTipo, setMovimientoTipo] = useState<"entrada" | "salida">("salida");
@@ -114,6 +115,7 @@ export function EquipoDetailsDialog({
     if (equipo) {
       setFormData(equipo);
       fetchMantenimientoInfo();
+      fetchModeloFoto();
     }
   }, [equipo]);
 
@@ -125,6 +127,29 @@ export function EquipoDetailsDialog({
       fetchAlmacenes();
     }
   }, [open, initialTab]);
+
+  const fetchModeloFoto = async () => {
+    if (!equipo?.modelo) {
+      setModeloFotoUrl(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('modelos_configuracion')
+        .select('foto_url')
+        .eq('modelo', equipo.modelo.toUpperCase())
+        .single();
+
+      if (!error && data?.foto_url) {
+        setModeloFotoUrl(data.foto_url);
+      } else {
+        setModeloFotoUrl(null);
+      }
+    } catch (error) {
+      setModeloFotoUrl(null);
+    }
+  };
 
   const fetchClientes = async () => {
     try {
@@ -426,30 +451,52 @@ export function EquipoDetailsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <DialogTitle>Equipo #{equipo.numero_equipo}</DialogTitle>
-              <DialogDescription>
-                {equipo.descripcion}
-              </DialogDescription>
-              
-              {/* Maintenance Alert */}
-              {mantenimientoInfo && mantenimientoInfo.enRenta && 
-               mantenimientoInfo.horasActuales >= mantenimientoInfo.proximoMantenimiento && (
-                <div className="mt-2">
-                  <Badge variant="destructive" className="gap-1">
-                    <Wrench className="h-3 w-3" />
-                    Mantenimiento preventivo requerido a las {mantenimientoInfo.proximoMantenimiento} horas
-                  </Badge>
+          <div className="flex items-start gap-4">
+            {/* Model Photo */}
+            {modeloFotoUrl && (
+              <div className="flex-shrink-0">
+                <img 
+                  src={modeloFotoUrl} 
+                  alt={`Modelo ${equipo.modelo}`}
+                  className="w-20 h-20 object-cover rounded-lg border shadow-sm"
+                />
+              </div>
+            )}
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="flex items-center gap-2">
+                    Equipo #{equipo.numero_equipo}
+                    {equipo.modelo && (
+                      <Badge variant="outline" className="font-normal">
+                        {equipo.modelo}
+                      </Badge>
+                    )}
+                  </DialogTitle>
+                  <DialogDescription className="truncate">
+                    {equipo.descripcion}
+                  </DialogDescription>
+                  
+                  {/* Maintenance Alert */}
+                  {mantenimientoInfo && mantenimientoInfo.enRenta && 
+                   mantenimientoInfo.horasActuales >= mantenimientoInfo.proximoMantenimiento && (
+                    <div className="mt-2">
+                      <Badge variant="destructive" className="gap-1">
+                        <Wrench className="h-3 w-3" />
+                        Mantenimiento preventivo requerido a las {mantenimientoInfo.proximoMantenimiento} horas
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {mantenimientoInfo && mantenimientoInfo.enRenta && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Horas actuales: {mantenimientoInfo.horasActuales} | 
+                      Próximo mantenimiento: {mantenimientoInfo.proximoMantenimiento} horas
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {mantenimientoInfo && mantenimientoInfo.enRenta && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Horas actuales: {mantenimientoInfo.horasActuales} | 
-                  Próximo mantenimiento: {mantenimientoInfo.proximoMantenimiento} horas
-                </div>
-              )}
+              </div>
             </div>
             <div className="flex gap-2">
               <Button
