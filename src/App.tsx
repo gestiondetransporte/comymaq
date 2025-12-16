@@ -19,6 +19,7 @@ import AdminUsuarios from "./pages/AdminUsuarios";
 import Configuracion from "./pages/Configuracion";
 import Clientes from "./pages/Clientes";
 import ReporteInventario from "./pages/ReporteInventario";
+import Cotizaciones from "./pages/Cotizaciones";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -147,6 +148,14 @@ function AppRoutes() {
           <AdminRoute>
             <ReporteInventario />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/cotizaciones"
+        element={
+          <ProtectedRoute>
+            <Cotizaciones />
+          </ProtectedRoute>
         }
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
