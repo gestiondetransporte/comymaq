@@ -151,6 +151,93 @@ export type Database = {
           },
         ]
       }
+      cotizaciones: {
+        Row: {
+          atencion: string | null
+          cliente_id: string | null
+          cliente_nombre: string
+          correo: string | null
+          created_at: string
+          created_by: string | null
+          dias_renta: number
+          entrega_recoleccion: number | null
+          equipo_descripcion: string
+          equipo_id: string | null
+          equipo_marca: string | null
+          equipo_modelo: string | null
+          id: string
+          precio_base: number
+          seguro_percent: number | null
+          subtotal: number
+          telefono: string | null
+          total_con_iva: number
+          vendedor: string | null
+          vendedor_correo: string | null
+          vendedor_telefono: string | null
+        }
+        Insert: {
+          atencion?: string | null
+          cliente_id?: string | null
+          cliente_nombre: string
+          correo?: string | null
+          created_at?: string
+          created_by?: string | null
+          dias_renta: number
+          entrega_recoleccion?: number | null
+          equipo_descripcion: string
+          equipo_id?: string | null
+          equipo_marca?: string | null
+          equipo_modelo?: string | null
+          id?: string
+          precio_base: number
+          seguro_percent?: number | null
+          subtotal: number
+          telefono?: string | null
+          total_con_iva: number
+          vendedor?: string | null
+          vendedor_correo?: string | null
+          vendedor_telefono?: string | null
+        }
+        Update: {
+          atencion?: string | null
+          cliente_id?: string | null
+          cliente_nombre?: string
+          correo?: string | null
+          created_at?: string
+          created_by?: string | null
+          dias_renta?: number
+          entrega_recoleccion?: number | null
+          equipo_descripcion?: string
+          equipo_id?: string | null
+          equipo_marca?: string | null
+          equipo_modelo?: string | null
+          id?: string
+          precio_base?: number
+          seguro_percent?: number | null
+          subtotal?: number
+          telefono?: string | null
+          total_con_iva?: number
+          vendedor?: string | null
+          vendedor_correo?: string | null
+          vendedor_telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cotizaciones_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_equipo_id_fkey"
+            columns: ["equipo_id"]
+            isOneToOne: false
+            referencedRelation: "equipos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entradas_salidas: {
         Row: {
           almacen_destino_id: string | null
