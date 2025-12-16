@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, QrCode, Plus } from "lucide-react";
+import { Search, Eye, QrCode, Plus, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
-
+import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 interface Almacen {
   id: string;
   nombre: string;
@@ -263,10 +264,12 @@ export default function Inventario() {
             Total de equipos: {filteredEquipos.length} de {equipos.length}
           </p>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Agregar Equipo
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Equipo
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -487,6 +490,18 @@ export default function Inventario() {
           </div>
         </CardContent>
       </Card>
+
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full">
+            <Upload className="h-4 w-4 mr-2" />
+            Importar Equipos desde Excel
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-4">
+          <ExcelEquiposImport onImportComplete={fetchEquipos} />
+        </CollapsibleContent>
+      </Collapsible>
 
       <EquipoDetailsDialog
         equipo={selectedEquipo as any}
