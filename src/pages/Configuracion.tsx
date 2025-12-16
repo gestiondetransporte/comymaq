@@ -249,14 +249,36 @@ export default function Configuracion() {
     }
   };
 
-  const handlePrecioUpdate = async (modeloId: string, precio: string) => {
+  const handlePrecioUpdate = async (modeloId: string, modelo: string, precio: string) => {
     try {
-      const { error } = await supabase
+      const precioNumerico = precio ? parseFloat(precio) : null;
+      
+      // Update model configuration
+      const { error: configError } = await supabase
         .from('modelos_configuracion')
-        .update({ precio_lista: precio ? parseFloat(precio) : null })
+        .update({ precio_lista: precioNumerico })
         .eq('id', modeloId);
 
-      if (error) throw error;
+      if (configError) throw configError;
+
+      // Update all equipment with this model
+      const { data: updatedEquipos, error: equiposError } = await supabase
+        .from('equipos')
+        .update({ precio_lista: precioNumerico })
+        .ilike('modelo', modelo)
+        .select('id');
+
+      if (equiposError) throw equiposError;
+
+      const count = updatedEquipos?.length || 0;
+      
+      if (count > 0) {
+        toast({ 
+          title: "Precio actualizado", 
+          description: `Se actualizó el precio de ${count} equipo(s) con modelo ${modelo}` 
+        });
+      }
+      
       loadModelos();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -546,7 +568,7 @@ export default function Configuracion() {
                           type="number"
                           className="w-32"
                           defaultValue={modelo.precio_lista?.toString() || ''}
-                          onBlur={(e) => handlePrecioUpdate(modelo.id, e.target.value)}
+                          onBlur={(e) => handlePrecioUpdate(modelo.id, modelo.modelo, e.target.value)}
                           placeholder="0.00"
                         />
                       </TableCell>
