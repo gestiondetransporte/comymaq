@@ -313,6 +313,7 @@ export type Database = {
           created_at: string
           descripcion: string
           estado: string | null
+          folio: number
           ganancia: number | null
           id: string
           marca: string | null
@@ -339,6 +340,7 @@ export type Database = {
           created_at?: string
           descripcion: string
           estado?: string | null
+          folio?: number
           ganancia?: number | null
           id?: string
           marca?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           created_at?: string
           descripcion?: string
           estado?: string | null
+          folio?: number
           ganancia?: number | null
           id?: string
           marca?: string | null
