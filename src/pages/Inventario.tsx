@@ -20,6 +20,7 @@ interface Almacen {
 
 interface Equipo {
   id: string;
+  folio: number;
   numero_equipo: string;
   descripcion: string;
   marca: string | null;
@@ -108,6 +109,7 @@ export default function Inventario() {
       .from('equipos')
       .select(`
         id,
+        folio,
         numero_equipo,
         descripcion,
         marca,
@@ -125,7 +127,7 @@ export default function Inventario() {
           ubicacion
         )
       `)
-      .order('numero_equipo', { ascending: true })
+      .order('folio', { ascending: true })
       .limit(500); // Límite de registros
 
     if (equiposError) {
@@ -395,6 +397,7 @@ export default function Inventario() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Folio</TableHead>
                   <TableHead>N° Equipo</TableHead>
                   <TableHead>Descripción</TableHead>
                   <TableHead>Marca</TableHead>
@@ -410,13 +413,14 @@ export default function Inventario() {
               <TableBody>
                 {filteredEquipos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredEquipos.map((equipo) => (
                     <TableRow key={equipo.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell className="font-mono text-sm font-bold">{equipo.folio}</TableCell>
                       <TableCell className="font-medium">{equipo.numero_equipo}</TableCell>
                       <TableCell>{equipo.descripcion}</TableCell>
                       <TableCell>{equipo.marca || "N/A"}</TableCell>
