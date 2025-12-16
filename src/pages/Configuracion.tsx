@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useOffline } from '@/hooks/useOffline';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getPendingSyncs, syncPendingChanges } from '@/lib/offlineStorage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,13 +16,23 @@ import {
   Wifi, 
   WifiOff, 
   MapPin, 
-  Bell, 
   Camera, 
   RefreshCw,
   Check,
   X,
-  Lock
+  Lock,
+  DollarSign,
+  Upload,
+  Trash2,
+  Image
 } from 'lucide-react';
+
+interface ModeloConfig {
+  id: string;
+  modelo: string;
+  precio_lista: number | null;
+  foto_url: string | null;
+}
 
 const passwordSchema = z.string()
   .min(12, "La contraseña debe tener al menos 12 caracteres")
@@ -32,9 +42,8 @@ const passwordSchema = z.string()
   .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial (!@#$%^&*)");
 
 export default function Configuracion() {
-  const { isOnline, isOffline } = useOffline();
+  const { isOnline } = useOffline();
   const { hasPermission: hasGeoPermission, isNative: isGeoNative, requestPermissions: requestGeoPermissions, getCurrentPosition } = useGeolocation();
-  const { hasPermission: hasPushPermission, isNative: isPushNative, requestPermissions: requestPushPermissions, sendLocalNotification } = usePushNotifications();
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -42,6 +51,13 @@ export default function Configuracion() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast } = useToast();
+
+  // Model pricing state
+  const [modelos, setModelos] = useState<ModeloConfig[]>([]);
+  const [newModelo, setNewModelo] = useState('');
+  const [newPrecio, setNewPrecio] = useState('');
+  const [isLoadingModelos, setIsLoadingModelos] = useState(false);
+  const [uploadingModelo, setUploadingModelo] = useState<string | null>(null);
 
   useEffect(() => {
     loadPendingCount();
@@ -91,11 +107,119 @@ export default function Configuracion() {
     }
   };
 
-  const testNotification = async () => {
-    await sendLocalNotification(
-      'Prueba de notificación',
-      'Esta es una notificación de prueba desde COMYMAQ'
-    );
+  // Load modelos on mount
+  useEffect(() => {
+    loadModelos();
+  }, []);
+
+  const loadModelos = async () => {
+    setIsLoadingModelos(true);
+    try {
+      const { data, error } = await supabase
+        .from('modelos_configuracion')
+        .select('*')
+        .order('modelo');
+      
+      if (error) throw error;
+      setModelos(data || []);
+    } catch (error) {
+      console.error('Error loading modelos:', error);
+    } finally {
+      setIsLoadingModelos(false);
+    }
+  };
+
+  const handleAddModelo = async () => {
+    if (!newModelo.trim()) {
+      toast({ title: "Error", description: "Ingresa el nombre del modelo", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('modelos_configuracion')
+        .insert({
+          modelo: newModelo.trim().toUpperCase(),
+          precio_lista: newPrecio ? parseFloat(newPrecio) : null
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Modelo agregado", description: `Modelo ${newModelo} agregado exitosamente` });
+      setNewModelo('');
+      setNewPrecio('');
+      loadModelos();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteModelo = async (id: string, modelo: string) => {
+    try {
+      // Delete photo from storage if exists
+      const modelConfig = modelos.find(m => m.id === id);
+      if (modelConfig?.foto_url) {
+        const fileName = `${modelo}.png`;
+        await supabase.storage.from('modelos').remove([fileName]);
+      }
+
+      const { error } = await supabase
+        .from('modelos_configuracion')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({ title: "Modelo eliminado" });
+      loadModelos();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handlePhotoUpload = async (modeloId: string, modelo: string, file: File) => {
+    setUploadingModelo(modeloId);
+    try {
+      const fileName = `${modelo}.png`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('modelos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('modelos')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('modelos_configuracion')
+        .update({ foto_url: publicUrl })
+        .eq('id', modeloId);
+
+      if (updateError) throw updateError;
+
+      toast({ title: "Foto actualizada", description: `Foto para ${modelo} subida exitosamente` });
+      loadModelos();
+    } catch (error: any) {
+      toast({ title: "Error al subir foto", description: error.message, variant: "destructive" });
+    } finally {
+      setUploadingModelo(null);
+    }
+  };
+
+  const handlePrecioUpdate = async (modeloId: string, precio: string) => {
+    try {
+      const { error } = await supabase
+        .from('modelos_configuracion')
+        .update({ precio_lista: precio ? parseFloat(precio) : null })
+        .eq('id', modeloId);
+
+      if (error) throw error;
+      loadModelos();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -293,6 +417,123 @@ export default function Configuracion() {
 
         <Separator className="my-6" />
 
+        {/* Configuración de Modelos */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Precios y Fotos por Modelo
+            </CardTitle>
+            <CardDescription>
+              Configura precios de lista y fotografías para cada modelo de equipo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Add new model form */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="new-modelo">Nuevo Modelo</Label>
+                <Input
+                  id="new-modelo"
+                  value={newModelo}
+                  onChange={(e) => setNewModelo(e.target.value.toUpperCase())}
+                  placeholder="Ej: TS1882"
+                />
+              </div>
+              <div className="w-32 space-y-1">
+                <Label htmlFor="new-precio">Precio Lista</Label>
+                <Input
+                  id="new-precio"
+                  type="number"
+                  value={newPrecio}
+                  onChange={(e) => setNewPrecio(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <Button onClick={handleAddModelo}>
+                Agregar
+              </Button>
+            </div>
+
+            {/* Models table */}
+            {isLoadingModelos ? (
+              <div className="text-center py-4 text-muted-foreground">Cargando modelos...</div>
+            ) : modelos.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">No hay modelos configurados</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Modelo</TableHead>
+                    <TableHead>Precio Lista</TableHead>
+                    <TableHead>Foto</TableHead>
+                    <TableHead className="w-24">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {modelos.map((modelo) => (
+                    <TableRow key={modelo.id}>
+                      <TableCell className="font-medium">{modelo.modelo}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          className="w-32"
+                          defaultValue={modelo.precio_lista?.toString() || ''}
+                          onBlur={(e) => handlePrecioUpdate(modelo.id, e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {modelo.foto_url ? (
+                            <img 
+                              src={modelo.foto_url} 
+                              alt={modelo.modelo}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                              <Image className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoUpload(modelo.id, modelo.modelo, file);
+                              }}
+                              disabled={uploadingModelo === modelo.id}
+                            />
+                            <Button variant="outline" size="sm" asChild disabled={uploadingModelo === modelo.id}>
+                              <span>
+                                <Upload className="h-4 w-4" />
+                              </span>
+                            </Button>
+                          </label>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteModelo(modelo.id, modelo.modelo)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Separator className="my-6" />
+
         {/* Permisos */}
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold">Permisos de la Aplicación</h2>
@@ -341,62 +582,6 @@ export default function Configuracion() {
             </CardContent>
           </Card>
 
-          {/* Notificaciones Push */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notificaciones Push
-              </CardTitle>
-              <CardDescription>
-                Recibe notificaciones sobre eventos importantes y recordatorios
-                {!isPushNative && " (solo disponible en Android/iOS)"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Plataforma:</span>
-                <Badge variant="outline">
-                  {isPushNative ? 'Nativa (Android/iOS)' : 'Web'}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Estado del permiso:</span>
-                <Badge variant={hasPushPermission ? "default" : "secondary"}>
-                  {hasPushPermission ? (
-                    <><Check className="h-3 w-3 mr-1" /> Concedido</>
-                  ) : (
-                    <><X className="h-3 w-3 mr-1" /> No concedido</>
-                  )}
-                </Badge>
-              </div>
-              {!isPushNative && (
-                <div className="p-3 bg-muted rounded-md">
-                  <p className="text-sm text-muted-foreground">
-                    Las notificaciones push solo funcionan en dispositivos móviles nativos (Android/iOS).
-                    Para probarlas, exporta el proyecto a GitHub y compílalo como app nativa.
-                  </p>
-                </div>
-              )}
-              <div className="flex gap-2">
-                {!hasPushPermission && (
-                  <Button 
-                    onClick={requestPushPermissions} 
-                    variant="outline" 
-                    className="flex-1"
-                    disabled={!isPushNative}
-                  >
-                    Solicitar permiso
-                  </Button>
-                )}
-                {hasPushPermission && (
-                  <Button onClick={testNotification} variant="outline" className="flex-1">
-                    Enviar notificación de prueba
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Cámara */}
           <Card>
