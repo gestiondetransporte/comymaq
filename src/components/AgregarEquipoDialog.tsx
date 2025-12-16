@@ -65,8 +65,14 @@ interface Almacen {
   nombre: string;
 }
 
+interface ModeloConfig {
+  modelo: string;
+  precio_lista: number | null;
+}
+
 export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEquipoDialogProps) {
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
+  const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -98,6 +104,7 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
   useEffect(() => {
     if (open) {
       fetchAlmacenes();
+      fetchModelosConfig();
     }
   }, [open]);
 
@@ -109,6 +116,32 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
 
     if (!error && data) {
       setAlmacenes(data);
+    }
+  };
+
+  const fetchModelosConfig = async () => {
+    const { data, error } = await supabase
+      .from('modelos_configuracion')
+      .select('modelo, precio_lista');
+
+    if (!error && data) {
+      setModelosConfig(data);
+    }
+  };
+
+  // Auto-apply price when model changes
+  const handleModeloChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    form.setValue('modelo', upperValue);
+    
+    // Look up model configuration
+    const config = modelosConfig.find(m => m.modelo === upperValue);
+    if (config?.precio_lista) {
+      form.setValue('precio_lista', config.precio_lista.toString());
+      toast({
+        title: "Precio aplicado",
+        description: `Precio de lista $${config.precio_lista.toLocaleString()} aplicado automáticamente para modelo ${upperValue}`,
+      });
     }
   };
 
@@ -248,7 +281,12 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
                   <FormItem>
                     <FormLabel>Modelo</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ej: 320D" />
+                      <Input 
+                        {...field} 
+                        placeholder="Ej: TS1882" 
+                        onChange={(e) => handleModeloChange(e.target.value)}
+                        onBlur={() => handleModeloChange(field.value || '')}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

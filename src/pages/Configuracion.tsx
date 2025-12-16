@@ -54,6 +54,7 @@ export default function Configuracion() {
 
   // Model pricing state
   const [modelos, setModelos] = useState<ModeloConfig[]>([]);
+  const [existingModelos, setExistingModelos] = useState<string[]>([]);
   const [newModelo, setNewModelo] = useState('');
   const [newPrecio, setNewPrecio] = useState('');
   const [isLoadingModelos, setIsLoadingModelos] = useState(false);
@@ -110,6 +111,7 @@ export default function Configuracion() {
   // Load modelos on mount
   useEffect(() => {
     loadModelos();
+    loadExistingModelos();
   }, []);
 
   const loadModelos = async () => {
@@ -126,6 +128,45 @@ export default function Configuracion() {
       console.error('Error loading modelos:', error);
     } finally {
       setIsLoadingModelos(false);
+    }
+  };
+
+  const loadExistingModelos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipos')
+        .select('modelo')
+        .not('modelo', 'is', null)
+        .order('modelo');
+      
+      if (error) throw error;
+      
+      // Get unique models
+      const uniqueModelos = [...new Set(data?.map(e => e.modelo).filter(Boolean) as string[])];
+      setExistingModelos(uniqueModelos);
+    } catch (error) {
+      console.error('Error loading existing modelos:', error);
+    }
+  };
+
+  const handleQuickAddModelo = async (modelo: string) => {
+    // Check if already configured
+    if (modelos.some(m => m.modelo === modelo)) {
+      toast({ title: "Info", description: `Modelo ${modelo} ya está configurado` });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('modelos_configuracion')
+        .insert({ modelo: modelo.toUpperCase(), precio_lista: null });
+
+      if (error) throw error;
+
+      toast({ title: "Modelo agregado", description: `Modelo ${modelo} agregado. Configura su precio.` });
+      loadModelos();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -454,6 +495,32 @@ export default function Configuracion() {
                 Agregar
               </Button>
             </div>
+
+            {/* Existing models from equipos not yet configured */}
+            {(() => {
+              const unconfiguredModelos = existingModelos.filter(
+                em => !modelos.some(m => m.modelo.toUpperCase() === em.toUpperCase())
+              );
+              if (unconfiguredModelos.length === 0) return null;
+              return (
+                <div className="p-3 bg-muted/50 rounded-md space-y-2">
+                  <Label className="text-sm font-medium">Modelos existentes sin configurar ({unconfiguredModelos.length})</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {unconfiguredModelos.map((modelo) => (
+                      <Badge
+                        key={modelo}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                        onClick={() => handleQuickAddModelo(modelo)}
+                      >
+                        + {modelo}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Clic en un modelo para agregarlo rápidamente</p>
+                </div>
+              );
+            })()}
 
             {/* Models table */}
             {isLoadingModelos ? (
