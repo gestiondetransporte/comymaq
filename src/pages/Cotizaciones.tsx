@@ -204,13 +204,21 @@ export default function Cotizaciones() {
 
       // Introduction
       doc.setFontSize(10);
-      const introText = `Buen día ${atencion.toUpperCase()},\n\nEspero usted se encuentre bien en General, a continuación presento mi cotización formal en renta del equipo en cuestión. Cabe señalar que se están presentando precios para trabajar 8 horas diarias, 50 horas a la semana y 200 horas al mes. En esta cotización estamos comprometidos a que su personal que reciba el equipo reciba una capacitación formal del equipo cotizado y que NO nos retiraremos hasta que su personal quede satisfecho con la cotización.`;
+      const introText = `Buen día:
+
+Espero que se encuentre bien. Por medio de la presente, me permito presentar la cotización formal correspondiente a la renta del equipo en cuestión.
+
+Cabe señalar que los precios considerados en esta propuesta están calculados con base en una jornada de trabajo de 8 horas diarias, 50 horas semanales y un total de 200 horas mensuales.
+
+Asimismo, reiteramos nuestro compromiso de brindar a su personal una capacitación formal y completa sobre el uso y operación del equipo cotizado. De igual manera, garantizamos que el proceso de entrega y capacitación no se dará por concluido hasta que su personal se encuentre plenamente satisfecho y capacitado respecto al equipo.
+
+Quedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
       
       const splitIntro = doc.splitTextToSize(introText, pageWidth - 28);
       doc.text(splitIntro, 14, 88);
 
       // Equipment section title
-      let yPos = 120;
+      let yPos = 145;
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
