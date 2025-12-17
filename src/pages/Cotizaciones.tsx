@@ -55,6 +55,7 @@ interface CotizacionHistorial {
   status: string | null;
   es_prospecto: boolean | null;
   contrato_id: string | null;
+  atencion: string | null;
 }
 
 export default function Cotizaciones() {
@@ -130,7 +131,7 @@ export default function Cotizaciones() {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .select('id, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, dias_renta, subtotal, total_con_iva, vendedor, created_at, status, es_prospecto, contrato_id')
+        .select('id, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, dias_renta, subtotal, total_con_iva, vendedor, created_at, status, es_prospecto, contrato_id, atencion')
         .order('created_at', { ascending: false })
         .limit(50);
       
@@ -248,6 +249,7 @@ export default function Cotizaciones() {
         .insert({
           folio_contrato: folio,
           cliente: selectedCotizacion.cliente_nombre,
+          comprador: selectedCotizacion.atencion || null,
           equipo_id: selectedCotizacion.equipo_id,
           suma: selectedCotizacion.total_con_iva,
           fecha_inicio: fechaInicio,
