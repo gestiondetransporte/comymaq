@@ -46,6 +46,7 @@ export type Database = {
           razon_social: string | null
           rfc: string | null
           telefono: string | null
+          tipo: string | null
           updated_at: string
         }
         Insert: {
@@ -58,6 +59,7 @@ export type Database = {
           razon_social?: string | null
           rfc?: string | null
           telefono?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           razon_social?: string | null
           rfc?: string | null
           telefono?: string | null
+          tipo?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -156,6 +159,7 @@ export type Database = {
           atencion: string | null
           cliente_id: string | null
           cliente_nombre: string
+          contrato_id: string | null
           correo: string | null
           created_at: string
           created_by: string | null
@@ -165,9 +169,11 @@ export type Database = {
           equipo_id: string | null
           equipo_marca: string | null
           equipo_modelo: string | null
+          es_prospecto: boolean | null
           id: string
           precio_base: number
           seguro_percent: number | null
+          status: string | null
           subtotal: number
           telefono: string | null
           total_con_iva: number
@@ -179,6 +185,7 @@ export type Database = {
           atencion?: string | null
           cliente_id?: string | null
           cliente_nombre: string
+          contrato_id?: string | null
           correo?: string | null
           created_at?: string
           created_by?: string | null
@@ -188,9 +195,11 @@ export type Database = {
           equipo_id?: string | null
           equipo_marca?: string | null
           equipo_modelo?: string | null
+          es_prospecto?: boolean | null
           id?: string
           precio_base: number
           seguro_percent?: number | null
+          status?: string | null
           subtotal: number
           telefono?: string | null
           total_con_iva: number
@@ -202,6 +211,7 @@ export type Database = {
           atencion?: string | null
           cliente_id?: string | null
           cliente_nombre?: string
+          contrato_id?: string | null
           correo?: string | null
           created_at?: string
           created_by?: string | null
@@ -211,9 +221,11 @@ export type Database = {
           equipo_id?: string | null
           equipo_marca?: string | null
           equipo_modelo?: string | null
+          es_prospecto?: boolean | null
           id?: string
           precio_base?: number
           seguro_percent?: number | null
+          status?: string | null
           subtotal?: number
           telefono?: string | null
           total_con_iva?: number
@@ -227,6 +239,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
           {
@@ -676,6 +695,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      generate_contrato_folio: { Args: never; Returns: string }
       generate_mantenimiento_id: { Args: never; Returns: string }
       has_role: {
         Args: {
