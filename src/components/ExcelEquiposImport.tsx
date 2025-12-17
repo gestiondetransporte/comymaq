@@ -1,11 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, FileSpreadsheet, X } from "lucide-react";
 
 interface Props {
   onImportComplete?: () => void;
@@ -14,10 +12,26 @@ interface Props {
 export function ExcelEquiposImport({ onImportComplete }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+    }
+  };
+
+  const handleButtonClick = () => {
+    if (file) {
+      handleImport();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -101,12 +115,7 @@ export function ExcelEquiposImport({ onImportComplete }: Props) {
       }
 
       toast.success(`Importación completada: ${imported} equipos importados${errors > 0 ? `, ${errors} errores` : ''}`);
-      setFile(null);
-      
-      // Reset file input
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      
+      clearFile();
       onImportComplete?.();
     } catch (error) {
       console.error('Error importing:', error);
@@ -117,39 +126,57 @@ export function ExcelEquiposImport({ onImportComplete }: Props) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Importar Equipos desde Excel
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Input
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={handleFileChange}
-          disabled={importing}
-        />
-        <Button
-          onClick={handleImport}
-          disabled={!file || importing}
-          className="w-full"
-        >
-          {importing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Importando...
-            </>
-          ) : (
-            'Importar Equipos'
-          )}
-        </Button>
-        <p className="text-sm text-muted-foreground">
-          El archivo debe contener las columnas: N.E., Estado, Número de Equipo, Tipo de Negocio, 
-          Asegurado, Proveedor, Tipo, Descripción, Marca, Modelo, Serie, Categoría, Clase, Año
-        </p>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleFileChange}
+        disabled={importing}
+        className="hidden"
+      />
+      
+      {/* Show selected file */}
+      {file && (
+        <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+          <FileSpreadsheet className="h-5 w-5 text-green-600" />
+          <span className="flex-1 text-sm truncate">{file.name}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFile}
+            disabled={importing}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
+      {/* Main action button */}
+      <Button
+        onClick={handleButtonClick}
+        disabled={importing}
+        className="w-full"
+        size="lg"
+      >
+        {importing ? (
+          <>
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            Importando...
+          </>
+        ) : file ? (
+          <>
+            <Upload className="mr-2 h-5 w-5" />
+            Importar {file.name.substring(0, 20)}...
+          </>
+        ) : (
+          <>
+            <Upload className="mr-2 h-5 w-5" />
+            Importar Equipos desde Excel
+          </>
+        )}
+      </Button>
+    </div>
   );
 }
