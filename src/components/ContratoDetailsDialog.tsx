@@ -32,7 +32,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin, Trash2 } from "lucide-react";
+import { Loader2, MapPin, Trash2, Plus, UserPlus } from "lucide-react";
+
+interface Cliente {
+  id: string;
+  nombre: string;
+  persona_contacto: string | null;
+  telefono: string | null;
+  correo_electronico: string | null;
+  tipo: string | null;
+}
 
 interface Contrato {
   id: string;
@@ -74,36 +83,118 @@ export function ContratoDetailsDialog({
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [equipos, setEquipos] = useState<Array<{ id: string; numero_equipo: string; descripcion: string }>>([]);
+  const [equipos, setEquipos] = useState<Array<{ id: string; numero_equipo: string; descripcion: string; estado: string | null }>>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [selectedClienteId, setSelectedClienteId] = useState<string>("");
+  const [showNewClienteForm, setShowNewClienteForm] = useState(false);
+  const [newCliente, setNewCliente] = useState({ nombre: "", telefono: "", correo_electronico: "" });
   const { toast } = useToast();
   const { getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
     if (open) {
       fetchEquipos();
+      fetchClientes();
     }
     if (contrato) {
       setFormData(contrato);
+      // Find cliente by name
+      const matchingCliente = clientes.find(c => c.nombre === contrato.cliente);
+      if (matchingCliente) {
+        setSelectedClienteId(matchingCliente.id);
+      }
     } else if (isCreating) {
+      // Generate automatic folio
+      generateFolio();
       setFormData({
-        folio_contrato: '',
         cliente: '',
         status: 'activo',
       });
+      setSelectedClienteId("");
     }
   }, [contrato, isCreating, open]);
+
+  const generateFolio = async () => {
+    try {
+      const { data, error } = await supabase.rpc('generate_contrato_folio');
+      if (!error && data) {
+        setFormData(prev => ({ ...prev, folio_contrato: data }));
+      }
+    } catch (error) {
+      console.error('Error generating folio:', error);
+      // Fallback folio
+      const fallbackFolio = `CTR-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+      setFormData(prev => ({ ...prev, folio_contrato: fallbackFolio }));
+    }
+  };
 
   const fetchEquipos = async () => {
     try {
       const { data, error } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion')
+        .select('id, numero_equipo, descripcion, estado')
         .order('numero_equipo');
       
       if (error) throw error;
       setEquipos(data || []);
     } catch (error) {
       console.error('Error fetching equipos:', error);
+    }
+  };
+
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('id, nombre, persona_contacto, telefono, correo_electronico, tipo')
+        .order('nombre');
+      
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error fetching clientes:', error);
+    }
+  };
+
+  const handleClienteChange = (clienteId: string) => {
+    setSelectedClienteId(clienteId);
+    const cliente = clientes.find(c => c.id === clienteId);
+    if (cliente) {
+      setFormData(prev => ({ ...prev, cliente: cliente.nombre }));
+    }
+  };
+
+  const handleCreateCliente = async () => {
+    if (!newCliente.nombre.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "El nombre del cliente es requerido" });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .insert({
+          nombre: newCliente.nombre,
+          telefono: newCliente.telefono || null,
+          correo_electronico: newCliente.correo_electronico || null,
+          tipo: 'cliente',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({ title: "Éxito", description: "Cliente creado correctamente" });
+      
+      // Refresh clientes and select the new one
+      await fetchClientes();
+      setSelectedClienteId(data.id);
+      setFormData(prev => ({ ...prev, cliente: data.nombre }));
+      setShowNewClienteForm(false);
+      setNewCliente({ nombre: "", telefono: "", correo_electronico: "" });
+    } catch (error) {
+      console.error('Error creating cliente:', error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo crear el cliente" });
     }
   };
 
@@ -151,6 +242,12 @@ export function ContratoDetailsDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.cliente) {
+      toast({ variant: "destructive", title: "Error", description: "Selecciona un cliente" });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -178,6 +275,14 @@ export function ContratoDetailsDialog({
           });
 
         if (error) throw error;
+
+        // Update equipment status to 'rentado' if assigned
+        if (formData.equipo_id) {
+          await supabase
+            .from('equipos')
+            .update({ estado: 'rentado' })
+            .eq('id', formData.equipo_id);
+        }
 
         toast({
           title: "Éxito",
@@ -262,6 +367,11 @@ export function ContratoDetailsDialog({
     }
   };
 
+  // Filter available equipos (only show available ones for new contracts)
+  const availableEquipos = isCreating 
+    ? equipos.filter(e => e.estado === 'disponible' || e.estado === null)
+    : equipos;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -283,9 +393,10 @@ export function ContratoDetailsDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, folio_contrato: e.target.value })
                 }
-                disabled={!isCreating}
-                className={!isCreating ? "bg-muted" : ""}
+                disabled={true}
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">Generado automáticamente</p>
             </div>
 
             <div className="space-y-2">
@@ -299,16 +410,60 @@ export function ContratoDetailsDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente *</Label>
-              <Input
-                id="cliente"
-                required
-                value={formData.cliente || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, cliente: e.target.value })
-                }
-              />
+            {/* Cliente Selection */}
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label>Cliente *</Label>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowNewClienteForm(!showNewClienteForm)}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  {showNewClienteForm ? 'Cancelar' : 'Nuevo Cliente'}
+                </Button>
+              </div>
+              
+              {showNewClienteForm ? (
+                <div className="p-4 border rounded-lg space-y-3 bg-muted/50">
+                  <Input
+                    placeholder="Nombre del cliente *"
+                    value={newCliente.nombre}
+                    onChange={(e) => setNewCliente({ ...newCliente, nombre: e.target.value })}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Teléfono"
+                      value={newCliente.telefono}
+                      onChange={(e) => setNewCliente({ ...newCliente, telefono: e.target.value })}
+                    />
+                    <Input
+                      placeholder="Correo electrónico"
+                      type="email"
+                      value={newCliente.correo_electronico}
+                      onChange={(e) => setNewCliente({ ...newCliente, correo_electronico: e.target.value })}
+                    />
+                  </div>
+                  <Button type="button" onClick={handleCreateCliente} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Cliente
+                  </Button>
+                </div>
+              ) : (
+                <Select value={selectedClienteId} onValueChange={handleClienteChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map((cliente) => (
+                      <SelectItem key={cliente.id} value={cliente.id}>
+                        {cliente.nombre} {cliente.tipo === 'prospecto' && '(Prospecto)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -455,13 +610,17 @@ export function ContratoDetailsDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sin asignar</SelectItem>
-                  {equipos.map((equipo) => (
+                  {availableEquipos.map((equipo) => (
                     <SelectItem key={equipo.id} value={equipo.id}>
                       {equipo.numero_equipo} - {equipo.descripcion}
+                      {equipo.estado && ` (${equipo.estado})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {isCreating && (
+                <p className="text-xs text-muted-foreground">Solo se muestran equipos disponibles</p>
+              )}
             </div>
           </div>
 
