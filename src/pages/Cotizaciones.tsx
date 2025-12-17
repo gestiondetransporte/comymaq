@@ -422,9 +422,48 @@ export default function Cotizaciones() {
         doc.text('COMYMAQ', 14, 20);
       }
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      // Remove "COMPRESORES Y MAQUINARIA" as it's in the logo
+      // Load equipment model image for top-right area
+      let equipoImgLoaded: HTMLImageElement | null = null;
+      if (modeloConfig?.foto_url) {
+        try {
+          const equipoImg = new Image();
+          equipoImg.crossOrigin = 'anonymous';
+          await new Promise<void>((resolve) => {
+            equipoImg.onload = () => resolve();
+            equipoImg.onerror = () => resolve();
+            equipoImg.src = modeloConfig.foto_url!;
+          });
+          if (equipoImg.complete && equipoImg.naturalWidth > 0) {
+            equipoImgLoaded = equipoImg;
+          }
+        } catch (e) {
+          console.log('Could not load equipment image');
+        }
+      }
+
+      // Add equipment image in top-right corner if available
+      const equipoImgWidth = 55;
+      const equipoImgHeight = 45;
+      const equipoImgX = pageWidth - equipoImgWidth - 14;
+      const equipoImgY = 50;
+      
+      if (equipoImgLoaded) {
+        // Calculate aspect ratio to fit within bounds
+        const aspectRatio = equipoImgLoaded.naturalWidth / equipoImgLoaded.naturalHeight;
+        let imgW = equipoImgWidth;
+        let imgH = imgW / aspectRatio;
+        
+        if (imgH > equipoImgHeight) {
+          imgH = equipoImgHeight;
+          imgW = imgH * aspectRatio;
+        }
+        
+        // Center the image in the reserved space
+        const offsetX = (equipoImgWidth - imgW) / 2;
+        const offsetY = (equipoImgHeight - imgH) / 2;
+        
+        doc.addImage(equipoImgLoaded, 'PNG', equipoImgX + offsetX, equipoImgY + offsetY, imgW, imgH);
+      }
 
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
@@ -433,13 +472,16 @@ export default function Cotizaciones() {
       
       doc.setFont('helvetica', 'normal');
       const ubicacion = 'Escobedo Nuevo León, ' + formatDate();
-      doc.text(ubicacion, pageWidth - 14 - doc.getTextWidth(ubicacion), 50);
+      // Position date above the image area
+      doc.text(ubicacion, equipoImgX - 5 - doc.getTextWidth(ubicacion), 50);
       
       doc.text(`ATENCIÓN: ${atencion.toUpperCase()}`, 14, 58);
       doc.text(`TELÉFONO: ${telefono}`, 14, 66);
       doc.text(`correo: ${correo}`, 14, 74);
 
       doc.setFontSize(10);
+      // Reduce text width to not overlap with equipment image
+      const introTextWidth = equipoImgLoaded ? pageWidth - 28 - equipoImgWidth - 10 : pageWidth - 28;
       const introText = `Buen día:
 
 Espero que se encuentre bien. Por medio de la presente, me permito presentar la cotización formal correspondiente a la renta del equipo en cuestión.
@@ -450,7 +492,7 @@ Asimismo, reiteramos nuestro compromiso de brindar a su personal una capacitaci�
 
 Quedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
       
-      const splitIntro = doc.splitTextToSize(introText, pageWidth - 28);
+      const splitIntro = doc.splitTextToSize(introText, introTextWidth);
       doc.text(splitIntro, 14, 88);
 
       let yPos = 145;
@@ -477,24 +519,6 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
         doc.text(`MODELO: ${selectedEquipo.modelo.toUpperCase()}`, 14, yPos);
         yPos += 6;
       }
-
-      if (modeloConfig?.foto_url) {
-        try {
-          const equipoImg = new Image();
-          equipoImg.crossOrigin = 'anonymous';
-          await new Promise<void>((resolve) => {
-            equipoImg.onload = () => resolve();
-            equipoImg.onerror = () => resolve();
-            equipoImg.src = modeloConfig.foto_url!;
-          });
-          if (equipoImg.complete && equipoImg.naturalWidth > 0) {
-            doc.addImage(equipoImg, 'PNG', pageWidth - 70, yPos - 30, 50, 40);
-          }
-        } catch (e) {
-          console.log('Could not load equipment image');
-        }
-      }
-
       yPos += 10;
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
