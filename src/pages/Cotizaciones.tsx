@@ -389,6 +389,8 @@ export default function Cotizaciones() {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginBottom = 20;
       
       const logoImg = new Image();
       logoImg.crossOrigin = 'anonymous';
@@ -400,7 +402,19 @@ export default function Cotizaciones() {
       });
 
       if (logoImg.complete && logoImg.naturalWidth > 0) {
-        doc.addImage(logoImg, 'PNG', 14, 10, 60, 20);
+        // Calculate proper aspect ratio for logo
+        const logoMaxWidth = 70;
+        const logoMaxHeight = 25;
+        const aspectRatio = logoImg.naturalWidth / logoImg.naturalHeight;
+        let logoWidth = logoMaxWidth;
+        let logoHeight = logoWidth / aspectRatio;
+        
+        if (logoHeight > logoMaxHeight) {
+          logoHeight = logoMaxHeight;
+          logoWidth = logoHeight * aspectRatio;
+        }
+        
+        doc.addImage(logoImg, 'PNG', 14, 8, logoWidth, logoHeight);
       } else {
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
@@ -410,7 +424,7 @@ export default function Cotizaciones() {
 
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text('COMPRESORES Y MAQUINARIA', 14, 35);
+      // Remove "COMPRESORES Y MAQUINARIA" as it's in the logo
 
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
@@ -509,6 +523,13 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
       yPos = (doc as any).lastAutoTable.finalY + 10;
 
+      // Check if we need a new page for the remaining content
+      const remainingContentHeight = 85; // Approximate height needed for the rest
+      if (yPos + remainingContentHeight > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -525,6 +546,13 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       doc.text('• ATENCIÓN ESPECIAL A DESHORAS', 14, yPos);
 
       yPos += 12;
+      
+      // Check again before payment conditions
+      if (yPos + 50 > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -535,27 +563,35 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
       doc.text('CONTADO', 14, yPos);
-      yPos += 8;
+      yPos += 6;
       doc.text('VIGENCIA DE LA COTIZACIÓN: 15 DÍAS', 14, yPos);
       yPos += 6;
       doc.setFont('helvetica', 'bold');
       doc.text('LOS PRECIOS NO INCLUYEN I.V.A.', 14, yPos);
-      yPos += 8;
+      yPos += 6;
       doc.setFont('helvetica', 'normal');
-      doc.text('TIEMPO DE ENTREGA: 24 HORAS DESPUÉS DE RECIBIR SU ORDEN DE COMPRA.', 14, yPos);
+      const tiempoEntrega = 'TIEMPO DE ENTREGA: 24 HORAS DESPUÉS DE RECIBIR SU ORDEN DE COMPRA.';
+      const splitTiempo = doc.splitTextToSize(tiempoEntrega, pageWidth - 28);
+      doc.text(splitTiempo, 14, yPos);
+      yPos += splitTiempo.length * 5 + 8;
 
-      yPos += 15;
+      // Check before signature section
+      if (yPos + 35 > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
       doc.text('Sin más por el momento, esperando vernos favorecidos por su pedido.', 14, yPos);
 
-      yPos += 12;
+      yPos += 10;
       doc.setFont('helvetica', 'bold');
       doc.text(vendedor.toUpperCase(), 14, yPos);
-      yPos += 6;
+      yPos += 5;
       doc.setFont('helvetica', 'normal');
       doc.text(`correo: ${vendedorCorreo}`, 14, yPos);
-      yPos += 6;
+      yPos += 5;
       doc.text(`Oficina: 01 81 89 01 07 12`, 14, yPos);
-      yPos += 6;
+      yPos += 5;
       doc.text(`Cel.: ${vendedorTelefono}`, 14, yPos);
 
       const fileName = `Cotizacion_${selectedCliente.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
