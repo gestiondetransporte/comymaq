@@ -340,6 +340,12 @@ export function ContratoDetailsDialog({
     
     setLoading(true);
     try {
+      // First, unlink any cotizaciones that reference this contrato
+      await supabase
+        .from("cotizaciones")
+        .update({ contrato_id: null })
+        .eq("contrato_id", contrato.id);
+
       const { error } = await supabase
         .from("contratos")
         .delete()
