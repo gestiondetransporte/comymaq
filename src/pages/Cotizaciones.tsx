@@ -104,6 +104,8 @@ export default function Cotizaciones() {
   const [precioBase, setPrecioBase] = useState<number>(0);
   const [entregaRecoleccion, setEntregaRecoleccion] = useState<number>(4000);
   const [seguroPercent, setSeguroPercent] = useState<number>(4);
+  const [otrosConcepto, setOtrosConcepto] = useState<string>('');
+  const [otrosMonto, setOtrosMonto] = useState<number>(0);
   
   // Accept dialog
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
@@ -396,7 +398,7 @@ export default function Cotizaciones() {
   
   const precioTotal = getPrecioRenta();
   const seguro = (precioTotal * seguroPercent) / 100;
-  const subtotal = precioTotal + entregaRecoleccion + seguro;
+  const subtotal = precioTotal + entregaRecoleccion + seguro + otrosMonto;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-MX', { 
@@ -596,16 +598,26 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       doc.text(`COTIZACIÓN - RENTA ${tipoRentaLabel} (${dias} días)`, 16, yPos + 6);
 
       yPos += 12;
+      const pdfBody: string[][] = [
+        [`RENTA ${tipoRentaLabel} (${dias} días)`, formatCurrency(precioTotal), ''],
+        ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaRecoleccion), ''],
+        [`SEGURO DEL EQUIPO (${seguroPercent}% DEL COSTO DE LA RENTA)`, formatCurrency(seguro), ''],
+      ];
+      
+      // Add "Otros" row if there's a value
+      if (otrosMonto > 0 && otrosConcepto) {
+        pdfBody.push([otrosConcepto.toUpperCase(), formatCurrency(otrosMonto), '']);
+      } else if (otrosMonto > 0) {
+        pdfBody.push(['OTROS SERVICIOS', formatCurrency(otrosMonto), '']);
+      }
+      
+      pdfBody.push(['SUBTOTAL (SIN IVA)', formatCurrency(subtotal), '']);
+      pdfBody.push(['TOTAL (CON IVA 16%)', formatCurrency(subtotal * 1.16), '']);
+
       autoTable(doc, {
         startY: yPos,
         head: [],
-        body: [
-          [`RENTA ${tipoRentaLabel} (${dias} días)`, formatCurrency(precioTotal), ''],
-          ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaRecoleccion), ''],
-          [`SEGURO DEL EQUIPO (${seguroPercent}% DEL COSTO DE LA RENTA)`, formatCurrency(seguro), ''],
-          ['SUBTOTAL (SIN IVA)', formatCurrency(subtotal), ''],
-          ['TOTAL (CON IVA 16%)', formatCurrency(subtotal * 1.16), ''],
-        ],
+        body: pdfBody,
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 3 },
         columnStyles: {
@@ -1073,6 +1085,27 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   />
                 </div>
 
+                {/* Otros servicios */}
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="text-sm font-medium">Otros Servicios (Opcional)</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2">
+                      <Input 
+                        value={otrosConcepto} 
+                        onChange={(e) => setOtrosConcepto(e.target.value)} 
+                        placeholder="Concepto (ej: Capacitación extra)"
+                      />
+                    </div>
+                    <Input 
+                      type="number" 
+                      value={otrosMonto || ''} 
+                      onChange={(e) => setOtrosMonto(parseFloat(e.target.value) || 0)} 
+                      placeholder="Monto"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2 border-t pt-4">
                   <Label className="text-sm font-medium">Datos del Vendedor</Label>
                   <Input value={vendedor} onChange={(e) => setVendedor(e.target.value)} placeholder="Nombre del vendedor" />
@@ -1168,6 +1201,12 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                           <TableCell>Seguro ({seguroPercent}%)</TableCell>
                           <TableCell className="text-right">{formatCurrency(seguro)}</TableCell>
                         </TableRow>
+                        {otrosMonto > 0 && (
+                          <TableRow>
+                            <TableCell>{otrosConcepto || 'Otros'}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(otrosMonto)}</TableCell>
+                          </TableRow>
+                        )}
                         <TableRow className="font-bold">
                           <TableCell>Subtotal (sin IVA)</TableCell>
                           <TableCell className="text-right">{formatCurrency(subtotal)}</TableCell>

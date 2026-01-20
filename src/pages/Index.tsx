@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, LayoutDashboard } from "lucide-react";
+import { Search, LayoutDashboard, Calculator, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -120,22 +120,48 @@ export default function Index() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 px-4">
-      <div className="text-center space-y-4 pt-4 relative">
-        {isAdmin && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-0 top-4 md:top-0"
-            onClick={() => navigate("/dashboard")}
-            title="Ver Dashboard"
-          >
-            <LayoutDashboard className="h-5 w-5" />
-          </Button>
-        )}
+      <div className="text-center space-y-4 pt-4">
         <h1 className="text-3xl md:text-4xl font-bold text-primary">Buscador de Equipo</h1>
         <p className="text-muted-foreground text-base md:text-lg">
           Ingresa el número de equipo para ver sus detalles
         </p>
+        
+        {/* Accesos directos */}
+        <div className="flex justify-center gap-2 flex-wrap">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+              className="gap-2"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Button>
+          )}
+          {canAccessSales && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/cotizaciones")}
+              className="gap-2"
+            >
+              <Calculator className="h-4 w-4" />
+              Cotizaciones
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/equipos-log")}
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              Historial Equipos
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="border-2 md:border">
