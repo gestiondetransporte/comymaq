@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useOffline } from '@/hooks/useOffline';
-import { useGeolocation } from '@/hooks/useGeolocation';
 import { getPendingSyncs, syncPendingChanges } from '@/lib/offlineStorage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,11 +14,7 @@ import { z } from 'zod';
 import { 
   Wifi, 
   WifiOff, 
-  MapPin, 
-  Camera, 
   RefreshCw,
-  Check,
-  X,
   Lock,
   DollarSign,
   Upload,
@@ -43,7 +38,6 @@ const passwordSchema = z.string()
 
 export default function Configuracion() {
   const { isOnline } = useOffline();
-  const { hasPermission: hasGeoPermission, isNative: isGeoNative, requestPermissions: requestGeoPermissions, getCurrentPosition } = useGeolocation();
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -95,16 +89,6 @@ export default function Configuracion() {
       });
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const testLocation = async () => {
-    const position = await getCurrentPosition();
-    if (position) {
-      toast({
-        title: "Ubicación obtenida",
-        description: `Lat: ${position.coords.latitude.toFixed(4)}, Lon: ${position.coords.longitude.toFixed(4)}`
-      });
     }
   };
 
@@ -620,79 +604,6 @@ export default function Configuracion() {
             )}
           </CardContent>
         </Card>
-
-        <Separator className="my-6" />
-
-        {/* Permisos */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Permisos de la Aplicación</h2>
-          
-          {/* Ubicación */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Ubicación
-              </CardTitle>
-              <CardDescription>
-                Permite a la app acceder a tu ubicación para funciones de geolocalización
-                {!isGeoNative && " (funcionalidad limitada en navegador web)"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Plataforma:</span>
-                <Badge variant="outline">
-                  {isGeoNative ? 'Nativa (Android/iOS)' : 'Web'}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Estado del permiso:</span>
-                <Badge variant={hasGeoPermission ? "default" : "secondary"}>
-                  {hasGeoPermission ? (
-                    <><Check className="h-3 w-3 mr-1" /> Concedido</>
-                  ) : (
-                    <><X className="h-3 w-3 mr-1" /> No concedido</>
-                  )}
-                </Badge>
-              </div>
-              <div className="flex gap-2">
-                {!hasGeoPermission && (
-                  <Button onClick={requestGeoPermissions} variant="outline" className="flex-1">
-                    Solicitar permiso
-                  </Button>
-                )}
-                {hasGeoPermission && (
-                  <Button onClick={testLocation} variant="outline" className="flex-1">
-                    Probar ubicación
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-
-          {/* Cámara */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" />
-                Cámara
-              </CardTitle>
-              <CardDescription>
-                Configurado automáticamente para escaneo QR
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span>Estado:</span>
-                <Badge variant="default">
-                  <Check className="h-3 w-3 mr-1" /> Configurado
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
       </div>
   );
