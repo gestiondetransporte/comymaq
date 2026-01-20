@@ -93,11 +93,13 @@ export type Database = {
           dias_contratado: number | null
           direccion: string | null
           equipo_id: string | null
+          estado_ubicacion: string | null
           fecha_inicio: string | null
           fecha_vencimiento: string | null
           folio_contrato: string
           horas_trabajo: number | null
           id: string
+          municipio: string | null
           numero_contrato: string | null
           obra: string | null
           status: string | null
@@ -115,11 +117,13 @@ export type Database = {
           dias_contratado?: number | null
           direccion?: string | null
           equipo_id?: string | null
+          estado_ubicacion?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato: string
           horas_trabajo?: number | null
           id?: string
+          municipio?: string | null
           numero_contrato?: string | null
           obra?: string | null
           status?: string | null
@@ -137,11 +141,13 @@ export type Database = {
           dias_contratado?: number | null
           direccion?: string | null
           equipo_id?: string | null
+          estado_ubicacion?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato?: string
           horas_trabajo?: number | null
           id?: string
+          municipio?: string | null
           numero_contrato?: string | null
           obra?: string | null
           status?: string | null

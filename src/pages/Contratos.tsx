@@ -32,6 +32,8 @@ interface Contrato {
   equipo_id: string | null;
   ubicacion_gps: string | null;
   direccion: string | null;
+  municipio: string | null;
+  estado_ubicacion: string | null;
   equipos?: {
     numero_equipo: string;
     descripcion: string;

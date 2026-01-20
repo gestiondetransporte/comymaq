@@ -32,7 +32,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin, Trash2, Plus, UserPlus } from "lucide-react";
+import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink } from "lucide-react";
 
 interface Cliente {
   id: string;
@@ -62,6 +62,8 @@ interface Contrato {
   equipo_id: string | null;
   ubicacion_gps: string | null;
   direccion: string | null;
+  municipio: string | null;
+  estado_ubicacion: string | null;
 }
 
 interface ContratoDetailsDialogProps {
@@ -82,6 +84,8 @@ export function ContratoDetailsDialog({
   const [formData, setFormData] = useState<Partial<Contrato>>({});
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [loadingMapsUrl, setLoadingMapsUrl] = useState(false);
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [equipos, setEquipos] = useState<Array<{ id: string; numero_equipo: string; descripcion: string; estado: string | null }>>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -240,6 +244,63 @@ export function ContratoDetailsDialog({
     }
   };
 
+  const handleResolveGoogleMapsUrl = async () => {
+    if (!googleMapsUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Ingresa una URL de Google Maps",
+      });
+      return;
+    }
+
+    setLoadingMapsUrl(true);
+    try {
+      const response = await supabase.functions.invoke('resolve-google-maps', {
+        body: { mapsUrl: googleMapsUrl }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const data = response.data;
+
+      if (!data.success) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "No se pudo procesar la URL",
+        });
+        return;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        ubicacion_gps: data.coordenadas || prev.ubicacion_gps,
+        direccion: data.direccion || prev.direccion,
+        municipio: data.municipio || prev.municipio,
+        estado_ubicacion: data.estado || prev.estado_ubicacion,
+      }));
+
+      toast({
+        title: "Ubicación obtenida",
+        description: "Se extrajeron los datos de ubicación correctamente. Puedes editarlos si es necesario.",
+      });
+
+      setGoogleMapsUrl('');
+    } catch (error: any) {
+      console.error('Error resolving Google Maps URL:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo procesar la URL de Google Maps",
+      });
+    } finally {
+      setLoadingMapsUrl(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -272,6 +333,8 @@ export function ContratoDetailsDialog({
             equipo_id: formData.equipo_id || null,
             ubicacion_gps: formData.ubicacion_gps || null,
             direccion: formData.direccion || null,
+            municipio: formData.municipio || null,
+            estado_ubicacion: formData.estado_ubicacion || null,
           });
 
         if (error) throw error;
@@ -310,6 +373,8 @@ export function ContratoDetailsDialog({
             equipo_id: formData.equipo_id || null,
             ubicacion_gps: formData.ubicacion_gps || null,
             direccion: formData.direccion || null,
+            municipio: formData.municipio || null,
+            estado_ubicacion: formData.estado_ubicacion || null,
           })
           .eq("id", contrato.id);
 
@@ -630,8 +695,39 @@ export function ContratoDetailsDialog({
             </div>
           </div>
 
+          {/* Google Maps URL Input */}
+          <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
+            <Label className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Obtener ubicación desde Google Maps
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={googleMapsUrl}
+                onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                placeholder="Pega aquí la URL de Google Maps (ej: https://maps.app.goo.gl/...)"
+                disabled={loadingMapsUrl}
+              />
+              <Button
+                type="button"
+                variant="default"
+                onClick={handleResolveGoogleMapsUrl}
+                disabled={loadingMapsUrl || !googleMapsUrl.trim()}
+              >
+                {loadingMapsUrl ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Copia la URL de Google Maps y pégala aquí para extraer automáticamente la dirección, municipio y estado.
+            </p>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="ubicacion_gps">Ubicación GPS</Label>
+            <Label htmlFor="ubicacion_gps">Coordenadas GPS</Label>
             <div className="flex gap-2">
               <Input
                 id="ubicacion_gps"
@@ -648,6 +744,7 @@ export function ContratoDetailsDialog({
                 size="icon"
                 onClick={handleGetLocation}
                 disabled={loadingLocation}
+                title="Obtener mi ubicación actual"
               >
                 {loadingLocation ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -667,8 +764,34 @@ export function ContratoDetailsDialog({
                 setFormData({ ...formData, direccion: e.target.value })
               }
               rows={2}
-              placeholder="Ingresa la dirección manualmente"
+              placeholder="Calle, número, colonia..."
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="municipio">Municipio</Label>
+              <Input
+                id="municipio"
+                value={formData.municipio || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, municipio: e.target.value })
+                }
+                placeholder="Ej: Monterrey, Guadalupe..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="estado_ubicacion">Estado</Label>
+              <Input
+                id="estado_ubicacion"
+                value={formData.estado_ubicacion || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, estado_ubicacion: e.target.value })
+                }
+                placeholder="Ej: Nuevo León, Jalisco..."
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
