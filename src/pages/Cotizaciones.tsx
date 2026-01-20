@@ -358,7 +358,8 @@ export default function Cotizaciones() {
 
   const handleEquipoChange = (equipoId: string) => {
     setSelectedEquipoId(equipoId);
-    const equipo = equipos.find(e => e.id === equipoId);
+    // Use todosEquipos to get equipment data regardless of status
+    const equipo = todosEquipos.find(e => e.id === equipoId);
     if (equipo) {
       const modelConfig = modelosConfig.find(m => 
         m.modelo.toUpperCase() === equipo.modelo?.toUpperCase()
@@ -374,7 +375,8 @@ export default function Cotizaciones() {
   };
 
   const selectedCliente = clientes.find(c => c.id === selectedClienteId);
-  const selectedEquipo = equipos.find(e => e.id === selectedEquipoId);
+  // Use todosEquipos to find the selected equipment (includes all statuses)
+  const selectedEquipo = todosEquipos.find(e => e.id === selectedEquipoId);
   const modeloConfig = selectedEquipo?.modelo 
     ? modelosConfig.find(m => m.modelo.toUpperCase() === selectedEquipo.modelo?.toUpperCase())
     : null;
@@ -481,11 +483,31 @@ export default function Cotizaciones() {
         }
       }
 
-      // Add equipment image in top-right corner if available
-      const equipoImgWidth = 55;
-      const equipoImgHeight = 45;
+      // Date header - separated from company name
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      const ubicacion = 'Escobedo Nuevo León, ' + formatDate();
+      doc.text(ubicacion, pageWidth - 14 - doc.getTextWidth(ubicacion), 38);
+
+      // Client data section starts at y=48
+      const clientDataStartY = 48;
+      
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`EMPRESA: ${selectedCliente.nombre.toUpperCase()}`, 14, clientDataStartY);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`ATENCIÓN: ${atencion.toUpperCase()}`, 14, clientDataStartY + 8);
+      doc.text(`TELÉFONO: ${telefono}`, 14, clientDataStartY + 16);
+      doc.text(`correo: ${correo}`, 14, clientDataStartY + 24);
+
+      // Add equipment image next to client data (right side)
+      const equipoImgWidth = 50;
+      const equipoImgHeight = 40;
       const equipoImgX = pageWidth - equipoImgWidth - 14;
-      const equipoImgY = 50;
+      const equipoImgY = clientDataStartY - 3;
       
       if (equipoImgLoaded) {
         // Calculate aspect ratio to fit within bounds
@@ -505,20 +527,6 @@ export default function Cotizaciones() {
         doc.addImage(equipoImgLoaded, 'PNG', equipoImgX + offsetX, equipoImgY + offsetY, imgW, imgH);
       }
 
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`EMPRESA: ${selectedCliente.nombre.toUpperCase()}`, 14, 50);
-      
-      doc.setFont('helvetica', 'normal');
-      const ubicacion = 'Escobedo Nuevo León, ' + formatDate();
-      // Position date above the image area
-      doc.text(ubicacion, equipoImgX - 5 - doc.getTextWidth(ubicacion), 50);
-      
-      doc.text(`ATENCIÓN: ${atencion.toUpperCase()}`, 14, 58);
-      doc.text(`TELÉFONO: ${telefono}`, 14, 66);
-      doc.text(`correo: ${correo}`, 14, 74);
-
       doc.setFontSize(10);
       // Reduce text width to not overlap with equipment image
       const introTextWidth = equipoImgLoaded ? pageWidth - 28 - equipoImgWidth - 10 : pageWidth - 28;
@@ -533,9 +541,9 @@ Asimismo, reiteramos nuestro compromiso de brindar a su personal una capacitaci�
 Quedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
       
       const splitIntro = doc.splitTextToSize(introText, introTextWidth);
-      doc.text(splitIntro, 14, 88);
+      doc.text(splitIntro, 14, 95);
 
-      let yPos = 145;
+      let yPos = 155;
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
