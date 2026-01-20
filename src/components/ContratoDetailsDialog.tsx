@@ -354,6 +354,11 @@ export function ContratoDetailsDialog({
       } else {
         if (!contrato) return;
         
+        const previousStatus = contrato.status;
+        const newStatus = formData.status || 'activo';
+        const previousEquipoId = contrato.equipo_id;
+        const newEquipoId = formData.equipo_id || null;
+        
         const { error } = await supabase
           .from("contratos")
           .update({
@@ -364,13 +369,13 @@ export function ContratoDetailsDialog({
             fecha_inicio: formData.fecha_inicio || null,
             fecha_vencimiento: formData.fecha_vencimiento || null,
             dias_contratado: formData.dias_contratado || null,
-            status: formData.status || 'activo',
+            status: newStatus,
             vendedor: formData.vendedor || null,
             comprador: formData.comprador || null,
             dentro_fuera: formData.dentro_fuera || null,
             horas_trabajo: formData.horas_trabajo || null,
             comentarios: formData.comentarios || null,
-            equipo_id: formData.equipo_id || null,
+            equipo_id: newEquipoId,
             ubicacion_gps: formData.ubicacion_gps || null,
             direccion: formData.direccion || null,
             municipio: formData.municipio || null,
@@ -379,6 +384,44 @@ export function ContratoDetailsDialog({
           .eq("id", contrato.id);
 
         if (error) throw error;
+
+        // Automatic equipment status sync based on contract status change
+        const wasActive = previousStatus === 'activo';
+        const isNowActive = newStatus === 'activo';
+        
+        // If contract status changed from active to non-active, set equipment to 'disponible'
+        if (wasActive && !isNowActive && previousEquipoId) {
+          await supabase
+            .from('equipos')
+            .update({ estado: 'disponible' })
+            .eq('id', previousEquipoId);
+        }
+        
+        // If contract status changed from non-active to active, set equipment to 'rentado'
+        if (!wasActive && isNowActive && newEquipoId) {
+          await supabase
+            .from('equipos')
+            .update({ estado: 'rentado' })
+            .eq('id', newEquipoId);
+        }
+        
+        // If equipment changed on an active contract
+        if (isNowActive) {
+          // Old equipment becomes available
+          if (previousEquipoId && previousEquipoId !== newEquipoId) {
+            await supabase
+              .from('equipos')
+              .update({ estado: 'disponible' })
+              .eq('id', previousEquipoId);
+          }
+          // New equipment becomes rented
+          if (newEquipoId && previousEquipoId !== newEquipoId) {
+            await supabase
+              .from('equipos')
+              .update({ estado: 'rentado' })
+              .eq('id', newEquipoId);
+          }
+        }
 
         toast({
           title: "Éxito",
@@ -410,6 +453,14 @@ export function ContratoDetailsDialog({
         .from("cotizaciones")
         .update({ contrato_id: null })
         .eq("contrato_id", contrato.id);
+
+      // Set equipment back to 'disponible' if contract had one assigned and was active
+      if (contrato.equipo_id && contrato.status === 'activo') {
+        await supabase
+          .from('equipos')
+          .update({ estado: 'disponible' })
+          .eq('id', contrato.equipo_id);
+      }
 
       const { error } = await supabase
         .from("contratos")
