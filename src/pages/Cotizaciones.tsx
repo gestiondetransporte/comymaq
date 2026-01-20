@@ -76,8 +76,13 @@ export default function Cotizaciones() {
   const [historial, setHistorial] = useState<CotizacionHistorial[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
   
-  // Equipment search state
+// Equipment search state
   const [modeloSearch, setModeloSearch] = useState('');
+  
+  // Rental type and dates
+  const [tipoRenta, setTipoRenta] = useState<'diario' | 'semanal' | 'mensual'>('mensual');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
   
   // Form state
   const [selectedClienteId, setSelectedClienteId] = useState('');
@@ -373,7 +378,23 @@ export default function Cotizaciones() {
     : null;
 
   const dias = parseInt(diasRenta) || 0;
-  const precioTotal = precioBase * (dias <= 7 ? 1 : dias <= 14 ? 1.5 : Math.ceil(dias / 7) * 0.8);
+  
+  // Price calculations based on monthly price (precio_lista = mensual)
+  const precioMensual = precioBase;
+  const precioSemanal = precioMensual / 3;
+  const precioDiario = precioSemanal / 4;
+  
+  // Calculate total based on rental type
+  const getPrecioRenta = () => {
+    switch (tipoRenta) {
+      case 'diario': return precioDiario * dias;
+      case 'semanal': return precioSemanal * Math.ceil(dias / 7);
+      case 'mensual': return precioMensual * Math.ceil(dias / 30);
+      default: return precioBase * dias;
+    }
+  };
+  
+  const precioTotal = getPrecioRenta();
   const seguro = (precioTotal * seguroPercent) / 100;
   const subtotal = precioTotal + entregaRecoleccion + seguro;
 
@@ -395,12 +416,6 @@ export default function Cotizaciones() {
     return new Date().toLocaleDateString('es-MX', options);
   };
 
-  const getPeriodoLabel = () => {
-    if (dias === 1) return 'POR DÍA';
-    if (dias <= 7) return 'POR SEMANA';
-    if (dias <= 14) return 'POR 2 SEMANAS';
-    return `POR ${Math.ceil(dias / 7)} SEMANAS`;
-  };
 
   const generatePDF = async () => {
     if (!selectedCliente || !selectedEquipo || !dias) {
@@ -543,27 +558,60 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
         yPos += 6;
       }
       yPos += 10;
+      
+      // TABLA DE PRECIOS DE REFERENCIA (Mensual, Semanal, Diario)
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.text(`PRECIOS DE RENTA ${getPeriodoLabel()}`, 16, yPos + 6);
+      doc.text('PRECIOS DE RENTA DE REFERENCIA', 16, yPos + 6);
+
+      yPos += 12;
+      autoTable(doc, {
+        startY: yPos,
+        head: [['PERIODO', 'PRECIO']],
+        body: [
+          ['MENSUAL (200 hrs)', formatCurrency(precioMensual)],
+          ['SEMANAL (50 hrs)', formatCurrency(precioSemanal)],
+          ['DIARIO (8 hrs)', formatCurrency(precioDiario)],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [0, 100, 150] },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 50, halign: 'right' },
+        },
+        margin: { left: 14 },
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+      
+      // COTIZACIÓN ESPECÍFICA
+      const tipoRentaLabel = tipoRenta === 'diario' ? 'DIARIO' : tipoRenta === 'semanal' ? 'SEMANAL' : 'MENSUAL';
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`COTIZACIÓN - RENTA ${tipoRentaLabel} (${dias} días)`, 16, yPos + 6);
 
       yPos += 12;
       autoTable(doc, {
         startY: yPos,
         head: [],
         body: [
-          [`PRECIO ${getPeriodoLabel()} (${dias} días)`, formatCurrency(precioTotal), '1'],
+          [`RENTA ${tipoRentaLabel} (${dias} días)`, formatCurrency(precioTotal), ''],
           ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaRecoleccion), ''],
           [`SEGURO DEL EQUIPO (${seguroPercent}% DEL COSTO DE LA RENTA)`, formatCurrency(seguro), ''],
+          ['SUBTOTAL (SIN IVA)', formatCurrency(subtotal), ''],
+          ['TOTAL (CON IVA 16%)', formatCurrency(subtotal * 1.16), ''],
         ],
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 3 },
         columnStyles: {
           0: { cellWidth: 110 },
-          1: { cellWidth: 40, halign: 'right' },
-          2: { cellWidth: 20, halign: 'center' },
+          1: { cellWidth: 50, halign: 'right' },
+          2: { cellWidth: 10, halign: 'center' },
         },
         margin: { left: 14 },
       });
@@ -790,21 +838,21 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   <Input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" />
                 </div>
 
-                {/* Equipo - Buscador por modelo */}
+                {/* Equipo - Buscador por modelo o descripción */}
                 <div className="space-y-3">
-                  <Label>Buscar Equipo por Modelo *</Label>
+                  <Label>Buscar Equipo por Modelo o Descripción *</Label>
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                       value={modeloSearch} 
                       onChange={(e) => setModeloSearch(e.target.value.toUpperCase())}
-                      placeholder="Ej: S-60X, TS1882, etc."
+                      placeholder="Ej: S-60X, MONTACARGAS, PLATAFORMA..."
                       className="pl-9"
                     />
                   </div>
                   
                   {modeloSearch.length >= 2 && (
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -817,7 +865,11 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                         </TableHeader>
                         <TableBody>
                           {todosEquipos
-                            .filter(e => e.modelo?.toUpperCase().includes(modeloSearch))
+                            .filter(e => 
+                              e.modelo?.toUpperCase().includes(modeloSearch) ||
+                              e.descripcion?.toUpperCase().includes(modeloSearch) ||
+                              e.numero_equipo?.toUpperCase().includes(modeloSearch)
+                            )
                             .map((equipo) => {
                               const isDisponible = equipo.estado === 'disponible';
                               return (
@@ -829,7 +881,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                                   <TableCell className="font-medium">{equipo.modelo || 'N/A'}</TableCell>
                                   <TableCell className="text-sm">{equipo.descripcion.substring(0, 35)}...</TableCell>
                                   <TableCell>
-                                    <Badge variant={isDisponible ? 'default' : 'secondary'}>
+                                    <Badge variant={isDisponible ? 'default' : 'secondary'} className={isDisponible ? 'bg-green-600' : ''}>
                                       {equipo.estado || 'N/A'}
                                     </Badge>
                                   </TableCell>
@@ -849,17 +901,25 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                                 </TableRow>
                               );
                             })}
-                          {todosEquipos.filter(e => e.modelo?.toUpperCase().includes(modeloSearch)).length === 0 && (
+                          {todosEquipos.filter(e => 
+                            e.modelo?.toUpperCase().includes(modeloSearch) ||
+                            e.descripcion?.toUpperCase().includes(modeloSearch) ||
+                            e.numero_equipo?.toUpperCase().includes(modeloSearch)
+                          ).length === 0 && (
                             <TableRow>
                               <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                                No se encontraron equipos con el modelo "{modeloSearch}"
+                                No se encontraron equipos con "{modeloSearch}"
                               </TableCell>
                             </TableRow>
                           )}
                         </TableBody>
                       </Table>
                       {(() => {
-                        const filtered = todosEquipos.filter(e => e.modelo?.toUpperCase().includes(modeloSearch));
+                        const filtered = todosEquipos.filter(e => 
+                          e.modelo?.toUpperCase().includes(modeloSearch) ||
+                          e.descripcion?.toUpperCase().includes(modeloSearch) ||
+                          e.numero_equipo?.toUpperCase().includes(modeloSearch)
+                        );
                         const disponibles = filtered.filter(e => e.estado === 'disponible').length;
                         const total = filtered.length;
                         if (total > 0) {
@@ -915,6 +975,41 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   </div>
                 )}
 
+                {/* Tipo de Renta */}
+                <div className="space-y-2">
+                  <Label>Tipo de Renta *</Label>
+                  <Select value={tipoRenta} onValueChange={(v: 'diario' | 'semanal' | 'mensual') => setTipoRenta(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona tipo de renta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="diario">Diario</SelectItem>
+                      <SelectItem value="semanal">Semanal</SelectItem>
+                      <SelectItem value="mensual">Mensual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Fechas de renta */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Fecha Inicio</Label>
+                    <Input 
+                      type="date" 
+                      value={fechaInicio} 
+                      onChange={(e) => setFechaInicio(e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fecha Fin (aprox)</Label>
+                    <Input 
+                      type="date" 
+                      value={fechaFin} 
+                      onChange={(e) => setFechaFin(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Tiempo de Renta (días) *</Label>
                   <Input 
@@ -925,6 +1020,27 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                     min={1}
                   />
                 </div>
+                
+                {/* Show price breakdown */}
+                {precioBase > 0 && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg space-y-1 text-sm">
+                    <p className="font-medium text-blue-800 dark:text-blue-200">Precios de Referencia (Precio Lista: {formatCurrency(precioMensual)})</p>
+                    <div className="grid grid-cols-3 gap-2 text-blue-700 dark:text-blue-300">
+                      <div>
+                        <span className="text-xs">Mensual</span>
+                        <p className="font-semibold">{formatCurrency(precioMensual)}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs">Semanal</span>
+                        <p className="font-semibold">{formatCurrency(precioSemanal)}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs">Diario</span>
+                        <p className="font-semibold">{formatCurrency(precioDiario)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1004,8 +1120,32 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Periodo de Renta</p>
-                      <p className="font-medium">{dias} días ({getPeriodoLabel()})</p>
+                      <p className="font-medium">{dias} días - Tipo: {tipoRenta.charAt(0).toUpperCase() + tipoRenta.slice(1)}</p>
                       <p className="text-sm text-muted-foreground">= {dias * 8} horas de trabajo</p>
+                      {fechaInicio && fechaFin && (
+                        <p className="text-sm text-muted-foreground">
+                          Del {new Date(fechaInicio).toLocaleDateString('es-MX')} al {new Date(fechaFin).toLocaleDateString('es-MX')}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Precios de referencia */}
+                    <div className="p-3 bg-muted rounded-lg space-y-1">
+                      <p className="text-sm font-medium">Precios de Referencia</p>
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Mensual</span>
+                          <p className="font-semibold">{formatCurrency(precioMensual)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Semanal</span>
+                          <p className="font-semibold">{formatCurrency(precioSemanal)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Diario</span>
+                          <p className="font-semibold">{formatCurrency(precioDiario)}</p>
+                        </div>
+                      </div>
                     </div>
 
                     <Table>

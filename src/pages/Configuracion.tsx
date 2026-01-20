@@ -49,8 +49,6 @@ export default function Configuracion() {
   // Model pricing state
   const [modelos, setModelos] = useState<ModeloConfig[]>([]);
   const [existingModelos, setExistingModelos] = useState<string[]>([]);
-  const [newModelo, setNewModelo] = useState('');
-  const [newPrecio, setNewPrecio] = useState('');
   const [isLoadingModelos, setIsLoadingModelos] = useState(false);
   const [uploadingModelo, setUploadingModelo] = useState<string | null>(null);
 
@@ -135,44 +133,29 @@ export default function Configuracion() {
 
   const handleQuickAddModelo = async (modelo: string) => {
     // Check if already configured
-    if (modelos.some(m => m.modelo === modelo)) {
+    if (modelos.some(m => m.modelo.toUpperCase() === modelo.toUpperCase())) {
       toast({ title: "Info", description: `Modelo ${modelo} ya está configurado` });
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('modelos_configuracion')
-        .insert({ modelo: modelo.toUpperCase(), precio_lista: null });
+    // Get the price from inventory if it exists
+    const { data: equipoData } = await supabase
+      .from('equipos')
+      .select('precio_lista')
+      .ilike('modelo', modelo)
+      .not('precio_lista', 'is', null)
+      .limit(1);
 
-      if (error) throw error;
-
-      toast({ title: "Modelo agregado", description: `Modelo ${modelo} agregado. Configura su precio.` });
-      loadModelos();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
-  const handleAddModelo = async () => {
-    if (!newModelo.trim()) {
-      toast({ title: "Error", description: "Ingresa el nombre del modelo", variant: "destructive" });
-      return;
-    }
+    const precioFromInventario = equipoData?.[0]?.precio_lista || null;
 
     try {
       const { error } = await supabase
         .from('modelos_configuracion')
-        .insert({
-          modelo: newModelo.trim().toUpperCase(),
-          precio_lista: newPrecio ? parseFloat(newPrecio) : null
-        });
+        .insert({ modelo: modelo.toUpperCase(), precio_lista: precioFromInventario });
 
       if (error) throw error;
 
-      toast({ title: "Modelo agregado", description: `Modelo ${newModelo} agregado exitosamente` });
-      setNewModelo('');
-      setNewPrecio('');
+      toast({ title: "Modelo agregado", description: `Modelo ${modelo} agregado${precioFromInventario ? ` con precio $${precioFromInventario}` : '. Configura su precio.'}` });
       loadModelos();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -476,54 +459,38 @@ export default function Configuracion() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Add new model form */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <Label htmlFor="new-modelo">Nuevo Modelo</Label>
-                <Input
-                  id="new-modelo"
-                  value={newModelo}
-                  onChange={(e) => setNewModelo(e.target.value.toUpperCase())}
-                  placeholder="Ej: TS1882"
-                />
-              </div>
-              <div className="w-32 space-y-1">
-                <Label htmlFor="new-precio">Precio Lista</Label>
-                <Input
-                  id="new-precio"
-                  type="number"
-                  value={newPrecio}
-                  onChange={(e) => setNewPrecio(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <Button onClick={handleAddModelo}>
-                Agregar
-              </Button>
-            </div>
-
-            {/* Existing models from equipos not yet configured */}
+            {/* Show existing models from inventory that can be configured */}
             {(() => {
               const unconfiguredModelos = existingModelos.filter(
                 em => !modelos.some(m => m.modelo.toUpperCase() === em.toUpperCase())
               );
-              if (unconfiguredModelos.length === 0) return null;
+              
               return (
-                <div className="p-3 bg-muted/50 rounded-md space-y-2">
-                  <Label className="text-sm font-medium">Modelos existentes sin configurar ({unconfiguredModelos.length})</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {unconfiguredModelos.map((modelo) => (
-                      <Badge
-                        key={modelo}
-                        variant="outline"
-                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                        onClick={() => handleQuickAddModelo(modelo)}
-                      >
-                        + {modelo}
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Clic en un modelo para agregarlo rápidamente</p>
+                <div className="space-y-4">
+                  {unconfiguredModelos.length > 0 && (
+                    <div className="p-3 bg-muted/50 rounded-md space-y-2">
+                      <Label className="text-sm font-medium">Modelos en Inventario sin Configurar ({unconfiguredModelos.length})</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {unconfiguredModelos.map((modelo) => (
+                          <Badge
+                            key={modelo}
+                            variant="outline"
+                            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                            onClick={() => handleQuickAddModelo(modelo)}
+                          >
+                            + {modelo}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Clic en un modelo para agregarlo y configurar su precio</p>
+                    </div>
+                  )}
+                  
+                  {unconfiguredModelos.length === 0 && modelos.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      No hay modelos en el inventario para configurar
+                    </div>
+                  )}
                 </div>
               );
             })()}
