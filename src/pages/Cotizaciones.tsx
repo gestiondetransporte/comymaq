@@ -541,9 +541,14 @@ Asimismo, reiteramos nuestro compromiso de brindar a su personal una capacitaci�
 Quedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
       
       const splitIntro = doc.splitTextToSize(introText, introTextWidth);
-      doc.text(splitIntro, 14, 95);
+      const introStartY = 95;
+      doc.text(splitIntro, 14, introStartY);
+      
+      // Calculate dynamic yPos based on intro text height
+      const introLineHeight = 5;
+      const introEndY = introStartY + (splitIntro.length * introLineHeight);
+      let yPos = introEndY + 10;
 
-      let yPos = 155;
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -599,6 +604,14 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       
       // COTIZACIÓN ESPECÍFICA
       const tipoRentaLabel = tipoRenta === 'diario' ? 'DIARIO' : tipoRenta === 'semanal' ? 'SEMANAL' : 'MENSUAL';
+      
+      // Check if we need a new page before the cost table header
+      const costTableEstimatedHeight = 80; // Approximate height for header + table
+      if (yPos + costTableEstimatedHeight > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
       doc.setTextColor(255, 255, 255);
@@ -607,20 +620,20 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
       yPos += 12;
       const pdfBody: string[][] = [
-        [`RENTA ${tipoRentaLabel} (${dias} días)`, formatCurrency(precioTotal), ''],
-        ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaRecoleccion), ''],
-        [`SEGURO DEL EQUIPO (${seguroPercent}% DEL COSTO DE LA RENTA)`, formatCurrency(seguro), ''],
+        [`RENTA ${tipoRentaLabel} (${dias} días)`, formatCurrency(precioTotal)],
+        ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaRecoleccion)],
+        [`SEGURO DEL EQUIPO (${seguroPercent}% DEL COSTO DE LA RENTA)`, formatCurrency(seguro)],
       ];
       
       // Add "Otros" row if there's a value
       if (otrosMonto > 0 && otrosConcepto) {
-        pdfBody.push([otrosConcepto.toUpperCase(), formatCurrency(otrosMonto), '']);
+        pdfBody.push([otrosConcepto.toUpperCase(), formatCurrency(otrosMonto)]);
       } else if (otrosMonto > 0) {
-        pdfBody.push(['OTROS SERVICIOS', formatCurrency(otrosMonto), '']);
+        pdfBody.push(['OTROS SERVICIOS', formatCurrency(otrosMonto)]);
       }
       
-      pdfBody.push(['SUBTOTAL (SIN IVA)', formatCurrency(subtotal), '']);
-      pdfBody.push(['TOTAL (CON IVA 16%)', formatCurrency(subtotal * 1.16), '']);
+      pdfBody.push(['SUBTOTAL (SIN IVA)', formatCurrency(subtotal)]);
+      pdfBody.push(['TOTAL (CON IVA 16%)', formatCurrency(subtotal * 1.16)]);
 
       autoTable(doc, {
         startY: yPos,
@@ -631,19 +644,14 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
         columnStyles: {
           0: { cellWidth: 110 },
           1: { cellWidth: 50, halign: 'right' },
-          2: { cellWidth: 10, halign: 'center' },
         },
         margin: { left: 14 },
+        tableWidth: 160,
       });
 
       yPos = (doc as any).lastAutoTable.finalY + 10;
 
       // Check if we need a new page for the remaining content
-      const remainingContentHeight = 85; // Approximate height needed for the rest
-      if (yPos + remainingContentHeight > pageHeight - marginBottom) {
-        doc.addPage();
-        yPos = 20;
-      }
 
       doc.setFillColor(0, 100, 150);
       doc.rect(14, yPos, pageWidth - 28, 8, 'F');
