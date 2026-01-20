@@ -37,6 +37,7 @@ export type Database = {
       }
       clientes: {
         Row: {
+          celular: string | null
           correo_electronico: string | null
           created_at: string
           direccion: string | null
@@ -50,6 +51,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          celular?: string | null
           correo_electronico?: string | null
           created_at?: string
           direccion?: string | null
@@ -63,6 +65,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          celular?: string | null
           correo_electronico?: string | null
           created_at?: string
           direccion?: string | null
