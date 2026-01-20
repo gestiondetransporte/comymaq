@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Download, Calculator, History, RefreshCw, UserPlus, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Download, Calculator, History, RefreshCw, UserPlus, Plus, CheckCircle, XCircle, Search } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -25,6 +25,16 @@ interface Cliente {
 }
 
 interface Equipo {
+  id: string;
+  numero_equipo: string;
+  descripcion: string;
+  modelo: string | null;
+  marca: string | null;
+  precio_lista: number | null;
+  estado: string | null;
+}
+
+interface EquipoCompleto {
   id: string;
   numero_equipo: string;
   descripcion: string;
@@ -61,9 +71,13 @@ interface CotizacionHistorial {
 export default function Cotizaciones() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [todosEquipos, setTodosEquipos] = useState<EquipoCompleto[]>([]);
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [historial, setHistorial] = useState<CotizacionHistorial[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
+  
+  // Equipment search state
+  const [modeloSearch, setModeloSearch] = useState('');
   
   // Form state
   const [selectedClienteId, setSelectedClienteId] = useState('');
@@ -98,6 +112,7 @@ export default function Cotizaciones() {
   useEffect(() => {
     fetchClientes();
     fetchEquipos();
+    fetchTodosEquipos();
     fetchModelosConfig();
     fetchHistorial();
   }, []);
@@ -117,6 +132,14 @@ export default function Cotizaciones() {
       .eq('estado', 'disponible')
       .order('numero_equipo');
     if (!error && data) setEquipos(data);
+  };
+
+  const fetchTodosEquipos = async () => {
+    const { data, error } = await supabase
+      .from('equipos')
+      .select('id, numero_equipo, descripcion, modelo, marca, precio_lista, estado')
+      .order('modelo', { ascending: true });
+    if (!error && data) setTodosEquipos(data);
   };
 
   const fetchModelosConfig = async () => {
@@ -767,22 +790,93 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   <Input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="correo@ejemplo.com" />
                 </div>
 
-                {/* Equipo */}
-                <div className="space-y-2">
-                  <Label>Equipo Disponible *</Label>
-                  <Select value={selectedEquipoId} onValueChange={handleEquipoChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un equipo disponible" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipos.map((equipo) => (
-                        <SelectItem key={equipo.id} value={equipo.id}>
-                          {equipo.numero_equipo} - {equipo.modelo || 'Sin modelo'} - {equipo.descripcion.substring(0, 40)}...
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Solo se muestran equipos disponibles</p>
+                {/* Equipo - Buscador por modelo */}
+                <div className="space-y-3">
+                  <Label>Buscar Equipo por Modelo *</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      value={modeloSearch} 
+                      onChange={(e) => setModeloSearch(e.target.value.toUpperCase())}
+                      placeholder="Ej: S-60X, TS1882, etc."
+                      className="pl-9"
+                    />
+                  </div>
+                  
+                  {modeloSearch.length >= 2 && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-24">Número</TableHead>
+                            <TableHead>Modelo</TableHead>
+                            <TableHead>Descripción</TableHead>
+                            <TableHead className="w-24">Estado</TableHead>
+                            <TableHead className="w-20"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {todosEquipos
+                            .filter(e => e.modelo?.toUpperCase().includes(modeloSearch))
+                            .map((equipo) => {
+                              const isDisponible = equipo.estado === 'disponible';
+                              return (
+                                <TableRow 
+                                  key={equipo.id}
+                                  className={!isDisponible ? 'opacity-60' : ''}
+                                >
+                                  <TableCell className="font-mono text-sm">{equipo.numero_equipo}</TableCell>
+                                  <TableCell className="font-medium">{equipo.modelo || 'N/A'}</TableCell>
+                                  <TableCell className="text-sm">{equipo.descripcion.substring(0, 35)}...</TableCell>
+                                  <TableCell>
+                                    <Badge variant={isDisponible ? 'default' : 'secondary'}>
+                                      {equipo.estado || 'N/A'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {isDisponible ? (
+                                      <Button 
+                                        size="sm" 
+                                        variant={selectedEquipoId === equipo.id ? "default" : "outline"}
+                                        onClick={() => handleEquipoChange(equipo.id)}
+                                      >
+                                        {selectedEquipoId === equipo.id ? 'Seleccionado' : 'Seleccionar'}
+                                      </Button>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">No disponible</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          {todosEquipos.filter(e => e.modelo?.toUpperCase().includes(modeloSearch)).length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                                No se encontraron equipos con el modelo "{modeloSearch}"
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                      {(() => {
+                        const filtered = todosEquipos.filter(e => e.modelo?.toUpperCase().includes(modeloSearch));
+                        const disponibles = filtered.filter(e => e.estado === 'disponible').length;
+                        const total = filtered.length;
+                        if (total > 0) {
+                          return (
+                            <div className="p-2 bg-muted text-sm text-muted-foreground text-center">
+                              {disponibles} de {total} equipos disponibles
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  )}
+                  
+                  {modeloSearch.length > 0 && modeloSearch.length < 2 && (
+                    <p className="text-xs text-muted-foreground">Escribe al menos 2 caracteres para buscar</p>
+                  )}
                 </div>
 
                 {selectedEquipo && (
@@ -795,15 +889,29 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                       />
                     )}
                     <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-600">Equipo Seleccionado</span>
+                      </div>
                       <p className="font-medium">{selectedEquipo.descripcion}</p>
                       <p className="text-sm text-muted-foreground">
-                        {selectedEquipo.marca && `Marca: ${selectedEquipo.marca}`}
-                        {selectedEquipo.modelo && ` | Modelo: ${selectedEquipo.modelo}`}
+                        {selectedEquipo.numero_equipo} | {selectedEquipo.marca && `${selectedEquipo.marca}`}
+                        {selectedEquipo.modelo && ` | ${selectedEquipo.modelo}`}
                       </p>
                       <p className="text-sm font-medium mt-1">
                         Precio Lista: {formatCurrency(precioBase)}
                       </p>
                     </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEquipoId('');
+                        setPrecioBase(0);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
 
