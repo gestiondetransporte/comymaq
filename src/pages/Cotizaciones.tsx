@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, Download, Calculator, History, RefreshCw, UserPlus, Plus, CheckCircle, XCircle, Search } from 'lucide-react';
+import { FileText, Download, Calculator, History, RefreshCw, UserPlus, Plus, CheckCircle, XCircle, Search, MapPin, Loader2, Eye, Edit } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -57,15 +57,30 @@ interface CotizacionHistorial {
   equipo_id: string | null;
   equipo_descripcion: string;
   equipo_modelo: string | null;
+  equipo_marca: string | null;
   dias_renta: number;
+  precio_base: number;
+  entrega_recoleccion: number;
+  seguro_percent: number;
   subtotal: number;
   total_con_iva: number;
   vendedor: string | null;
+  vendedor_correo: string | null;
+  vendedor_telefono: string | null;
   created_at: string;
   status: string | null;
   es_prospecto: boolean | null;
   contrato_id: string | null;
   atencion: string | null;
+  telefono: string | null;
+  correo: string | null;
+  direccion: string | null;
+  municipio: string | null;
+  estado_ubicacion: string | null;
+  ubicacion_gps: string | null;
+  tipo_renta: string | null;
+  otros_concepto: string | null;
+  otros_monto: number | null;
 }
 
 export default function Cotizaciones() {
@@ -106,6 +121,18 @@ export default function Cotizaciones() {
   const [seguroPercent, setSeguroPercent] = useState<number>(4);
   const [otrosConcepto, setOtrosConcepto] = useState<string>('');
   const [otrosMonto, setOtrosMonto] = useState<number>(0);
+  
+  // Location state
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('');
+  const [loadingMapsUrl, setLoadingMapsUrl] = useState(false);
+  const [direccion, setDireccion] = useState('');
+  const [municipio, setMunicipio] = useState('');
+  const [estadoUbicacion, setEstadoUbicacion] = useState('');
+  const [ubicacionGps, setUbicacionGps] = useState('');
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCotizacion, setEditingCotizacion] = useState<CotizacionHistorial | null>(null);
   
   // Accept dialog
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
@@ -161,7 +188,7 @@ export default function Cotizaciones() {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .select('id, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, dias_renta, subtotal, total_con_iva, vendedor, created_at, status, es_prospecto, contrato_id, atencion')
+        .select('id, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto')
         .order('created_at', { ascending: false })
         .limit(50);
       
@@ -170,6 +197,60 @@ export default function Cotizaciones() {
       console.error('Error fetching historial:', error);
     } finally {
       setLoadingHistorial(false);
+    }
+  };
+
+  const handleResolveGoogleMapsUrl = async () => {
+    if (!googleMapsUrl.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Ingresa una URL de Google Maps",
+      });
+      return;
+    }
+
+    setLoadingMapsUrl(true);
+    try {
+      const response = await supabase.functions.invoke('resolve-google-maps', {
+        body: { mapsUrl: googleMapsUrl }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const data = response.data;
+
+      if (!data.success) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.error || "No se pudo procesar la URL",
+        });
+        return;
+      }
+
+      setUbicacionGps(data.coordenadas || '');
+      setDireccion(data.direccion || '');
+      setMunicipio(data.municipio || '');
+      setEstadoUbicacion(data.estado || '');
+
+      toast({
+        title: "Ubicación obtenida",
+        description: "Se extrajeron los datos de ubicación correctamente.",
+      });
+
+      setGoogleMapsUrl('');
+    } catch (error: any) {
+      console.error('Error resolving Google Maps URL:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo procesar la URL de Google Maps",
+      });
+    } finally {
+      setLoadingMapsUrl(false);
     }
   };
 
@@ -240,6 +321,13 @@ export default function Cotizaciones() {
           vendedor_telefono: vendedorTelefono,
           status: 'pendiente',
           es_prospecto: cliente?.tipo === 'prospecto',
+          direccion,
+          municipio,
+          estado_ubicacion: estadoUbicacion,
+          ubicacion_gps: ubicacionGps,
+          tipo_renta: tipoRenta,
+          otros_concepto: otrosConcepto || null,
+          otros_monto: otrosMonto,
         });
 
       if (error) throw error;
@@ -289,6 +377,11 @@ export default function Cotizaciones() {
           status: 'activo',
           vendedor: selectedCotizacion.vendedor,
           dentro_fuera: 'Dentro',
+          // Pass location info from cotizacion to contrato
+          direccion: selectedCotizacion.direccion || null,
+          municipio: selectedCotizacion.municipio || null,
+          estado_ubicacion: selectedCotizacion.estado_ubicacion || null,
+          ubicacion_gps: selectedCotizacion.ubicacion_gps || null,
         })
         .select()
         .single();
@@ -342,6 +435,326 @@ export default function Cotizaciones() {
     } catch (error) {
       console.error('Error rejecting cotizacion:', error);
       toast({ variant: "destructive", title: "Error", description: "No se pudo rechazar la cotización" });
+    }
+  };
+
+  const handleEditCotizacion = (cot: CotizacionHistorial) => {
+    setEditingCotizacion(cot);
+    // Populate form with cotizacion data
+    setSelectedClienteId(cot.cliente_id || '');
+    setSelectedEquipoId(cot.equipo_id || '');
+    setAtencion(cot.atencion || '');
+    setTelefono(cot.telefono || '');
+    setCorreo(cot.correo || '');
+    setDiasRenta(cot.dias_renta.toString());
+    setPrecioBase(cot.precio_base || 0);
+    setEntregaRecoleccion(cot.entrega_recoleccion || 4000);
+    setSeguroPercent(cot.seguro_percent || 4);
+    setVendedor(cot.vendedor || '');
+    setVendedorCorreo(cot.vendedor_correo || '');
+    setVendedorTelefono(cot.vendedor_telefono || '');
+    setDireccion(cot.direccion || '');
+    setMunicipio(cot.municipio || '');
+    setEstadoUbicacion(cot.estado_ubicacion || '');
+    setUbicacionGps(cot.ubicacion_gps || '');
+    setTipoRenta((cot.tipo_renta as 'diario' | 'semanal' | 'mensual') || 'mensual');
+    setOtrosConcepto(cot.otros_concepto || '');
+    setOtrosMonto(cot.otros_monto || 0);
+    setIsProspecto(cot.es_prospecto || false);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateCotizacion = async () => {
+    if (!editingCotizacion || !user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('cotizaciones')
+        .update({
+          atencion,
+          telefono,
+          correo,
+          dias_renta: dias,
+          precio_base: precioBase,
+          entrega_recoleccion: entregaRecoleccion,
+          seguro_percent: seguroPercent,
+          subtotal: subtotal,
+          total_con_iva: subtotal * 1.16,
+          vendedor,
+          vendedor_correo: vendedorCorreo,
+          vendedor_telefono: vendedorTelefono,
+          direccion,
+          municipio,
+          estado_ubicacion: estadoUbicacion,
+          ubicacion_gps: ubicacionGps,
+          tipo_renta: tipoRenta,
+          otros_concepto: otrosConcepto || null,
+          otros_monto: otrosMonto,
+        })
+        .eq('id', editingCotizacion.id);
+
+      if (error) throw error;
+      
+      toast({ title: "Éxito", description: "Cotización actualizada correctamente" });
+      fetchHistorial();
+      setEditDialogOpen(false);
+      setEditingCotizacion(null);
+    } catch (error: any) {
+      console.error('Error updating cotizacion:', error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar la cotización" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const regeneratePDF = async (cot: CotizacionHistorial) => {
+    setLoading(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const marginBottom = 20;
+      
+      // Use stored cotizacion data
+      const tipoRentaLabel = cot.tipo_renta === 'diario' ? 'DIARIO' : cot.tipo_renta === 'semanal' ? 'SEMANAL' : 'MENSUAL';
+      const diasCot = cot.dias_renta;
+      const precioBaseCot = cot.precio_base || 0;
+      const entregaCot = cot.entrega_recoleccion || 4000;
+      const seguroPercentCot = cot.seguro_percent || 4;
+      
+      // Calculate prices
+      const precioMensualCot = precioBaseCot;
+      const precioSemanalCot = precioMensualCot / 3;
+      const precioDiarioCot = precioSemanalCot / 4;
+      
+      const getPrecioRentaCot = () => {
+        switch (cot.tipo_renta) {
+          case 'diario': return precioDiarioCot * diasCot;
+          case 'semanal': return precioSemanalCot * Math.ceil(diasCot / 7);
+          case 'mensual': return precioMensualCot * Math.ceil(diasCot / 30);
+          default: return precioBaseCot * diasCot;
+        }
+      };
+      
+      const precioTotalCot = getPrecioRentaCot();
+      const seguroCot = (precioTotalCot * seguroPercentCot) / 100;
+      const otrosM = cot.otros_monto || 0;
+      const subtotalCot = precioTotalCot + entregaCot + seguroCot + otrosM;
+      
+      // Load logo
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+        logoImg.src = '/comymaq-cotizacion-logo.png';
+      });
+
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        const logoMaxWidth = 70;
+        const logoMaxHeight = 25;
+        const aspectRatio = logoImg.naturalWidth / logoImg.naturalHeight;
+        let logoWidth = logoMaxWidth;
+        let logoHeight = logoWidth / aspectRatio;
+        if (logoHeight > logoMaxHeight) {
+          logoHeight = logoMaxHeight;
+          logoWidth = logoHeight * aspectRatio;
+        }
+        doc.addImage(logoImg, 'PNG', 14, 8, logoWidth, logoHeight);
+      }
+
+      // Date
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      const cotDate = new Date(cot.created_at).toLocaleDateString('es-MX', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      const ubicacionText = 'Escobedo Nuevo León, ' + cotDate;
+      doc.text(ubicacionText, pageWidth - 14 - doc.getTextWidth(ubicacionText), 38);
+
+      // Client data
+      const clientDataStartY = 48;
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`EMPRESA: ${cot.cliente_nombre.toUpperCase()}`, 14, clientDataStartY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`ATENCIÓN: ${(cot.atencion || '').toUpperCase()}`, 14, clientDataStartY + 8);
+      doc.text(`TELÉFONO: ${cot.telefono || ''}`, 14, clientDataStartY + 16);
+      doc.text(`correo: ${cot.correo || ''}`, 14, clientDataStartY + 24);
+
+      // Intro text
+      doc.setFontSize(10);
+      const introTextWidth = pageWidth - 28;
+      const introText = `Buen día:\n\nEspero que se encuentre bien. Por medio de la presente, me permito presentar la cotización formal correspondiente a la renta del equipo en cuestión.\n\nCabe señalar que los precios considerados en esta propuesta están calculados con base en una jornada de trabajo de 8 horas diarias, 50 horas semanales y un total de 200 horas mensuales.\n\nAsimismo, reiteramos nuestro compromiso de brindar a su personal una capacitación formal y completa sobre el uso y operación del equipo cotizado. De igual manera, garantizamos que el proceso de entrega y capacitación no se dará por concluido hasta que su personal se encuentre plenamente satisfecho y capacitado respecto al equipo.\n\nQuedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
+      const splitIntro = doc.splitTextToSize(introText, introTextWidth);
+      const introStartY = 95;
+      doc.text(splitIntro, 14, introStartY);
+      const introLineHeight = 5;
+      const introEndY = introStartY + (splitIntro.length * introLineHeight);
+      let yPos = introEndY + 10;
+
+      // Equipment section
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('EQUIPO COTIZADO EN ESTA OPORTUNIDAD', 16, yPos + 6);
+      yPos += 15;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.text(cot.equipo_descripcion.toUpperCase(), 14, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      if (cot.equipo_marca) {
+        doc.text(`MARCA: ${cot.equipo_marca.toUpperCase()}`, 14, yPos);
+        yPos += 6;
+      }
+      if (cot.equipo_modelo) {
+        doc.text(`MODELO: ${cot.equipo_modelo.toUpperCase()}`, 14, yPos);
+        yPos += 6;
+      }
+      yPos += 10;
+
+      // Reference prices table
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PRECIOS DE RENTA DE REFERENCIA', 16, yPos + 6);
+      yPos += 12;
+      autoTable(doc, {
+        startY: yPos,
+        head: [['PERIODO', 'PRECIO']],
+        body: [
+          ['MENSUAL (200 hrs)', formatCurrency(precioMensualCot)],
+          ['SEMANAL (50 hrs)', formatCurrency(precioSemanalCot)],
+          ['DIARIO (8 hrs)', formatCurrency(precioDiarioCot)],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [0, 100, 150] },
+        columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 50, halign: 'right' } },
+        margin: { left: 14 },
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Cost table
+      const costTableEstimatedHeight = 80;
+      if (yPos + costTableEstimatedHeight > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`COTIZACIÓN - RENTA ${tipoRentaLabel} (${diasCot} días)`, 16, yPos + 6);
+      yPos += 12;
+      
+      const pdfBody: string[][] = [
+        [`RENTA ${tipoRentaLabel} (${diasCot} días)`, formatCurrency(precioTotalCot)],
+        ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaCot)],
+        [`SEGURO DEL EQUIPO (${seguroPercentCot}% DEL COSTO DE LA RENTA)`, formatCurrency(seguroCot)],
+      ];
+      if (otrosM > 0 && cot.otros_concepto) {
+        pdfBody.push([cot.otros_concepto.toUpperCase(), formatCurrency(otrosM)]);
+      } else if (otrosM > 0) {
+        pdfBody.push(['OTROS SERVICIOS', formatCurrency(otrosM)]);
+      }
+      pdfBody.push(['SUBTOTAL (SIN IVA)', formatCurrency(subtotalCot)]);
+      pdfBody.push(['TOTAL (CON IVA 16%)', formatCurrency(subtotalCot * 1.16)]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [],
+        body: pdfBody,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3 },
+        columnStyles: { 0: { cellWidth: 110 }, 1: { cellWidth: 50, halign: 'right' } },
+        margin: { left: 14 },
+        tableWidth: 160,
+      });
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Remaining sections
+      const remainingContentHeight = 85;
+      if (yPos + remainingContentHeight > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('EN EL PRECIO INCLUYE', 16, yPos + 6);
+      yPos += 12;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('• ATENCIÓN A FALLAS EN GENERAL', 14, yPos);
+      yPos += 6;
+      doc.text('• ATENCIÓN ESPECIAL A DESHORAS', 14, yPos);
+      yPos += 12;
+
+      if (yPos + 50 > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFillColor(0, 100, 150);
+      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CONDICIONES DE PAGO', 16, yPos + 6);
+      yPos += 12;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text('CONTADO', 14, yPos);
+      yPos += 6;
+      doc.text('VIGENCIA DE LA COTIZACIÓN: 15 DÍAS', 14, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('LOS PRECIOS NO INCLUYEN I.V.A.', 14, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      const tiempoEntrega = 'TIEMPO DE ENTREGA: 24 HORAS DESPUÉS DE RECIBIR SU ORDEN DE COMPRA.';
+      const splitTiempo = doc.splitTextToSize(tiempoEntrega, pageWidth - 28);
+      doc.text(splitTiempo, 14, yPos);
+      yPos += splitTiempo.length * 5 + 8;
+
+      if (yPos + 35 > pageHeight - marginBottom) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.text('Sin más por el momento, esperando vernos favorecidos por su pedido.', 14, yPos);
+      yPos += 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text((cot.vendedor || '').toUpperCase(), 14, yPos);
+      yPos += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.text(`correo: ${cot.vendedor_correo || ''}`, 14, yPos);
+      yPos += 5;
+      doc.text(`Oficina: 01 81 89 01 07 12`, 14, yPos);
+      yPos += 5;
+      doc.text(`Cel.: ${cot.vendedor_telefono || ''}`, 14, yPos);
+
+      const fileName = `Cotizacion_${cot.cliente_nombre.replace(/\s+/g, '_')}_${new Date(cot.created_at).toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+
+      toast({ title: "PDF regenerado", description: `Cotización descargada como ${fileName}` });
+    } catch (error: any) {
+      console.error('Error regenerating PDF:', error);
+      toast({ title: "Error", description: "No se pudo regenerar el PDF", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1122,6 +1535,52 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   </div>
                 </div>
 
+                {/* Google Maps Location */}
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Ubicación (Google Maps)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      value={googleMapsUrl} 
+                      onChange={(e) => setGoogleMapsUrl(e.target.value)} 
+                      placeholder="https://maps.app.goo.gl/..."
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleResolveGoogleMapsUrl}
+                      disabled={loadingMapsUrl}
+                    >
+                      {loadingMapsUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Resolver'}
+                    </Button>
+                  </div>
+                  
+                  {(direccion || municipio || estadoUbicacion) && (
+                    <div className="grid grid-cols-1 gap-2 mt-2">
+                      <Input 
+                        value={direccion} 
+                        onChange={(e) => setDireccion(e.target.value)} 
+                        placeholder="Dirección"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input 
+                          value={municipio} 
+                          onChange={(e) => setMunicipio(e.target.value)} 
+                          placeholder="Municipio"
+                        />
+                        <Input 
+                          value={estadoUbicacion} 
+                          onChange={(e) => setEstadoUbicacion(e.target.value)} 
+                          placeholder="Estado"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2 border-t pt-4">
                   <Label className="text-sm font-medium">Datos del Vendedor</Label>
                   <Input value={vendedor} onChange={(e) => setVendedor(e.target.value)} placeholder="Nombre del vendedor" />
@@ -1301,32 +1760,52 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                         </TableCell>
                         <TableCell>{getStatusBadge(cot.status)}</TableCell>
                         <TableCell className="text-right">
-                          {cot.status === 'pendiente' && (
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => {
-                                  setSelectedCotizacion(cot);
-                                  setAcceptDialogOpen(true);
-                                }}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => handleRejectCotizacion(cot)}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                          {cot.status === 'aceptada' && cot.contrato_id && (
-                            <span className="text-xs text-muted-foreground">Contrato creado</span>
-                          )}
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => regeneratePDF(cot)}
+                              title="Ver/Descargar PDF"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {cot.status === 'pendiente' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditCotizacion(cot)}
+                                  title="Editar cotización"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-green-600 hover:text-green-700"
+                                  onClick={() => {
+                                    setSelectedCotizacion(cot);
+                                    setAcceptDialogOpen(true);
+                                  }}
+                                  title="Aceptar"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-600 hover:text-red-700"
+                                  onClick={() => handleRejectCotizacion(cot)}
+                                  title="Rechazar"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            {cot.status === 'aceptada' && cot.contrato_id && (
+                              <span className="text-xs text-muted-foreground">Contrato creado</span>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1385,6 +1864,71 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
             </Button>
             <Button onClick={handleAcceptCotizacion} disabled={acceptLoading} className="bg-green-600 hover:bg-green-700">
               {acceptLoading ? 'Procesando...' : 'Confirmar y Crear Contrato'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Cotización Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Cotización</DialogTitle>
+            <DialogDescription>
+              Modifica los datos de la cotización y guarda los cambios.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingCotizacion && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Días de Renta</Label>
+                <Input 
+                  type="number" 
+                  value={diasRenta} 
+                  onChange={(e) => setDiasRenta(e.target.value)} 
+                  min={1}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label>Precio Base</Label>
+                  <Input 
+                    type="number" 
+                    value={precioBase} 
+                    onChange={(e) => setPrecioBase(parseFloat(e.target.value) || 0)} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Entrega/Recolección</Label>
+                  <Input 
+                    type="number" 
+                    value={entregaRecoleccion} 
+                    onChange={(e) => setEntregaRecoleccion(parseFloat(e.target.value) || 0)} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Dirección</Label>
+                <Input value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio" />
+                <Input value={estadoUbicacion} onChange={(e) => setEstadoUbicacion(e.target.value)} placeholder="Estado" />
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm">Subtotal: {formatCurrency(subtotal)}</p>
+                <p className="font-bold">Total con IVA: {formatCurrency(subtotal * 1.16)}</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={loading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateCotizacion} disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </DialogFooter>
         </DialogContent>
