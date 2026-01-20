@@ -21,6 +21,7 @@ interface Cliente {
   celular: string | null;
   persona_contacto: string | null;
   direccion: string | null;
+  vendedor: string | null;
   created_at: string;
 }
 
@@ -41,6 +42,7 @@ export default function Clientes() {
   const [celular, setCelular] = useState("");
   const [personaContacto, setPersonaContacto] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [vendedorCliente, setVendedorCliente] = useState("");
 
   const { toast } = useToast();
   const { isAdmin, isVendedor } = useAuth();
@@ -101,6 +103,7 @@ export default function Clientes() {
       setCelular(cliente.celular || "");
       setPersonaContacto(cliente.persona_contacto || "");
       setDireccion(cliente.direccion || "");
+      setVendedorCliente(cliente.vendedor || "");
     } else {
       setEditingCliente(null);
       clearForm();
@@ -117,6 +120,7 @@ export default function Clientes() {
     setCelular("");
     setPersonaContacto("");
     setDireccion("");
+    setVendedorCliente("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,6 +136,7 @@ export default function Clientes() {
       celular: celular.trim() || null,
       persona_contacto: personaContacto.trim() || null,
       direccion: direccion.trim() || null,
+      vendedor: vendedorCliente.trim() || null,
     };
 
     let error;
@@ -240,19 +245,20 @@ export default function Clientes() {
                   <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Celular</TableHead>
+                  <TableHead>Vendedor</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                 <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Cargando clientes...
                     </TableCell>
                   </TableRow>
                 ) : filteredClientes.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "No se encontraron clientes" : "No hay clientes registrados"}
                     </TableCell>
                   </TableRow>
@@ -266,6 +272,7 @@ export default function Clientes() {
                       <TableCell>{cliente.correo_electronico || "N/A"}</TableCell>
                       <TableCell>{cliente.telefono || "N/A"}</TableCell>
                       <TableCell>{cliente.celular || "N/A"}</TableCell>
+                      <TableCell>{cliente.vendedor || "N/A"}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="ghost"
@@ -389,6 +396,16 @@ export default function Clientes() {
                     placeholder="Dirección completa"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vendedor">Vendedor Asignado</Label>
+                <Input
+                  id="vendedor"
+                  value={vendedorCliente}
+                  onChange={(e) => setVendedorCliente(e.target.value)}
+                  placeholder="Nombre del vendedor asignado"
+                />
               </div>
 
             </div>
