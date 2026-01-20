@@ -49,6 +49,7 @@ export type Database = {
           telefono: string | null
           tipo: string | null
           updated_at: string
+          vendedor: string | null
         }
         Insert: {
           celular?: string | null
@@ -63,6 +64,7 @@ export type Database = {
           telefono?: string | null
           tipo?: string | null
           updated_at?: string
+          vendedor?: string | null
         }
         Update: {
           celular?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           telefono?: string | null
           tipo?: string | null
           updated_at?: string
+          vendedor?: string | null
         }
         Relationships: []
       }
@@ -528,6 +531,60 @@ export type Database = {
           id?: string
           nombre_archivo?: string | null
           tipo_archivo?: string
+        }
+        Relationships: []
+      }
+      equipos_log: {
+        Row: {
+          cliente: string | null
+          contrato_folio: string | null
+          created_at: string
+          datos_extra: Json | null
+          descripcion: string | null
+          equipo_id: string
+          estado_anterior: string | null
+          estado_nuevo: string | null
+          id: string
+          numero_equipo: string
+          tipo_movimiento: string
+          ubicacion_anterior: string | null
+          ubicacion_nueva: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          cliente?: string | null
+          contrato_folio?: string | null
+          created_at?: string
+          datos_extra?: Json | null
+          descripcion?: string | null
+          equipo_id: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          numero_equipo: string
+          tipo_movimiento: string
+          ubicacion_anterior?: string | null
+          ubicacion_nueva?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          cliente?: string | null
+          contrato_folio?: string | null
+          created_at?: string
+          datos_extra?: Json | null
+          descripcion?: string | null
+          equipo_id?: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          numero_equipo?: string
+          tipo_movimiento?: string
+          ubicacion_anterior?: string | null
+          ubicacion_nueva?: string | null
+          usuario_email?: string | null
+          usuario_id?: string | null
         }
         Relationships: []
       }

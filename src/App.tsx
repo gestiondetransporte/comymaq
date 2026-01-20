@@ -20,6 +20,7 @@ import Configuracion from "./pages/Configuracion";
 import Clientes from "./pages/Clientes";
 import ReporteInventario from "./pages/ReporteInventario";
 import Cotizaciones from "./pages/Cotizaciones";
+import EquiposLog from "./pages/EquiposLog";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -156,6 +157,14 @@ function AppRoutes() {
           <ProtectedRoute>
             <Cotizaciones />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/equipos-log"
+        element={
+          <AdminRoute>
+            <EquiposLog />
+          </AdminRoute>
         }
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
