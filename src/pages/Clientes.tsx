@@ -18,6 +18,7 @@ interface Cliente {
   rfc: string | null;
   correo_electronico: string | null;
   telefono: string | null;
+  celular: string | null;
   persona_contacto: string | null;
   direccion: string | null;
   created_at: string;
@@ -37,6 +38,7 @@ export default function Clientes() {
   const [rfc, setRfc] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [celular, setCelular] = useState("");
   const [personaContacto, setPersonaContacto] = useState("");
   const [direccion, setDireccion] = useState("");
 
@@ -96,6 +98,7 @@ export default function Clientes() {
       setRfc(cliente.rfc || "");
       setCorreo(cliente.correo_electronico || "");
       setTelefono(cliente.telefono || "");
+      setCelular(cliente.celular || "");
       setPersonaContacto(cliente.persona_contacto || "");
       setDireccion(cliente.direccion || "");
     } else {
@@ -111,6 +114,7 @@ export default function Clientes() {
     setRfc("");
     setCorreo("");
     setTelefono("");
+    setCelular("");
     setPersonaContacto("");
     setDireccion("");
   };
@@ -125,6 +129,7 @@ export default function Clientes() {
       rfc: rfc.trim() || null,
       correo_electronico: correo.trim() || null,
       telefono: telefono.trim() || null,
+      celular: celular.trim() || null,
       persona_contacto: personaContacto.trim() || null,
       direccion: direccion.trim() || null,
     };
@@ -234,19 +239,20 @@ export default function Clientes() {
                   <TableHead>Contacto</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
+                  <TableHead>Celular</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
                       Cargando clientes...
                     </TableCell>
                   </TableRow>
                 ) : filteredClientes.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {searchQuery ? "No se encontraron clientes" : "No hay clientes registrados"}
                     </TableCell>
                   </TableRow>
@@ -259,6 +265,7 @@ export default function Clientes() {
                       <TableCell>{cliente.persona_contacto || "N/A"}</TableCell>
                       <TableCell>{cliente.correo_electronico || "N/A"}</TableCell>
                       <TableCell>{cliente.telefono || "N/A"}</TableCell>
+                      <TableCell>{cliente.celular || "N/A"}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           variant="ghost"
@@ -358,20 +365,32 @@ export default function Clientes() {
                     id="telefono"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="Teléfono"
+                    placeholder="Teléfono fijo"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="direccion">Dirección</Label>
-                <Input
-                  id="direccion"
-                  value={direccion}
-                  onChange={(e) => setDireccion(e.target.value)}
-                  placeholder="Dirección completa"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="celular">Celular</Label>
+                  <Input
+                    id="celular"
+                    value={celular}
+                    onChange={(e) => setCelular(e.target.value)}
+                    placeholder="Celular"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="direccion">Dirección</Label>
+                  <Input
+                    id="direccion"
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
+                    placeholder="Dirección completa"
+                  />
+                </div>
               </div>
+
             </div>
             <DialogFooter>
               <Button
