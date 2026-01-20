@@ -176,19 +176,28 @@ export type Database = {
           created_at: string
           created_by: string | null
           dias_renta: number
+          direccion: string | null
           entrega_recoleccion: number | null
           equipo_descripcion: string
           equipo_id: string | null
           equipo_marca: string | null
           equipo_modelo: string | null
           es_prospecto: boolean | null
+          estado_ubicacion: string | null
           id: string
+          municipio: string | null
+          otros_concepto: string | null
+          otros_monto: number | null
           precio_base: number
+          precio_total: number | null
+          seguro: number | null
           seguro_percent: number | null
           status: string | null
           subtotal: number
           telefono: string | null
+          tipo_renta: string | null
           total_con_iva: number
+          ubicacion_gps: string | null
           vendedor: string | null
           vendedor_correo: string | null
           vendedor_telefono: string | null
@@ -202,19 +211,28 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dias_renta: number
+          direccion?: string | null
           entrega_recoleccion?: number | null
           equipo_descripcion: string
           equipo_id?: string | null
           equipo_marca?: string | null
           equipo_modelo?: string | null
           es_prospecto?: boolean | null
+          estado_ubicacion?: string | null
           id?: string
+          municipio?: string | null
+          otros_concepto?: string | null
+          otros_monto?: number | null
           precio_base: number
+          precio_total?: number | null
+          seguro?: number | null
           seguro_percent?: number | null
           status?: string | null
           subtotal: number
           telefono?: string | null
+          tipo_renta?: string | null
           total_con_iva: number
+          ubicacion_gps?: string | null
           vendedor?: string | null
           vendedor_correo?: string | null
           vendedor_telefono?: string | null
@@ -228,19 +246,28 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dias_renta?: number
+          direccion?: string | null
           entrega_recoleccion?: number | null
           equipo_descripcion?: string
           equipo_id?: string | null
           equipo_marca?: string | null
           equipo_modelo?: string | null
           es_prospecto?: boolean | null
+          estado_ubicacion?: string | null
           id?: string
+          municipio?: string | null
+          otros_concepto?: string | null
+          otros_monto?: number | null
           precio_base?: number
+          precio_total?: number | null
+          seguro?: number | null
           seguro_percent?: number | null
           status?: string | null
           subtotal?: number
           telefono?: string | null
+          tipo_renta?: string | null
           total_con_iva?: number
+          ubicacion_gps?: string | null
           vendedor?: string | null
           vendedor_correo?: string | null
           vendedor_telefono?: string | null
