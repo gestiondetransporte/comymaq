@@ -34,6 +34,8 @@ interface Contrato {
   direccion: string | null;
   municipio: string | null;
   estado_ubicacion: string | null;
+  folio_factura: string | null;
+  motivo_baja: string | null;
   equipos?: {
     numero_equipo: string;
     descripcion: string;
