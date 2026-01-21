@@ -900,8 +900,10 @@ export function ContratoDetailsDialog({
             <div className="flex gap-2 flex-1 flex-wrap">
               {!isCreating && contrato && (
                 <>
-                  {/* Renovar button - only when finalized/vencido */}
-                  {(contrato.status === 'finalizado' || contrato.status === 'vencido') && (
+                  {/* Renovar button - when finalized, vencido, or active but expired */}
+                  {(contrato.status === 'finalizado' || 
+                    contrato.status === 'vencido' || 
+                    (contrato.status === 'activo' && contrato.fecha_vencimiento && new Date(contrato.fecha_vencimiento) < new Date())) && (
                     <Button
                       type="button"
                       variant="outline"

@@ -94,6 +94,13 @@ export function ContratoRenovacionDialog({
 
       if (renovacionError) throw renovacionError;
 
+      // Cancel any pending recolecciones for this contract
+      await supabase
+        .from("recolecciones")
+        .update({ status: "cancelada" })
+        .eq("contrato_id", contrato.id)
+        .in("status", ["pendiente", "en_proceso"]);
+
       // Update contract with new dates and status
       const { error: updateError } = await supabase
         .from("contratos")
