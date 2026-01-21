@@ -40,30 +40,13 @@ import {
   MapPin,
   User,
   RefreshCw,
-  Plus,
   Check,
   Clock,
   AlertTriangle,
   Search,
   Loader2,
+  Edit,
 } from "lucide-react";
-
-interface ContratoVencido {
-  id: string;
-  folio_contrato: string;
-  cliente: string;
-  direccion: string | null;
-  municipio: string | null;
-  estado_ubicacion: string | null;
-  ubicacion_gps: string | null;
-  fecha_vencimiento: string | null;
-  equipo_id: string | null;
-  equipos: {
-    id: string;
-    numero_equipo: string;
-    descripcion: string;
-  } | null;
-}
 
 interface Recoleccion {
   id: string;
@@ -93,15 +76,13 @@ interface Recoleccion {
 
 export default function Recolecciones() {
   const [recolecciones, setRecolecciones] = useState<Recoleccion[]>([]);
-  const [contratosVencidos, setContratosVencidos] = useState<ContratoVencido[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [programarDialogOpen, setProgramarDialogOpen] = useState(false);
-  const [selectedContrato, setSelectedContrato] = useState<ContratoVencido | null>(null);
   const [completarDialogOpen, setCompletarDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedRecoleccion, setSelectedRecoleccion] = useState<Recoleccion | null>(null);
-  const [formData, setFormData] = useState({
+  const [editFormData, setEditFormData] = useState({
     fecha_programada: "",
     chofer: "",
     transporte: "",
@@ -122,7 +103,8 @@ export default function Recolecciones() {
 
   const fetchData = async () => {
     setLoading(true);
-    await Promise.all([fetchRecolecciones(), fetchContratosVencidos()]);
+    await fetchRecolecciones();
+    await checkAndCreateRecolecciones();
     setLoading(false);
   };
 
@@ -144,10 +126,12 @@ export default function Recolecciones() {
     }
   };
 
-  const fetchContratosVencidos = async () => {
+  const checkAndCreateRecolecciones = async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
+      
+      // Get all active contracts that have expired
+      const { data: contratosVencidos, error } = await supabase
         .from("contratos")
         .select(`
           id,
@@ -158,83 +142,110 @@ export default function Recolecciones() {
           estado_ubicacion,
           ubicacion_gps,
           fecha_vencimiento,
-          equipo_id,
-          equipos:equipo_id (id, numero_equipo, descripcion)
+          equipo_id
         `)
         .eq("status", "activo")
         .lte("fecha_vencimiento", today)
-        .not("equipo_id", "is", null)
-        .order("fecha_vencimiento", { ascending: true });
+        .not("equipo_id", "is", null);
 
       if (error) throw error;
 
-      // Filter out contracts that already have pending recolecciones
-      const contratosConRecoleccion = recolecciones
+      if (!contratosVencidos || contratosVencidos.length === 0) return;
+
+      // Get existing recolecciones for these contracts
+      const contratoIds = contratosVencidos.map(c => c.id);
+      const { data: existingRecolecciones } = await supabase
+        .from("recolecciones")
+        .select("contrato_id, status")
+        .in("contrato_id", contratoIds);
+
+      const contratosConRecoleccionActiva = (existingRecolecciones || [])
         .filter(r => r.status === "pendiente" || r.status === "en_proceso")
         .map(r => r.contrato_id);
-      
-      const filteredData = (data || []).filter(
-        c => !contratosConRecoleccion.includes(c.id)
+
+      // Filter contracts that don't have active recolecciones
+      const contratosNuevos = contratosVencidos.filter(
+        c => !contratosConRecoleccionActiva.includes(c.id)
       );
 
-      setContratosVencidos(filteredData as ContratoVencido[]);
+      if (contratosNuevos.length === 0) return;
+
+      // Auto-create recolecciones
+      const { data: { user } } = await supabase.auth.getUser();
+      const tomorrow = addDays(new Date(), 1).toISOString().split("T")[0];
+
+      for (const contrato of contratosNuevos) {
+        await supabase.from("recolecciones").insert({
+          contrato_id: contrato.id,
+          equipo_id: contrato.equipo_id,
+          fecha_programada: tomorrow,
+          cliente: contrato.cliente,
+          direccion: contrato.direccion,
+          municipio: contrato.municipio,
+          estado_ubicacion: contrato.estado_ubicacion,
+          ubicacion_gps: contrato.ubicacion_gps,
+          status: "pendiente",
+          usuario_id: user?.id || null,
+          usuario_email: user?.email || null,
+          comentarios: "Recolección programada automáticamente por vencimiento de contrato",
+        });
+      }
+
+      // Refresh recolecciones after auto-creating
+      await fetchRecolecciones();
+
+      toast({
+        title: "Recolecciones Programadas",
+        description: `Se programaron ${contratosNuevos.length} recolección(es) automáticamente para contratos vencidos.`,
+      });
     } catch (error) {
-      console.error("Error fetching contratos vencidos:", error);
+      console.error("Error checking/creating recolecciones:", error);
     }
   };
 
-  const handleProgramarRecoleccion = (contrato: ContratoVencido) => {
-    setSelectedContrato(contrato);
-    setFormData({
-      fecha_programada: addDays(new Date(), 1).toISOString().split("T")[0],
-      chofer: "",
-      transporte: "",
-      comentarios: "",
+  const handleEditRecoleccion = (recoleccion: Recoleccion) => {
+    setSelectedRecoleccion(recoleccion);
+    setEditFormData({
+      fecha_programada: recoleccion.fecha_programada,
+      chofer: recoleccion.chofer || "",
+      transporte: recoleccion.transporte || "",
+      comentarios: recoleccion.comentarios || "",
     });
-    setProgramarDialogOpen(true);
+    setEditDialogOpen(true);
   };
 
-  const handleSubmitProgramar = async (e: React.FormEvent) => {
+  const handleSubmitEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedContrato) return;
+    if (!selectedRecoleccion) return;
 
     setSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { error } = await supabase.from("recolecciones").insert({
-        contrato_id: selectedContrato.id,
-        equipo_id: selectedContrato.equipo_id,
-        fecha_programada: formData.fecha_programada,
-        cliente: selectedContrato.cliente,
-        direccion: selectedContrato.direccion,
-        municipio: selectedContrato.municipio,
-        estado_ubicacion: selectedContrato.estado_ubicacion,
-        ubicacion_gps: selectedContrato.ubicacion_gps,
-        chofer: formData.chofer || null,
-        transporte: formData.transporte || null,
-        comentarios: formData.comentarios || null,
-        status: "pendiente",
-        usuario_id: user?.id || null,
-        usuario_email: user?.email || null,
-      });
+      const { error } = await supabase
+        .from("recolecciones")
+        .update({
+          fecha_programada: editFormData.fecha_programada,
+          chofer: editFormData.chofer || null,
+          transporte: editFormData.transporte || null,
+          comentarios: editFormData.comentarios || null,
+        })
+        .eq("id", selectedRecoleccion.id);
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Recolección programada correctamente",
+        description: "Recolección actualizada correctamente",
       });
 
-      setProgramarDialogOpen(false);
-      fetchData();
+      setEditDialogOpen(false);
+      fetchRecolecciones();
     } catch (error) {
-      console.error("Error scheduling recoleccion:", error);
+      console.error("Error updating recoleccion:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo programar la recolección",
+        description: "No se pudo actualizar la recolección",
       });
     } finally {
       setSubmitting(false);
@@ -322,11 +333,6 @@ export default function Recolecciones() {
     }
   };
 
-  const getDiasVencido = (fechaVencimiento: string | null) => {
-    if (!fechaVencimiento) return 0;
-    return differenceInDays(new Date(), new Date(fechaVencimiento));
-  };
-
   const filteredRecolecciones = recolecciones.filter((r) => {
     const matchesSearch =
       !searchQuery ||
@@ -349,7 +355,7 @@ export default function Recolecciones() {
             Recolección de Equipos
           </h1>
           <p className="text-muted-foreground">
-            Programa y gestiona la recolección de equipos con contratos vencidos
+            Las recolecciones se programan automáticamente cuando un contrato vence
           </p>
         </div>
         <Button variant="outline" onClick={fetchData}>
@@ -358,62 +364,21 @@ export default function Recolecciones() {
         </Button>
       </div>
 
-      {/* Contratos Vencidos Card */}
-      {contratosVencidos.length > 0 && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Contratos Vencidos Sin Recolección ({contratosVencidos.length})
-            </CardTitle>
-            <CardDescription>
-              Estos contratos están vencidos y necesitan programar recolección
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Folio</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Venció</TableHead>
-                  <TableHead>Días Vencido</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contratosVencidos.map((contrato) => (
-                  <TableRow key={contrato.id}>
-                    <TableCell className="font-medium">
-                      {contrato.folio_contrato}
-                    </TableCell>
-                    <TableCell>{contrato.cliente}</TableCell>
-                    <TableCell>
-                      {contrato.equipos?.numero_equipo} - {contrato.equipos?.descripcion}
-                    </TableCell>
-                    <TableCell>{formatDate(contrato.fecha_vencimiento)}</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">
-                        {getDiasVencido(contrato.fecha_vencimiento)} días
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        onClick={() => handleProgramarRecoleccion(contrato)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Programar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      {/* Info Card about automatic scheduling */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-3">
+            <Clock className="h-8 w-8 text-primary" />
+            <div>
+              <p className="font-medium">Recolecciones Automáticas</p>
+              <p className="text-sm text-muted-foreground">
+                Las recolecciones se programan automáticamente para el día siguiente cuando un contrato vence. 
+                Si el cliente renueva, la recolección se cancela automáticamente.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recolecciones Programadas */}
       <Card>
@@ -503,7 +468,7 @@ export default function Recolecciones() {
                     </TableCell>
                     <TableCell>
                       {recoleccion.chofer ? (
-                        <span className="flex items-center gap-1 text-sm">
+                        <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {recoleccion.chofer}
                         </span>
@@ -513,16 +478,27 @@ export default function Recolecciones() {
                     </TableCell>
                     <TableCell>{getStatusBadge(recoleccion.status)}</TableCell>
                     <TableCell>
-                      {recoleccion.status === "pendiente" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCompletarRecoleccion(recoleccion)}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Completar
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {recoleccion.status === "pendiente" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditRecoleccion(recoleccion)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCompletarRecoleccion(recoleccion)}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Completar
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -532,34 +508,26 @@ export default function Recolecciones() {
         </CardContent>
       </Card>
 
-      {/* Dialog para Programar Recolección */}
-      <Dialog open={programarDialogOpen} onOpenChange={setProgramarDialogOpen}>
+      {/* Dialog para Editar Recolección */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Programar Recolección</DialogTitle>
+            <DialogTitle>Editar Recolección</DialogTitle>
             <DialogDescription>
-              {selectedContrato && (
-                <>
-                  Contrato: {selectedContrato.folio_contrato} - Cliente:{" "}
-                  {selectedContrato.cliente}
-                </>
-              )}
+              Actualiza los datos de la recolección
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmitProgramar} className="space-y-4">
-            {selectedContrato?.equipos && (
+          <form onSubmit={handleSubmitEdit} className="space-y-4">
+            {selectedRecoleccion && (
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm font-medium">
-                  Equipo: {selectedContrato.equipos.numero_equipo} -{" "}
-                  {selectedContrato.equipos.descripcion}
+                  Equipo: {selectedRecoleccion.equipos?.numero_equipo} -{" "}
+                  {selectedRecoleccion.equipos?.descripcion}
                 </p>
-                {selectedContrato.direccion && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <MapPin className="h-3 w-3 inline mr-1" />
-                    {selectedContrato.direccion}
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Cliente: {selectedRecoleccion.cliente}
+                </p>
               </div>
             )}
 
@@ -569,9 +537,9 @@ export default function Recolecciones() {
                 id="fecha_programada"
                 type="date"
                 required
-                value={formData.fecha_programada}
+                value={editFormData.fecha_programada}
                 onChange={(e) =>
-                  setFormData({ ...formData, fecha_programada: e.target.value })
+                  setEditFormData({ ...editFormData, fecha_programada: e.target.value })
                 }
               />
             </div>
@@ -580,9 +548,9 @@ export default function Recolecciones() {
               <Label htmlFor="chofer">Chofer</Label>
               <Input
                 id="chofer"
-                value={formData.chofer}
+                value={editFormData.chofer}
                 onChange={(e) =>
-                  setFormData({ ...formData, chofer: e.target.value })
+                  setEditFormData({ ...editFormData, chofer: e.target.value })
                 }
                 placeholder="Nombre del chofer"
               />
@@ -592,9 +560,9 @@ export default function Recolecciones() {
               <Label htmlFor="transporte">Transporte</Label>
               <Input
                 id="transporte"
-                value={formData.transporte}
+                value={editFormData.transporte}
                 onChange={(e) =>
-                  setFormData({ ...formData, transporte: e.target.value })
+                  setEditFormData({ ...editFormData, transporte: e.target.value })
                 }
                 placeholder="Tipo de transporte o placas"
               />
@@ -604,9 +572,9 @@ export default function Recolecciones() {
               <Label htmlFor="comentarios">Comentarios</Label>
               <Textarea
                 id="comentarios"
-                value={formData.comentarios}
+                value={editFormData.comentarios}
                 onChange={(e) =>
-                  setFormData({ ...formData, comentarios: e.target.value })
+                  setEditFormData({ ...editFormData, comentarios: e.target.value })
                 }
                 rows={2}
               />
@@ -616,14 +584,14 @@ export default function Recolecciones() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setProgramarDialogOpen(false)}
+                onClick={() => setEditDialogOpen(false)}
                 disabled={submitting}
               >
                 Cancelar
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Programar Recolección
+                Guardar Cambios
               </Button>
             </DialogFooter>
           </form>
