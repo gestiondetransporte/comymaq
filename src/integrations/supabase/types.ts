@@ -94,11 +94,14 @@ export type Database = {
           direccion: string | null
           equipo_id: string | null
           estado_ubicacion: string | null
+          fecha_baja: string | null
           fecha_inicio: string | null
           fecha_vencimiento: string | null
           folio_contrato: string
+          folio_factura: string | null
           horas_trabajo: number | null
           id: string
+          motivo_baja: string | null
           municipio: string | null
           numero_contrato: string | null
           obra: string | null
@@ -118,11 +121,14 @@ export type Database = {
           direccion?: string | null
           equipo_id?: string | null
           estado_ubicacion?: string | null
+          fecha_baja?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato: string
+          folio_factura?: string | null
           horas_trabajo?: number | null
           id?: string
+          motivo_baja?: string | null
           municipio?: string | null
           numero_contrato?: string | null
           obra?: string | null
@@ -142,11 +148,14 @@ export type Database = {
           direccion?: string | null
           equipo_id?: string | null
           estado_ubicacion?: string | null
+          fecha_baja?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato?: string
+          folio_factura?: string | null
           horas_trabajo?: number | null
           id?: string
+          motivo_baja?: string | null
           municipio?: string | null
           numero_contrato?: string | null
           obra?: string | null
@@ -162,6 +171,65 @@ export type Database = {
             columns: ["equipo_id"]
             isOneToOne: false
             referencedRelation: "equipos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratos_renovaciones: {
+        Row: {
+          comentarios: string | null
+          contrato_id: string
+          created_at: string
+          dias_contratado_nuevo: number | null
+          fecha_inicio_anterior: string | null
+          fecha_inicio_nueva: string
+          fecha_renovacion: string
+          fecha_vencimiento_anterior: string | null
+          fecha_vencimiento_nueva: string
+          folio_factura: string | null
+          id: string
+          suma_nueva: number | null
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          comentarios?: string | null
+          contrato_id: string
+          created_at?: string
+          dias_contratado_nuevo?: number | null
+          fecha_inicio_anterior?: string | null
+          fecha_inicio_nueva: string
+          fecha_renovacion?: string
+          fecha_vencimiento_anterior?: string | null
+          fecha_vencimiento_nueva: string
+          folio_factura?: string | null
+          id?: string
+          suma_nueva?: number | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          comentarios?: string | null
+          contrato_id?: string
+          created_at?: string
+          dias_contratado_nuevo?: number | null
+          fecha_inicio_anterior?: string | null
+          fecha_inicio_nueva?: string
+          fecha_renovacion?: string
+          fecha_vencimiento_anterior?: string | null
+          fecha_vencimiento_nueva?: string
+          folio_factura?: string | null
+          id?: string
+          suma_nueva?: number | null
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_renovaciones_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
             referencedColumns: ["id"]
           },
         ]
@@ -754,6 +822,84 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recolecciones: {
+        Row: {
+          chofer: string | null
+          cliente: string | null
+          comentarios: string | null
+          contrato_id: string | null
+          created_at: string
+          direccion: string | null
+          equipo_id: string | null
+          estado_ubicacion: string | null
+          fecha_programada: string
+          fecha_recoleccion: string | null
+          id: string
+          municipio: string | null
+          status: string
+          transporte: string | null
+          ubicacion_gps: string | null
+          updated_at: string
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          chofer?: string | null
+          cliente?: string | null
+          comentarios?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          direccion?: string | null
+          equipo_id?: string | null
+          estado_ubicacion?: string | null
+          fecha_programada: string
+          fecha_recoleccion?: string | null
+          id?: string
+          municipio?: string | null
+          status?: string
+          transporte?: string | null
+          ubicacion_gps?: string | null
+          updated_at?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          chofer?: string | null
+          cliente?: string | null
+          comentarios?: string | null
+          contrato_id?: string | null
+          created_at?: string
+          direccion?: string | null
+          equipo_id?: string | null
+          estado_ubicacion?: string | null
+          fecha_programada?: string
+          fecha_recoleccion?: string | null
+          id?: string
+          municipio?: string | null
+          status?: string
+          transporte?: string | null
+          ubicacion_gps?: string | null
+          updated_at?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recolecciones_contrato_id_fkey"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recolecciones_equipo_id_fkey"
+            columns: ["equipo_id"]
+            isOneToOne: false
+            referencedRelation: "equipos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
