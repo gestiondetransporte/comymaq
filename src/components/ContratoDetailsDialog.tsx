@@ -32,7 +32,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink } from "lucide-react";
+import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink, RefreshCw, Ban, FileText, History } from "lucide-react";
+import { ContratoRenovacionDialog } from "./ContratoRenovacionDialog";
+import { ContratoBajaDialog } from "./ContratoBajaDialog";
+import { ContratoRenovacionesHistorial } from "./ContratoRenovacionesHistorial";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Cliente {
   id: string;
@@ -64,6 +68,8 @@ interface Contrato {
   direccion: string | null;
   municipio: string | null;
   estado_ubicacion: string | null;
+  folio_factura: string | null;
+  motivo_baja: string | null;
 }
 
 interface ContratoDetailsDialogProps {
@@ -87,6 +93,8 @@ export function ContratoDetailsDialog({
   const [loadingMapsUrl, setLoadingMapsUrl] = useState(false);
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [renovacionDialogOpen, setRenovacionDialogOpen] = useState(false);
+  const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
   const [equipos, setEquipos] = useState<Array<{ id: string; numero_equipo: string; descripcion: string; estado: string | null }>>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedClienteId, setSelectedClienteId] = useState<string>("");
@@ -846,6 +854,18 @@ export function ContratoDetailsDialog({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="folio_factura">Folio de Factura</Label>
+            <Input
+              id="folio_factura"
+              value={formData.folio_factura || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, folio_factura: e.target.value })
+              }
+              placeholder="Ej: FAC-2026-001"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="comentarios">Comentarios</Label>
             <Textarea
               id="comentarios"
@@ -857,36 +877,83 @@ export function ContratoDetailsDialog({
             />
           </div>
 
+          {/* Show motivo_baja if contract is cancelled */}
+          {contrato?.motivo_baja && (
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+              <p className="text-sm font-medium text-destructive">Motivo de Baja:</p>
+              <p className="text-sm">{contrato.motivo_baja}</p>
+            </div>
+          )}
+
+          {/* Historial de Renovaciones */}
+          {!isCreating && contrato && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Historial de Renovaciones
+              </Label>
+              <ContratoRenovacionesHistorial contratoId={contrato.id} />
+            </div>
+          )}
+
           <DialogFooter className="flex justify-between gap-2">
-            <div className="flex gap-2 flex-1">
+            <div className="flex gap-2 flex-1 flex-wrap">
               {!isCreating && contrato && (
-                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="destructive" className="gap-2">
-                      <Trash2 className="h-4 w-4" />
-                      Eliminar
+                <>
+                  {/* Renovar button - only when finalized/vencido */}
+                  {(contrato.status === 'finalizado' || contrato.status === 'vencido') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setRenovacionDialogOpen(true)}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Renovar
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer. Se eliminará permanentemente el contrato "{formData.folio_contrato}".
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={handleDelete} 
-                        disabled={loading}
-                        className="bg-destructive hover:bg-destructive/90"
-                      >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  )}
+
+                  {/* Dar de Baja button - only when active */}
+                  {contrato.status === 'activo' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setBajaDialogOpen(true)}
+                      className="gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Ban className="h-4 w-4" />
+                      Dar de Baja
+                    </Button>
+                  )}
+
+                  <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="destructive" className="gap-2">
+                        <Trash2 className="h-4 w-4" />
                         Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente el contrato "{formData.folio_contrato}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleDelete} 
+                          disabled={loading}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
               )}
             </div>
             <div className="flex gap-2">
@@ -911,6 +978,30 @@ export function ContratoDetailsDialog({
             </div>
           </DialogFooter>
         </form>
+
+        {/* Dialogs for renewal and baja */}
+        {contrato && (
+          <>
+            <ContratoRenovacionDialog
+              contrato={contrato}
+              open={renovacionDialogOpen}
+              onOpenChange={setRenovacionDialogOpen}
+              onRenovacionComplete={() => {
+                onUpdate();
+                onOpenChange(false);
+              }}
+            />
+            <ContratoBajaDialog
+              contrato={contrato}
+              open={bajaDialogOpen}
+              onOpenChange={setBajaDialogOpen}
+              onBajaComplete={() => {
+                onUpdate();
+                onOpenChange(false);
+              }}
+            />
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

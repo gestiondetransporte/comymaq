@@ -21,6 +21,7 @@ import Clientes from "./pages/Clientes";
 import ReporteInventario from "./pages/ReporteInventario";
 import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
+import Recolecciones from "./pages/Recolecciones";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -164,6 +165,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <EquiposLog />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/recolecciones"
+        element={
+          <AdminRoute>
+            <Recolecciones />
           </AdminRoute>
         }
       />
