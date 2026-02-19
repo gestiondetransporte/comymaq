@@ -22,6 +22,7 @@ import ReporteInventario from "./pages/ReporteInventario";
 import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
+import InventarioFisico from "./pages/InventarioFisico";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -174,6 +175,14 @@ function AppRoutes() {
           <AdminRoute>
             <Recolecciones />
           </AdminRoute>
+        }
+      />
+      <Route
+        path="/inventario-fisico"
+        element={
+          <ProtectedRoute>
+            <InventarioFisico />
+          </ProtectedRoute>
         }
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
