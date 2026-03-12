@@ -83,6 +83,13 @@ interface CotizacionHistorial {
   otros_monto: number | null;
 }
 
+interface VendedorOption {
+  id: string;
+  nombre: string;
+  correo: string | null;
+  telefono: string | null;
+}
+
 export default function Cotizaciones() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
@@ -90,6 +97,7 @@ export default function Cotizaciones() {
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [historial, setHistorial] = useState<CotizacionHistorial[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [vendedores, setVendedores] = useState<VendedorOption[]>([]);
   
 // Equipment search state
   const [modeloSearch, setModeloSearch] = useState('');
