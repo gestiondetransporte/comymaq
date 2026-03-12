@@ -157,7 +157,18 @@ export default function Cotizaciones() {
     fetchTodosEquipos();
     fetchModelosConfig();
     fetchHistorial();
+    fetchVendedores();
   }, []);
+
+  const fetchVendedores = async () => {
+    const { data, error } = await supabase
+      .from('personal')
+      .select('id, nombre, correo, telefono')
+      .eq('categoria', 'vendedor')
+      .eq('activo', true)
+      .order('nombre');
+    if (!error && data) setVendedores(data);
+  };
 
   const fetchClientes = async () => {
     const { data, error } = await supabase
