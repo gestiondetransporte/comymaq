@@ -691,13 +691,21 @@ export function EquipoDetailsDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="ubicacion_actual">Ubicación Actual</Label>
-                  <Input
-                    id="ubicacion_actual"
+                  <Select
                     value={formData.ubicacion_actual || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, ubicacion_actual: e.target.value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, ubicacion_actual: value })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar ubicación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bodega 1">Bodega 1</SelectItem>
+                      <SelectItem value="Bodega 2">Bodega 2</SelectItem>
+                      <SelectItem value="Bodega 3">Bodega 3</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
