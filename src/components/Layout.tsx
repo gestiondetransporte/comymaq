@@ -51,6 +51,7 @@ export default function Layout({ children }: LayoutProps) {
       { path: "/recolecciones", label: "Recolecciones", icon: Truck },
       { path: "/clientes", label: "Clientes", icon: Users },
       { path: "/almacenes", label: "Almacenes", icon: Building2 },
+      { path: "/personal", label: "Personal", icon: Users },
       { path: "/equipos-log", label: "Historial Equipos", icon: History },
       { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { path: "/reporte-inventario", label: "Reporte Inventario", icon: FileBarChart },
