@@ -1602,11 +1602,32 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
                 <div className="space-y-2 border-t pt-4">
                   <Label className="text-sm font-medium">Datos del Vendedor</Label>
-                  <Input value={vendedor} onChange={(e) => setVendedor(e.target.value)} placeholder="Nombre del vendedor" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input value={vendedorCorreo} onChange={(e) => setVendedorCorreo(e.target.value)} placeholder="Correo" />
-                    <Input value={vendedorTelefono} onChange={(e) => setVendedorTelefono(e.target.value)} placeholder="Teléfono" />
-                  </div>
+                  <Select
+                    value={vendedores.find(v => v.nombre === vendedor)?.id || ''}
+                    onValueChange={(id) => {
+                      const v = vendedores.find(v => v.id === id);
+                      if (v) {
+                        setVendedor(v.nombre);
+                        setVendedorCorreo(v.correo || '');
+                        setVendedorTelefono(v.telefono || '');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar vendedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendedores.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {vendedor && (
+                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <span>{vendedorCorreo || 'Sin correo'}</span>
+                      <span>{vendedorTelefono || 'Sin teléfono'}</span>
+                    </div>
+                  )}
                 </div>
 
                 <Button 
