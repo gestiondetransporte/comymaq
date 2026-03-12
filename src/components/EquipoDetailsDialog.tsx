@@ -625,13 +625,23 @@ export function EquipoDetailsDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="estado">Estado</Label>
-                  <Input
-                    id="estado"
+                  <Select
                     value={formData.estado || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, estado: e.target.value })
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, estado: value })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TALLER">TALLER</SelectItem>
+                      <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
+                      <SelectItem value="LIBRE">LIBRE</SelectItem>
+                      <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
+                      <SelectItem value="DENTRO">DENTRO</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
