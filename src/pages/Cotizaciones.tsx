@@ -83,6 +83,13 @@ interface CotizacionHistorial {
   otros_monto: number | null;
 }
 
+interface VendedorOption {
+  id: string;
+  nombre: string;
+  correo: string | null;
+  telefono: string | null;
+}
+
 export default function Cotizaciones() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [equipos, setEquipos] = useState<Equipo[]>([]);
@@ -90,6 +97,7 @@ export default function Cotizaciones() {
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [historial, setHistorial] = useState<CotizacionHistorial[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [vendedores, setVendedores] = useState<VendedorOption[]>([]);
   
 // Equipment search state
   const [modeloSearch, setModeloSearch] = useState('');
@@ -106,9 +114,9 @@ export default function Cotizaciones() {
   const [atencion, setAtencion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [correo, setCorreo] = useState('');
-  const [vendedor, setVendedor] = useState('CARLOS OMAR SANTANA RODRIGUEZ');
-  const [vendedorCorreo, setVendedorCorreo] = useState('cos.santana@live.com.mx');
-  const [vendedorTelefono, setVendedorTelefono] = useState('812 390 12 59');
+  const [vendedor, setVendedor] = useState('');
+  const [vendedorCorreo, setVendedorCorreo] = useState('');
+  const [vendedorTelefono, setVendedorTelefono] = useState('');
   
   // Prospecto form
   const [showProspectoForm, setShowProspectoForm] = useState(false);
@@ -149,7 +157,18 @@ export default function Cotizaciones() {
     fetchTodosEquipos();
     fetchModelosConfig();
     fetchHistorial();
+    fetchVendedores();
   }, []);
+
+  const fetchVendedores = async () => {
+    const { data, error } = await supabase
+      .from('personal')
+      .select('id, nombre, correo, telefono')
+      .eq('categoria', 'vendedor')
+      .eq('activo', true)
+      .order('nombre');
+    if (!error && data) setVendedores(data);
+  };
 
   const fetchClientes = async () => {
     const { data, error } = await supabase
@@ -1583,11 +1602,32 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
                 <div className="space-y-2 border-t pt-4">
                   <Label className="text-sm font-medium">Datos del Vendedor</Label>
-                  <Input value={vendedor} onChange={(e) => setVendedor(e.target.value)} placeholder="Nombre del vendedor" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input value={vendedorCorreo} onChange={(e) => setVendedorCorreo(e.target.value)} placeholder="Correo" />
-                    <Input value={vendedorTelefono} onChange={(e) => setVendedorTelefono(e.target.value)} placeholder="Teléfono" />
-                  </div>
+                  <Select
+                    value={vendedores.find(v => v.nombre === vendedor)?.id || ''}
+                    onValueChange={(id) => {
+                      const v = vendedores.find(v => v.id === id);
+                      if (v) {
+                        setVendedor(v.nombre);
+                        setVendedorCorreo(v.correo || '');
+                        setVendedorTelefono(v.telefono || '');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar vendedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendedores.map(v => (
+                        <SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {vendedor && (
+                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <span>{vendedorCorreo || 'Sin correo'}</span>
+                      <span>{vendedorTelefono || 'Sin teléfono'}</span>
+                    </div>
+                  )}
                 </div>
 
                 <Button 

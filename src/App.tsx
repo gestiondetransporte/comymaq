@@ -23,6 +23,7 @@ import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
 import InventarioFisico from "./pages/InventarioFisico";
+import Personal from "./pages/Personal";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -183,6 +184,14 @@ function AppRoutes() {
           <ProtectedRoute>
             <InventarioFisico />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/personal"
+        element={
+          <AdminRoute>
+            <Personal />
+          </AdminRoute>
         }
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

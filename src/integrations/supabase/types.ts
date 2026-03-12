@@ -802,6 +802,42 @@ export type Database = {
         }
         Relationships: []
       }
+      personal: {
+        Row: {
+          activo: boolean
+          categoria: string
+          correo: string | null
+          created_at: string
+          id: string
+          nombre: string
+          puesto: string | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria?: string
+          correo?: string | null
+          created_at?: string
+          id?: string
+          nombre: string
+          puesto?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          correo?: string | null
+          created_at?: string
+          id?: string
+          nombre?: string
+          puesto?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
