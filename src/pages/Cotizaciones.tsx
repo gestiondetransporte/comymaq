@@ -114,9 +114,9 @@ export default function Cotizaciones() {
   const [atencion, setAtencion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [correo, setCorreo] = useState('');
-  const [vendedor, setVendedor] = useState('CARLOS OMAR SANTANA RODRIGUEZ');
-  const [vendedorCorreo, setVendedorCorreo] = useState('cos.santana@live.com.mx');
-  const [vendedorTelefono, setVendedorTelefono] = useState('812 390 12 59');
+  const [vendedor, setVendedor] = useState('');
+  const [vendedorCorreo, setVendedorCorreo] = useState('');
+  const [vendedorTelefono, setVendedorTelefono] = useState('');
   
   // Prospecto form
   const [showProspectoForm, setShowProspectoForm] = useState(false);
