@@ -88,6 +88,7 @@ export default function EntradasSalidas() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
   const [fotoOdometro, setFotoOdometro] = useState<File | null>(null);
