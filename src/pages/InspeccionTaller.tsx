@@ -605,25 +605,21 @@ export default function InspeccionTaller() {
                   </div>
                 )}
 
-                {cambiarEstado && (
-                  <div className="space-y-2">
-                    <Label htmlFor="almacen_destino">Almacén de Destino (opcional)</Label>
-                    <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el almacén si deseas cambiar ubicación" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {almacenes.map((almacen) => (
-                          <SelectItem key={almacen.id} value={almacen.id}>
-                            {almacen.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                {/* Resultado Check List */}
+                <div className="space-y-2">
+                  <Label>Resultado del Check List *</Label>
+                  <Select value={resultadoCheckList} onValueChange={(v: "ok" | "no_ok") => setResultadoCheckList(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ok">✅ CHECK LIST OK - Liberar a Disponible</SelectItem>
+                      <SelectItem value="no_ok">❌ CHECK LIST NO OK - Regresar a Taller</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                {!cambiarEstado && (
+                {resultadoCheckList === "ok" && (
                   <div className="space-y-2">
                     <Label htmlFor="almacen_destino">Almacén de Destino *</Label>
                     <Select value={almacenDestino} onValueChange={setAlmacenDestino}>
@@ -640,6 +636,14 @@ export default function InspeccionTaller() {
                     </Select>
                   </div>
                 )}
+
+                {resultadoCheckList === "no_ok" && (
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+                    <p className="text-sm text-destructive font-medium">
+                      El equipo será regresado a Taller para reparación.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -654,13 +658,14 @@ export default function InspeccionTaller() {
             </Button>
             <Button
               onClick={handleLiberarEquipo}
-              disabled={loading}
+              disabled={loading || (resultadoCheckList === "ok" && !almacenDestino)}
+              variant={resultadoCheckList === "no_ok" ? "destructive" : "default"}
             >
               {loading 
                 ? "Guardando..." 
-                : cambiarEstado 
-                  ? "Registrar Inspección" 
-                  : "Liberar Equipo a Inventario"}
+                : resultadoCheckList === "ok"
+                  ? "✅ Liberar Equipo a Inventario"
+                  : "❌ Regresar a Taller"}
             </Button>
           </DialogFooter>
         </DialogContent>
