@@ -347,11 +347,11 @@ export function ContratoDetailsDialog({
 
         if (error) throw error;
 
-        // Update equipment status to 'rentado' if assigned
+        // Update equipment status to 'dentro' if assigned
         if (formData.equipo_id) {
           await supabase
             .from('equipos')
-            .update({ estado: 'rentado' })
+            .update({ estado: 'dentro' })
             .eq('id', formData.equipo_id);
         }
 
