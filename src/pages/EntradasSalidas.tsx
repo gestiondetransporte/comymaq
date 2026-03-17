@@ -710,12 +710,16 @@ export default function EntradasSalidas() {
 
             <div className="space-y-2">
               <Label htmlFor="chofer">Chofer</Label>
-              <Input
-                id="chofer"
-                placeholder="Nombre del chofer..."
-                value={chofer}
-                onChange={(e) => setChofer(e.target.value)}
-              />
+              <Select value={chofer} onValueChange={setChofer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar chofer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {choferes.map((c) => (
+                    <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
