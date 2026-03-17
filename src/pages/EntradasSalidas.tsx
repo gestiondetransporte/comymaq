@@ -552,9 +552,21 @@ export default function EntradasSalidas() {
   };
 
   const getTipoBadge = (tipo: string) => {
-    if (tipo === "entrada") return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Entrada</Badge>;
-    if (tipo === "salida") return <Badge variant="destructive">Salida</Badge>;
-    if (tipo === "traspaso") return <Badge variant="secondary" className="bg-blue-600 hover:bg-blue-700">Traspaso</Badge>;
+    const badges: Record<string, { label: string; className: string; variant?: string }> = {
+      'entrada_equipo': { label: 'Entrada de Equipo', className: 'bg-green-600 hover:bg-green-700' },
+      'regreso_renta': { label: 'Regreso de Renta', className: 'bg-green-600 hover:bg-green-700' },
+      'entrada': { label: 'Entrada', className: 'bg-green-600 hover:bg-green-700' },
+      'salida_renta': { label: 'Salida a Renta', className: 'bg-orange-600 hover:bg-orange-700' },
+      'salida_venta': { label: 'Salida Venta', className: 'bg-red-600 hover:bg-red-700' },
+      'salida_taller_externo': { label: 'Taller Externo', className: 'bg-purple-600 hover:bg-purple-700' },
+      'salida': { label: 'Salida', className: '' },
+      'traspaso': { label: 'Traspaso', className: 'bg-blue-600 hover:bg-blue-700' },
+    };
+    const badge = badges[tipo];
+    if (badge) {
+      if (tipo === 'salida') return <Badge variant="destructive">{badge.label}</Badge>;
+      return <Badge variant="default" className={badge.className}>{badge.label}</Badge>;
+    }
     return <Badge variant="outline">{tipo}</Badge>;
   };
 
