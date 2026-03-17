@@ -349,10 +349,10 @@ export default function InspeccionTaller() {
       }
 
       toast({
-        title: cambiarEstado ? "Inspección registrada" : "Equipo liberado",
-        description: cambiarEstado 
-          ? `Se ha registrado la inspección del equipo #${selectedEquipo.numero_equipo}`
-          : `El equipo #${selectedEquipo.numero_equipo} ha sido inspeccionado y liberado`,
+        title: resultadoCheckList === "ok" ? "CHECK LIST OK - Equipo liberado" : "CHECK LIST NO OK - Regresa a Taller",
+        description: resultadoCheckList === "ok"
+          ? `El equipo #${selectedEquipo.numero_equipo} ha sido aprobado y está DISPONIBLE`
+          : `El equipo #${selectedEquipo.numero_equipo} requiere reparación y regresa a TALLER`,
       });
 
       setShowInspeccionDialog(false);
