@@ -240,7 +240,8 @@ export default function Inventario() {
     return <Badge variant="outline">N/A</Badge>;
   };
 
-  const getDisponibilidadBadge = (equipo: Equipo) => {
+  const getDisponibilidadBadge = (equipo: Equipo | null) => {
+    if (!equipo) return <Badge variant="outline">N/A</Badge>;
     const estado = equipo.estado?.toUpperCase();
     if (estado) {
       switch (estado) {
