@@ -74,7 +74,7 @@ export default function EntradasSalidas() {
   const [searchParams] = useSearchParams();
   const equipoIdParam = searchParams.get('equipo_id');
   const [equipoId, setEquipoId] = useState("");
-  const [tipo, setTipo] = useState<"entrada" | "salida" | "traspaso">("entrada");
+  const [tipo, setTipo] = useState<string>("entrada_equipo");
   const [almacenOrigen, setAlmacenOrigen] = useState("");
   const [almacenDestino, setAlmacenDestino] = useState("");
   const [cliente, setCliente] = useState("");
@@ -450,14 +450,24 @@ export default function EntradasSalidas() {
 
         if (error) throw error;
 
-        // Si es entrada, enviar equipo a taller para inspección
-        if (tipo === "entrada") {
+        // Update equipment status based on movement type
+        const statusMap: Record<string, { estado: string; ubicacion?: string }> = {
+          'entrada_equipo': { estado: 'taller', ubicacion: 'Taller - Pendiente de Inspección' },
+          'regreso_renta': { estado: 'taller', ubicacion: 'Taller - Pendiente de Inspección' },
+          'salida_renta': { estado: 'dentro' },
+          'salida_venta': { estado: 'baja' },
+          'salida_taller_externo': { estado: 'taller_externo' },
+        };
+
+        const statusUpdate = statusMap[tipo];
+        if (statusUpdate) {
+          const updateData: Record<string, string> = { estado: statusUpdate.estado };
+          if (statusUpdate.ubicacion) {
+            updateData.ubicacion_actual = statusUpdate.ubicacion;
+          }
           const { error: updateError } = await supabase
             .from('equipos')
-            .update({ 
-              ubicacion_actual: 'Taller - Pendiente de Inspección',
-              estado: 'en_inspeccion'
-            })
+            .update(updateData)
             .eq('id', equipoData.id);
 
           if (updateError) throw updateError;
@@ -489,11 +499,18 @@ export default function EntradasSalidas() {
           if (archivosError) console.error('Error saving archivos:', archivosError);
         }
 
+        const tipoLabels: Record<string, string> = {
+          'entrada_equipo': 'Entrada de Equipo',
+          'regreso_renta': 'Regreso de Renta',
+          'salida_renta': 'Salida a Renta',
+          'salida_venta': 'Salida Venta',
+          'salida_taller_externo': 'Salida a Taller Externo',
+          'traspaso': 'Traspaso',
+        };
+
         toast({
           title: "Movimiento registrado",
-          description: tipo === "traspaso" 
-            ? `Traspaso registrado exitosamente para equipo ${equipoId}`
-            : `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente para equipo ${equipoId}`,
+          description: `${tipoLabels[tipo] || tipo} registrada exitosamente para equipo ${equipoId}`,
         });
         
         fetchMovimientos();
@@ -542,9 +559,21 @@ export default function EntradasSalidas() {
   };
 
   const getTipoBadge = (tipo: string) => {
-    if (tipo === "entrada") return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Entrada</Badge>;
-    if (tipo === "salida") return <Badge variant="destructive">Salida</Badge>;
-    if (tipo === "traspaso") return <Badge variant="secondary" className="bg-blue-600 hover:bg-blue-700">Traspaso</Badge>;
+    const badges: Record<string, { label: string; className: string; variant?: string }> = {
+      'entrada_equipo': { label: 'Entrada de Equipo', className: 'bg-green-600 hover:bg-green-700' },
+      'regreso_renta': { label: 'Regreso de Renta', className: 'bg-green-600 hover:bg-green-700' },
+      'entrada': { label: 'Entrada', className: 'bg-green-600 hover:bg-green-700' },
+      'salida_renta': { label: 'Salida a Renta', className: 'bg-orange-600 hover:bg-orange-700' },
+      'salida_venta': { label: 'Salida Venta', className: 'bg-red-600 hover:bg-red-700' },
+      'salida_taller_externo': { label: 'Taller Externo', className: 'bg-purple-600 hover:bg-purple-700' },
+      'salida': { label: 'Salida', className: '' },
+      'traspaso': { label: 'Traspaso', className: 'bg-blue-600 hover:bg-blue-700' },
+    };
+    const badge = badges[tipo];
+    if (badge) {
+      if (tipo === 'salida') return <Badge variant="destructive">{badge.label}</Badge>;
+      return <Badge variant="default" className={badge.className}>{badge.label}</Badge>;
+    }
     return <Badge variant="outline">{tipo}</Badge>;
   };
 
@@ -651,13 +680,16 @@ export default function EntradasSalidas() {
 
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo de Movimiento</Label>
-              <Select value={tipo} onValueChange={(value: "entrada" | "salida" | "traspaso") => setTipo(value)}>
+              <Select value={tipo} onValueChange={(value: string) => setTipo(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="entrada">Entrada</SelectItem>
-                  <SelectItem value="salida">Salida</SelectItem>
+                  <SelectItem value="entrada_equipo">Entrada de Equipo</SelectItem>
+                  <SelectItem value="regreso_renta">Regreso de Renta</SelectItem>
+                  <SelectItem value="salida_renta">Salida a Renta</SelectItem>
+                  <SelectItem value="salida_venta">Salida Venta</SelectItem>
+                  <SelectItem value="salida_taller_externo">Salida a Taller Externo</SelectItem>
                   <SelectItem value="traspaso">Traspaso entre Almacenes</SelectItem>
                 </SelectContent>
               </Select>
@@ -899,8 +931,13 @@ export default function EntradasSalidas() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="entrada">Entrada</SelectItem>
-                    <SelectItem value="salida">Salida</SelectItem>
+                    <SelectItem value="entrada_equipo">Entrada de Equipo</SelectItem>
+                    <SelectItem value="regreso_renta">Regreso de Renta</SelectItem>
+                    <SelectItem value="entrada">Entrada (legacy)</SelectItem>
+                    <SelectItem value="salida_renta">Salida a Renta</SelectItem>
+                    <SelectItem value="salida_venta">Salida Venta</SelectItem>
+                    <SelectItem value="salida_taller_externo">Taller Externo</SelectItem>
+                    <SelectItem value="salida">Salida (legacy)</SelectItem>
                     <SelectItem value="traspaso">Traspaso</SelectItem>
                   </SelectContent>
                 </Select>

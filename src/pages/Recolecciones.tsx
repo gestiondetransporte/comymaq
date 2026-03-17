@@ -274,11 +274,11 @@ export default function Recolecciones() {
 
       if (recolError) throw recolError;
 
-      // Update equipment status to available
+      // Equipment goes to taller on collection (regreso de renta)
       if (selectedRecoleccion.equipo_id) {
         await supabase
           .from("equipos")
-          .update({ estado: "disponible" })
+          .update({ estado: "taller", ubicacion_actual: "Taller - Pendiente de Inspección" })
           .eq("id", selectedRecoleccion.equipo_id);
       }
 

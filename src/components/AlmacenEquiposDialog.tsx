@@ -97,14 +97,20 @@ export function AlmacenEquiposDialog({
     if (!estado) return <Badge variant="outline">Sin estado</Badge>;
     
     const estadoLower = estado.toLowerCase();
-    if (estadoLower.includes("disponible")) {
+    if (estadoLower === "disponible") {
       return <Badge variant="default" className="bg-green-600">Disponible</Badge>;
     }
-    if (estadoLower.includes("rentado") || estadoLower.includes("en uso")) {
-      return <Badge variant="secondary" className="bg-blue-600">Rentado</Badge>;
+    if (estadoLower === "dentro" || estadoLower === "rentado") {
+      return <Badge variant="secondary" className="bg-blue-600 text-white">Dentro</Badge>;
     }
-    if (estadoLower.includes("mantenimiento") || estadoLower.includes("taller")) {
-      return <Badge variant="secondary" className="bg-orange-600">Mantenimiento</Badge>;
+    if (estadoLower === "taller" || estadoLower === "en_inspeccion") {
+      return <Badge variant="secondary" className="bg-orange-600 text-white">Taller</Badge>;
+    }
+    if (estadoLower === "taller_externo") {
+      return <Badge variant="secondary" className="bg-purple-600 text-white">Taller Externo</Badge>;
+    }
+    if (estadoLower === "baja") {
+      return <Badge variant="destructive">Baja</Badge>;
     }
     return <Badge variant="outline">{estado}</Badge>;
   };
