@@ -461,7 +461,7 @@ export default function Inventario() {
                           <span className="text-muted-foreground">Sin asignar</span>
                         )}
                       </TableCell>
-                      <TableCell>{getDisponibilidadBadge(equipo.contrato_activo)}</TableCell>
+                      <TableCell>{getDisponibilidadBadge(equipo)}</TableCell>
                       <TableCell>
                         {equipo.contrato_activo ? (
                           <div className="text-sm">
