@@ -358,6 +358,7 @@ export default function InspeccionTaller() {
       setShowInspeccionDialog(false);
       setSelectedEquipo(null);
       setCambiarEstado(false);
+      setResultadoCheckList("ok");
       fetchEquiposEnTaller();
       fetchTodosEquipos();
     } catch (error) {
