@@ -450,14 +450,24 @@ export default function EntradasSalidas() {
 
         if (error) throw error;
 
-        // Si es entrada, enviar equipo a taller para inspección
-        if (tipo === "entrada") {
+        // Update equipment status based on movement type
+        const statusMap: Record<string, { estado: string; ubicacion?: string }> = {
+          'entrada_equipo': { estado: 'taller', ubicacion: 'Taller - Pendiente de Inspección' },
+          'regreso_renta': { estado: 'taller', ubicacion: 'Taller - Pendiente de Inspección' },
+          'salida_renta': { estado: 'dentro' },
+          'salida_venta': { estado: 'baja' },
+          'salida_taller_externo': { estado: 'taller_externo' },
+        };
+
+        const statusUpdate = statusMap[tipo];
+        if (statusUpdate) {
+          const updateData: Record<string, string> = { estado: statusUpdate.estado };
+          if (statusUpdate.ubicacion) {
+            updateData.ubicacion_actual = statusUpdate.ubicacion;
+          }
           const { error: updateError } = await supabase
             .from('equipos')
-            .update({ 
-              ubicacion_actual: 'Taller - Pendiente de Inspección',
-              estado: 'en_inspeccion'
-            })
+            .update(updateData)
             .eq('id', equipoData.id);
 
           if (updateError) throw updateError;
