@@ -240,8 +240,28 @@ export default function Inventario() {
     return <Badge variant="outline">N/A</Badge>;
   };
 
-  const getDisponibilidadBadge = (contrato: any) => {
-    if (contrato) {
+  const getDisponibilidadBadge = (equipo: Equipo) => {
+    const estado = equipo.estado?.toUpperCase();
+    if (estado) {
+      switch (estado) {
+        case 'TALLER':
+          return <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">TALLER</Badge>;
+        case 'TALLER EXTERNO':
+        case 'TALLER_EXTERNO':
+          return <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">TALLER EXTERNO</Badge>;
+        case 'DENTRO':
+          return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">DENTRO</Badge>;
+        case 'DISPONIBLE':
+        case 'LIBRE':
+          return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
+        case 'BAJA':
+          return <Badge variant="destructive">BAJA</Badge>;
+        default:
+          return <Badge variant="outline">{equipo.estado}</Badge>;
+      }
+    }
+    // Fallback: contract-based logic
+    if (equipo.contrato_activo) {
       return <Badge variant="destructive">RENTADO</Badge>;
     }
     return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
@@ -441,7 +461,7 @@ export default function Inventario() {
                           <span className="text-muted-foreground">Sin asignar</span>
                         )}
                       </TableCell>
-                      <TableCell>{getDisponibilidadBadge(equipo.contrato_activo)}</TableCell>
+                      <TableCell>{getDisponibilidadBadge(equipo)}</TableCell>
                       <TableCell>
                         {equipo.contrato_activo ? (
                           <div className="text-sm">
