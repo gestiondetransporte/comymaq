@@ -407,11 +407,11 @@ export default function Cotizaciones() {
 
       if (contratoError) throw contratoError;
 
-      // 5. Update equipment status to 'rentado'
+      // 5. Update equipment status to 'dentro'
       if (selectedCotizacion.equipo_id) {
         await supabase
           .from('equipos')
-          .update({ estado: 'rentado' })
+          .update({ estado: 'dentro' })
           .eq('id', selectedCotizacion.equipo_id);
       }
 

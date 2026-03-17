@@ -74,7 +74,7 @@ export default function EntradasSalidas() {
   const [searchParams] = useSearchParams();
   const equipoIdParam = searchParams.get('equipo_id');
   const [equipoId, setEquipoId] = useState("");
-  const [tipo, setTipo] = useState<"entrada" | "salida" | "traspaso">("entrada");
+  const [tipo, setTipo] = useState<string>("entrada_equipo");
   const [almacenOrigen, setAlmacenOrigen] = useState("");
   const [almacenDestino, setAlmacenDestino] = useState("");
   const [cliente, setCliente] = useState("");
