@@ -58,6 +58,7 @@ export default function InspeccionTaller() {
   const [almacenDestino, setAlmacenDestino] = useState("");
   const [tecnico, setTecnico] = useState("");
   const [archivos, setArchivos] = useState<FileWithPreview[]>([]);
+  const [resultadoCheckList, setResultadoCheckList] = useState<"ok" | "no_ok">("ok");
   
   // Manual inspection states
   const [showManualInspeccionDialog, setShowManualInspeccionDialog] = useState(false);
