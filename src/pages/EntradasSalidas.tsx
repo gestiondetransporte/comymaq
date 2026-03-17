@@ -215,6 +215,22 @@ export default function EntradasSalidas() {
     }
   };
 
+  const fetchChoferes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('personal')
+        .select('id, nombre')
+        .ilike('puesto', '%chofer%')
+        .eq('activo', true)
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+      setChoferes(data || []);
+    } catch (error) {
+      console.error('Error fetching choferes:', error);
+    }
+  };
+
   const fetchUltimoContrato = async (numeroEquipo: string) => {
     if (!numeroEquipo.trim()) {
       setContratoInfo(null);
