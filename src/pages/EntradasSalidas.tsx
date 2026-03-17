@@ -924,8 +924,13 @@ export default function EntradasSalidas() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="entrada">Entrada</SelectItem>
-                    <SelectItem value="salida">Salida</SelectItem>
+                    <SelectItem value="entrada_equipo">Entrada de Equipo</SelectItem>
+                    <SelectItem value="regreso_renta">Regreso de Renta</SelectItem>
+                    <SelectItem value="entrada">Entrada (legacy)</SelectItem>
+                    <SelectItem value="salida_renta">Salida a Renta</SelectItem>
+                    <SelectItem value="salida_venta">Salida Venta</SelectItem>
+                    <SelectItem value="salida_taller_externo">Taller Externo</SelectItem>
+                    <SelectItem value="salida">Salida (legacy)</SelectItem>
                     <SelectItem value="traspaso">Traspaso</SelectItem>
                   </SelectContent>
                 </Select>
