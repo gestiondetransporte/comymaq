@@ -112,12 +112,26 @@ export function EquipoDetailsDialog({
   const { user } = useAuth();
 
   useEffect(() => {
-    if (equipo) {
-      setFormData(equipo);
+    if (equipo && open) {
+      // Fetch full equipo data to ensure all fields are loaded
+      const fetchFullEquipo = async () => {
+        const { data, error } = await supabase
+          .from('equipos')
+          .select('*')
+          .eq('id', equipo.id)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setFormData(data as Equipo);
+        } else {
+          setFormData(equipo);
+        }
+      };
+      fetchFullEquipo();
       fetchMantenimientoInfo();
       fetchModeloFoto();
     }
-  }, [equipo]);
+  }, [equipo, open]);
 
   // Update active tab when dialog opens
   useEffect(() => {
