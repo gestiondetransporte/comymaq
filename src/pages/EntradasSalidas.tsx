@@ -499,11 +499,18 @@ export default function EntradasSalidas() {
           if (archivosError) console.error('Error saving archivos:', archivosError);
         }
 
+        const tipoLabels: Record<string, string> = {
+          'entrada_equipo': 'Entrada de Equipo',
+          'regreso_renta': 'Regreso de Renta',
+          'salida_renta': 'Salida a Renta',
+          'salida_venta': 'Salida Venta',
+          'salida_taller_externo': 'Salida a Taller Externo',
+          'traspaso': 'Traspaso',
+        };
+
         toast({
           title: "Movimiento registrado",
-          description: tipo === "traspaso" 
-            ? `Traspaso registrado exitosamente para equipo ${equipoId}`
-            : `${tipo === "entrada" ? "Entrada" : "Salida"} registrada exitosamente para equipo ${equipoId}`,
+          description: `${tipoLabels[tipo] || tipo} registrada exitosamente para equipo ${equipoId}`,
         });
         
         fetchMovimientos();
