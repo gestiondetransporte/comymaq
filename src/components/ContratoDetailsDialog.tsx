@@ -426,7 +426,7 @@ export function ContratoDetailsDialog({
           if (newEquipoId && previousEquipoId !== newEquipoId) {
             await supabase
               .from('equipos')
-              .update({ estado: 'rentado' })
+              .update({ estado: 'dentro' })
               .eq('id', newEquipoId);
           }
         }
