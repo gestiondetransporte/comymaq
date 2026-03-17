@@ -242,28 +242,30 @@ export default function Inventario() {
 
   const getDisponibilidadBadge = (equipo: Equipo | null) => {
     if (!equipo) return <Badge variant="outline">N/A</Badge>;
-    const estado = equipo.estado?.toUpperCase();
+    const estado = equipo.estado?.toUpperCase()?.replace(/_/g, ' ') || '';
     if (estado) {
       switch (estado) {
         case 'TALLER':
+        case 'EN TALLER':
           return <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">TALLER</Badge>;
         case 'TALLER EXTERNO':
-        case 'TALLER_EXTERNO':
           return <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">TALLER EXTERNO</Badge>;
         case 'DENTRO':
-          return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">DENTRO</Badge>;
+        case 'RENTADO':
+        case 'EN RENTA':
+          return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">RENTADO</Badge>;
         case 'DISPONIBLE':
         case 'LIBRE':
           return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
         case 'BAJA':
           return <Badge variant="destructive">BAJA</Badge>;
         default:
-          return <Badge variant="outline">{equipo.estado}</Badge>;
+          return <Badge variant="outline">{equipo.estado?.toUpperCase()}</Badge>;
       }
     }
     // Fallback: contract-based logic
     if (equipo.contrato_activo) {
-      return <Badge variant="destructive">RENTADO</Badge>;
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">RENTADO</Badge>;
     }
     return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
   };
