@@ -651,13 +651,16 @@ export default function EntradasSalidas() {
 
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo de Movimiento</Label>
-              <Select value={tipo} onValueChange={(value: "entrada" | "salida" | "traspaso") => setTipo(value)}>
+              <Select value={tipo} onValueChange={(value: string) => setTipo(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="entrada">Entrada</SelectItem>
-                  <SelectItem value="salida">Salida</SelectItem>
+                  <SelectItem value="entrada_equipo">Entrada de Equipo</SelectItem>
+                  <SelectItem value="regreso_renta">Regreso de Renta</SelectItem>
+                  <SelectItem value="salida_renta">Salida a Renta</SelectItem>
+                  <SelectItem value="salida_venta">Salida Venta</SelectItem>
+                  <SelectItem value="salida_taller_externo">Salida a Taller Externo</SelectItem>
                   <SelectItem value="traspaso">Traspaso entre Almacenes</SelectItem>
                 </SelectContent>
               </Select>
