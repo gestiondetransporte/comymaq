@@ -115,6 +115,7 @@ export default function EntradasSalidas() {
     fetchMovimientos();
     fetchClientes();
     fetchAlmacenes();
+    fetchChoferes();
   }, []);
 
   // Actualizar la hora cada segundo
