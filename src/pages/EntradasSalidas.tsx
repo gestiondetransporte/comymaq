@@ -88,6 +88,7 @@ export default function EntradasSalidas() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
   const [fotoOdometro, setFotoOdometro] = useState<File | null>(null);
@@ -114,6 +115,7 @@ export default function EntradasSalidas() {
     fetchMovimientos();
     fetchClientes();
     fetchAlmacenes();
+    fetchChoferes();
   }, []);
 
   // Actualizar la hora cada segundo
@@ -210,6 +212,22 @@ export default function EntradasSalidas() {
       setAlmacenes(data || []);
     } catch (error) {
       console.error('Error fetching almacenes:', error);
+    }
+  };
+
+  const fetchChoferes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('personal')
+        .select('id, nombre')
+        .ilike('puesto', '%chofer%')
+        .eq('activo', true)
+        .order('nombre', { ascending: true });
+
+      if (error) throw error;
+      setChoferes(data || []);
+    } catch (error) {
+      console.error('Error fetching choferes:', error);
     }
   };
 
@@ -709,12 +727,16 @@ export default function EntradasSalidas() {
 
             <div className="space-y-2">
               <Label htmlFor="chofer">Chofer</Label>
-              <Input
-                id="chofer"
-                placeholder="Nombre del chofer..."
-                value={chofer}
-                onChange={(e) => setChofer(e.target.value)}
-              />
+              <Select value={chofer} onValueChange={setChofer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar chofer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {choferes.map((c) => (
+                    <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
