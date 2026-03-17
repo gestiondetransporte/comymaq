@@ -409,10 +409,10 @@ export function ContratoDetailsDialog({
         if (!wasActive && isNowActive && newEquipoId) {
           await supabase
             .from('equipos')
-            .update({ estado: 'rentado' })
+            .update({ estado: 'dentro' })
             .eq('id', newEquipoId);
         }
-        
+
         // If equipment changed on an active contract
         if (isNowActive) {
           // Old equipment becomes available
