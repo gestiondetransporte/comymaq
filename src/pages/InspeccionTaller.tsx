@@ -318,28 +318,30 @@ export default function InspeccionTaller() {
         }
       }
 
-      // 2. Actualizar el equipo solo si es inspección manual con cambio de estado
-      if (cambiarEstado && almacenDestino) {
+      // 2. Update equipment based on check list result
+      if (resultadoCheckList === "ok") {
+        // CHECK LIST OK → DISPONIBLE
         const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
+        const updateData: Record<string, string | null> = { 
+          estado: 'disponible',
+        };
+        if (almacenDestino) {
+          updateData.ubicacion_actual = `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`;
+          updateData.almacen_id = almacenDestino;
+        }
         const { error: equipoError } = await supabase
           .from('equipos')
-          .update({ 
-            estado: 'disponible',
-            ubicacion_actual: `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`,
-            almacen_id: almacenDestino
-          })
+          .update(updateData)
           .eq('id', selectedEquipo.id);
 
         if (equipoError) throw equipoError;
-      } else if (!cambiarEstado) {
-        // Inspección de recibo: siempre actualiza a disponible
-        const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
+      } else {
+        // CHECK LIST NO OK → TALLER
         const { error: equipoError } = await supabase
           .from('equipos')
           .update({ 
-            estado: 'disponible',
-            ubicacion_actual: `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`,
-            almacen_id: almacenDestino
+            estado: 'taller',
+            ubicacion_actual: 'Taller - Requiere reparación',
           })
           .eq('id', selectedEquipo.id);
 
