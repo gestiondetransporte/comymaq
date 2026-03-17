@@ -99,11 +99,11 @@ export default function InspeccionTaller() {
 
   const fetchEquiposEnTaller = async () => {
     try {
-      // Obtener equipos que están en inspección
+      // Obtener equipos que están en taller o en inspección
       const { data: equiposData, error: equiposError } = await supabase
         .from('equipos')
         .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
-        .eq('estado', 'en_inspeccion')
+        .in('estado', ['en_inspeccion', 'taller'])
         .order('numero_equipo', { ascending: true });
 
       if (equiposError) throw equiposError;
