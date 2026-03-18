@@ -31,8 +31,18 @@ interface Equipo {
   estado: string | null;
   categoria: string | null;
   clase: string | null;
+  anio: number | null;
+  proveedor: string | null;
+  precio_lista: number | null;
+  precio_real_cliente: number | null;
+  costo_proveedor_mxn: number | null;
+  costo_proveedor_usd: number | null;
+  ganancia: number | null;
   almacen_id: string | null;
   tipo_negocio: string | null;
+  asegurado: string | null;
+  ubicacion_actual: string | null;
+  codigo_qr: string | null;
   almacenes?: Almacen | null;
   contrato_activo?: {
     id: string;
@@ -120,8 +130,18 @@ export default function Inventario() {
         estado,
         categoria,
         clase,
+        anio,
+        proveedor,
+        precio_lista,
+        precio_real_cliente,
+        costo_proveedor_mxn,
+        costo_proveedor_usd,
+        ganancia,
         almacen_id,
         tipo_negocio,
+        asegurado,
+        ubicacion_actual,
+        codigo_qr,
         almacenes (
           id,
           nombre,

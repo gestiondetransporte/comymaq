@@ -270,32 +270,40 @@ export function EquipoDetailsDialog({
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const updatePayload = {
+        descripcion: formData.descripcion,
+        marca: formData.marca,
+        modelo: formData.modelo,
+        serie: formData.serie,
+        tipo: formData.tipo,
+        estado: formData.estado,
+        categoria: formData.categoria,
+        clase: formData.clase,
+        anio: formData.anio,
+        proveedor: formData.proveedor,
+        precio_lista: formData.precio_lista,
+        precio_real_cliente: formData.precio_real_cliente,
+        costo_proveedor_mxn: formData.costo_proveedor_mxn,
+        costo_proveedor_usd: formData.costo_proveedor_usd,
+        ganancia: formData.ganancia,
+        tipo_negocio: formData.tipo_negocio,
+        asegurado: formData.asegurado,
+        ubicacion_actual: formData.ubicacion_actual,
+        almacen_id: formData.almacen_id || null,
+      };
+
+      const { data: updatedEquipo, error } = await supabase
         .from("equipos")
-        .update({
-          descripcion: formData.descripcion,
-          marca: formData.marca,
-          modelo: formData.modelo,
-          serie: formData.serie,
-          tipo: formData.tipo,
-          estado: formData.estado,
-          categoria: formData.categoria,
-          clase: formData.clase,
-          anio: formData.anio,
-          proveedor: formData.proveedor,
-          precio_lista: formData.precio_lista,
-          precio_real_cliente: formData.precio_real_cliente,
-          costo_proveedor_mxn: formData.costo_proveedor_mxn,
-          costo_proveedor_usd: formData.costo_proveedor_usd,
-          ganancia: formData.ganancia,
-          tipo_negocio: formData.tipo_negocio,
-          asegurado: formData.asegurado,
-          ubicacion_actual: formData.ubicacion_actual,
-          almacen_id: formData.almacen_id || null,
-        })
-        .eq("id", equipo.id);
+        .update(updatePayload)
+        .eq("id", equipo.id)
+        .select("*")
+        .single();
 
       if (error) throw error;
+
+      if (updatedEquipo) {
+        setFormData(updatedEquipo as Equipo);
+      }
 
       toast({
         title: "Éxito",
