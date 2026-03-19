@@ -546,12 +546,13 @@ export default function EntradasSalidas() {
       setTieneDanos(false);
       setDescripcionDanos("");
       setContratoInfo(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registrando movimiento:', error);
+      const errorMsg = error?.message || error?.error_description || 'Error desconocido';
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo registrar el movimiento",
+        description: `No se pudo registrar el movimiento: ${errorMsg}`,
       });
     } finally {
       setLoading(false);
