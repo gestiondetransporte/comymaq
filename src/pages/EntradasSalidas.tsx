@@ -414,10 +414,20 @@ export default function EntradasSalidas() {
       const fotoCargadorUrl = await uploadSpecificPhoto(fotoCargador, 'cargador');
       const fotoExtintorUrl = await uploadSpecificPhoto(fotoExtintor, 'extintor');
 
+      // Mapear tipo del formulario al valor válido en la BD (CHECK constraint: entrada, salida, traspaso)
+      const tipoDbMap: Record<string, string> = {
+        'entrada_equipo': 'entrada',
+        'regreso_renta': 'entrada',
+        'salida_renta': 'salida',
+        'salida_venta': 'salida',
+        'salida_taller_externo': 'salida',
+        'traspaso': 'traspaso',
+      };
+
       const movimiento = {
         equipo_id: equipoData.id,
         created_by: user?.id,
-        tipo,
+        tipo: tipoDbMap[tipo] || 'entrada',
         fecha: new Date().toISOString(),
         cliente: cliente.trim() || null,
         obra: obra.trim() || null,
@@ -425,7 +435,7 @@ export default function EntradasSalidas() {
         transporte: transporte.trim() || null,
         serie: equipoData.serie,
         modelo: equipoData.modelo,
-        comentarios: observaciones.trim() || null,
+        comentarios: observaciones.trim() ? `[${tipo}] ${observaciones.trim()}` : `[${tipo}]`,
         fotografia_url: imageUrls[0] || null,
         fotografia_url_2: imageUrls[1] || null,
         fotografia_url_3: imageUrls[2] || null,
