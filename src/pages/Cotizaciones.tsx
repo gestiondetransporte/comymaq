@@ -311,13 +311,13 @@ export default function Cotizaciones() {
     }
   };
 
-  const saveCotizacion = async () => {
-    if (!selectedCliente || !selectedEquipo || !user) return;
+  const saveCotizacion = async (): Promise<string | null> => {
+    if (!selectedCliente || !selectedEquipo || !user) return null;
 
     const cliente = clientes.find(c => c.id === selectedClienteId);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cotizaciones')
         .insert({
           cliente_id: selectedClienteId,
@@ -348,13 +348,17 @@ export default function Cotizaciones() {
           tipo_renta: tipoRenta,
           otros_concepto: otrosConcepto || null,
           otros_monto: otrosMonto,
-        });
+        })
+        .select('folio_cotizacion')
+        .single();
 
       if (error) throw error;
       
       fetchHistorial();
+      return data?.folio_cotizacion || null;
     } catch (error: any) {
       console.error('Error saving cotizacion:', error);
+      return null;
     }
   };
 
@@ -925,12 +929,24 @@ export default function Cotizaciones() {
         }
       }
 
+      // Save cotizacion first to get folio
+      const folioCotizacion = await saveCotizacion();
+
       // Date header - separated from company name
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(80, 80, 80);
       const ubicacion = 'Escobedo Nuevo León, ' + formatDate();
       doc.text(ubicacion, pageWidth - 14 - doc.getTextWidth(ubicacion), 38);
+
+      // Folio
+      if (folioCotizacion) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const folioText = `Folio: ${folioCotizacion}`;
+        doc.text(folioText, pageWidth - 14 - doc.getTextWidth(folioText), 44);
+      }
 
       // Client data section starts at y=48
       const clientDataStartY = 48;
@@ -1161,8 +1177,6 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
 
       const fileName = `Cotizacion_${selectedCliente.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
-
-      await saveCotizacion();
 
       toast({ title: "PDF generado", description: `Cotización guardada como ${fileName}` });
     } catch (error: any) {
