@@ -311,13 +311,13 @@ export default function Cotizaciones() {
     }
   };
 
-  const saveCotizacion = async () => {
-    if (!selectedCliente || !selectedEquipo || !user) return;
+  const saveCotizacion = async (): Promise<string | null> => {
+    if (!selectedCliente || !selectedEquipo || !user) return null;
 
     const cliente = clientes.find(c => c.id === selectedClienteId);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cotizaciones')
         .insert({
           cliente_id: selectedClienteId,
@@ -348,13 +348,17 @@ export default function Cotizaciones() {
           tipo_renta: tipoRenta,
           otros_concepto: otrosConcepto || null,
           otros_monto: otrosMonto,
-        });
+        })
+        .select('folio_cotizacion')
+        .single();
 
       if (error) throw error;
       
       fetchHistorial();
+      return data?.folio_cotizacion || null;
     } catch (error: any) {
       console.error('Error saving cotizacion:', error);
+      return null;
     }
   };
 
