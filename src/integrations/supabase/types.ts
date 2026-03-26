@@ -252,6 +252,7 @@ export type Database = {
           equipo_modelo: string | null
           es_prospecto: boolean | null
           estado_ubicacion: string | null
+          folio_cotizacion: string | null
           id: string
           municipio: string | null
           otros_concepto: string | null
@@ -287,6 +288,7 @@ export type Database = {
           equipo_modelo?: string | null
           es_prospecto?: boolean | null
           estado_ubicacion?: string | null
+          folio_cotizacion?: string | null
           id?: string
           municipio?: string | null
           otros_concepto?: string | null
@@ -322,6 +324,7 @@ export type Database = {
           equipo_modelo?: string | null
           es_prospecto?: boolean | null
           estado_ubicacion?: string | null
+          folio_cotizacion?: string | null
           id?: string
           municipio?: string | null
           otros_concepto?: string | null
@@ -971,6 +974,7 @@ export type Database = {
         Returns: undefined
       }
       generate_contrato_folio: { Args: never; Returns: string }
+      generate_cotizacion_folio: { Args: never; Returns: string }
       generate_mantenimiento_id: { Args: never; Returns: string }
       has_role: {
         Args: {

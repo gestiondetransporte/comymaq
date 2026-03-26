@@ -52,6 +52,7 @@ interface ModeloConfig {
 
 interface CotizacionHistorial {
   id: string;
+  folio_cotizacion: string | null;
   cliente_id: string | null;
   cliente_nombre: string;
   equipo_id: string | null;
@@ -207,7 +208,7 @@ export default function Cotizaciones() {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .select('id, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto')
+        .select('id, folio_cotizacion, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto')
         .order('created_at', { ascending: false })
         .limit(50);
       
@@ -592,6 +593,15 @@ export default function Cotizaciones() {
       });
       const ubicacionText = 'Escobedo Nuevo León, ' + cotDate;
       doc.text(ubicacionText, pageWidth - 14 - doc.getTextWidth(ubicacionText), 38);
+
+      // Folio
+      if (cot.folio_cotizacion) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const folioText = `Folio: ${cot.folio_cotizacion}`;
+        doc.text(folioText, pageWidth - 14 - doc.getTextWidth(folioText), 44);
+      }
 
       // Client data
       const clientDataStartY = 48;
@@ -1770,7 +1780,8 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                     <TableRow>
+                      <TableHead>Folio</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Equipo</TableHead>
@@ -1782,7 +1793,12 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   </TableHeader>
                   <TableBody>
                     {historial.map((cot) => (
-                      <TableRow key={cot.id}>
+                       <TableRow key={cot.id}>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {cot.folio_cotizacion || '—'}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-sm">
                           {formatDateShort(cot.created_at)}
                         </TableCell>
