@@ -1178,8 +1178,6 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
       const fileName = `Cotizacion_${selectedCliente.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
-      await saveCotizacion();
-
       toast({ title: "PDF generado", description: `Cotización guardada como ${fileName}` });
     } catch (error: any) {
       console.error('Error generating PDF:', error);
