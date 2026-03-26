@@ -929,12 +929,24 @@ export default function Cotizaciones() {
         }
       }
 
+      // Save cotizacion first to get folio
+      const folioCotizacion = await saveCotizacion();
+
       // Date header - separated from company name
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(80, 80, 80);
       const ubicacion = 'Escobedo Nuevo León, ' + formatDate();
       doc.text(ubicacion, pageWidth - 14 - doc.getTextWidth(ubicacion), 38);
+
+      // Folio
+      if (folioCotizacion) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const folioText = `Folio: ${folioCotizacion}`;
+        doc.text(folioText, pageWidth - 14 - doc.getTextWidth(folioText), 44);
+      }
 
       // Client data section starts at y=48
       const clientDataStartY = 48;
