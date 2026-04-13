@@ -51,11 +51,8 @@ interface EntradaSalida {
   fotografia_url: string | null;
   fotografia_url_2: string | null;
   fotografia_url_3: string | null;
-  foto_odometro_url: string | null;
-  foto_calca_url: string | null;
-  foto_tablero_url: string | null;
-  foto_cargador_url: string | null;
-  foto_extintor_url: string | null;
+  lleva_extintor: boolean | null;
+  odometro: number | null;
   tiene_danos: boolean | null;
   descripcion_danos: string | null;
   equipos: {
@@ -152,11 +149,8 @@ export default function EntradasSalidas() {
           fotografia_url,
           fotografia_url_2,
           fotografia_url_3,
-          foto_odometro_url,
-          foto_calca_url,
-          foto_tablero_url,
-          foto_cargador_url,
-          foto_extintor_url,
+          lleva_extintor,
+          odometro,
           tiene_danos,
           descripcion_danos,
           equipos (
