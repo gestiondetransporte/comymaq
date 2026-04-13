@@ -21,7 +21,9 @@ import {
   AlertCircle,
   Image as ImageIcon,
   FileIcon,
-  Warehouse
+  Warehouse,
+  ShieldCheck,
+  Gauge
 } from "lucide-react";
 
 interface EntradaSalidaDetailsDialogProps {
@@ -46,11 +48,8 @@ interface MovimientoDetalle {
   fotografia_url: string | null;
   fotografia_url_2: string | null;
   fotografia_url_3: string | null;
-  foto_odometro_url: string | null;
-  foto_calca_url: string | null;
-  foto_tablero_url: string | null;
-  foto_cargador_url: string | null;
-  foto_extintor_url: string | null;
+  lleva_extintor: boolean | null;
+  odometro: number | null;
   equipos: {
     numero_equipo: string;
     descripcion: string;
@@ -271,6 +270,18 @@ export function EntradaSalidaDetailsDialog({
                     </>
                   )}
 
+                  <Separator className="my-2" />
+                  <InfoRow 
+                    icon={ShieldCheck} 
+                    label="¿Lleva extintor?" 
+                    value={movimiento.lleva_extintor === true ? 'Sí' : movimiento.lleva_extintor === false ? 'No' : 'N/A'} 
+                  />
+                  <InfoRow 
+                    icon={Gauge} 
+                    label="Odómetro" 
+                    value={movimiento.odometro != null ? String(movimiento.odometro) : 'N/A'} 
+                  />
+
                   {movimiento.comentarios && (
                     <>
                       <Separator className="my-2" />
@@ -306,17 +317,6 @@ export function EntradaSalidaDetailsDialog({
               ]}
             />
 
-            {/* Fotografías Específicas */}
-            <PhotoSection
-              title="Fotografías Específicas"
-              photos={[
-                { url: movimiento.foto_odometro_url, label: 'Odómetro' },
-                { url: movimiento.foto_calca_url, label: 'Calca' },
-                { url: movimiento.foto_tablero_url, label: 'Tablero' },
-                { url: movimiento.foto_cargador_url, label: 'Cargador' },
-                { url: movimiento.foto_extintor_url, label: 'Extintor' },
-              ]}
-            />
 
             {/* Archivos Adicionales */}
             {archivos.length > 0 && (
