@@ -96,11 +96,8 @@ export default function EntradasSalidas() {
   const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
-  const [fotoOdometro, setFotoOdometro] = useState<File | null>(null);
-  const [fotoCalca, setFotoCalca] = useState<File | null>(null);
-  const [fotoTablero, setFotoTablero] = useState<File | null>(null);
-  const [fotoCargador, setFotoCargador] = useState<File | null>(null);
-  const [fotoExtintor, setFotoExtintor] = useState<File | null>(null);
+  const [llevaExtintor, setLlevaExtintor] = useState<boolean>(false);
+  const [odometro, setOdometro] = useState<string>("");
   const [tieneDanos, setTieneDanos] = useState(false);
   const [descripcionDanos, setDescripcionDanos] = useState("");
   const [selectedMovimientoId, setSelectedMovimientoId] = useState<string | null>(null);
