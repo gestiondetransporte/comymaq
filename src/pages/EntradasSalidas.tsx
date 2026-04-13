@@ -414,30 +414,7 @@ export default function EntradasSalidas() {
         }
       }
 
-      // Subir fotos específicas
-      const uploadSpecificPhoto = async (file: File | null, prefix: string): Promise<string | null> => {
-        if (!file || !isOnline) return null;
-        
-        const fileName = `${prefix}-${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('fotografias')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('fotografias')
-          .getPublicUrl(fileName);
-
-        return publicUrl;
-      };
-
-      const fotoOdometroUrl = await uploadSpecificPhoto(fotoOdometro, 'odometro');
-      const fotoCalcaUrl = await uploadSpecificPhoto(fotoCalca, 'calca');
-      const fotoTableroUrl = await uploadSpecificPhoto(fotoTablero, 'tablero');
-      const fotoCargadorUrl = await uploadSpecificPhoto(fotoCargador, 'cargador');
-      const fotoExtintorUrl = await uploadSpecificPhoto(fotoExtintor, 'extintor');
-
+      // Upload specific photos removed - no longer using specific photo fields
       // Mapear tipo del formulario al valor válido en la BD (CHECK constraint: entrada, salida, traspaso)
       const tipoDbMap: Record<string, string> = {
         'entrada_equipo': 'entrada',
@@ -463,11 +440,13 @@ export default function EntradasSalidas() {
         fotografia_url: imageUrls[0] || null,
         fotografia_url_2: imageUrls[1] || null,
         fotografia_url_3: imageUrls[2] || null,
-        foto_odometro_url: fotoOdometroUrl,
-        foto_calca_url: fotoCalcaUrl,
-        foto_tablero_url: fotoTableroUrl,
-        foto_cargador_url: fotoCargadorUrl,
-        foto_extintor_url: fotoExtintorUrl,
+        foto_odometro_url: null,
+        foto_calca_url: null,
+        foto_tablero_url: null,
+        foto_cargador_url: null,
+        foto_extintor_url: null,
+        lleva_extintor: llevaExtintor,
+        odometro: odometro.trim() ? parseFloat(odometro) : null,
         tiene_danos: tieneDanos,
         descripcion_danos: tieneDanos && descripcionDanos.trim() ? descripcionDanos.trim() : null,
         almacen_origen_id: tipo === "traspaso" ? almacenOrigen : null,
@@ -572,11 +551,8 @@ export default function EntradasSalidas() {
       setAlmacenOrigen("");
       setAlmacenDestino("");
       setFiles([]);
-      setFotoOdometro(null);
-      setFotoCalca(null);
-      setFotoTablero(null);
-      setFotoCargador(null);
-      setFotoExtintor(null);
+      setLlevaExtintor(false);
+      setOdometro("");
       setTieneDanos(false);
       setDescripcionDanos("");
       setContratoInfo(null);
@@ -880,69 +856,28 @@ export default function EntradasSalidas() {
               )}
             </div>
 
-            <div className="space-y-4">
-              <Label className="text-base font-semibold">Fotos Específicas del Equipo</Label>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fotoOdometro">Foto Odómetro</Label>
-                  <Input
-                    id="fotoOdometro"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => setFotoOdometro(e.target.files?.[0] || null)}
-                  />
-                  {fotoOdometro && <p className="text-xs text-muted-foreground">{fotoOdometro.name}</p>}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="llevaExtintor" className="text-base font-semibold">¿Lleva extintor?</Label>
+                  <p className="text-sm text-muted-foreground">Indica si el equipo lleva extintor</p>
                 </div>
+                <Switch
+                  id="llevaExtintor"
+                  checked={llevaExtintor}
+                  onCheckedChange={setLlevaExtintor}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fotoCalca">Foto de Calca</Label>
-                  <Input
-                    id="fotoCalca"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => setFotoCalca(e.target.files?.[0] || null)}
-                  />
-                  {fotoCalca && <p className="text-xs text-muted-foreground">{fotoCalca.name}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fotoTablero">Foto de Tablero</Label>
-                  <Input
-                    id="fotoTablero"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => setFotoTablero(e.target.files?.[0] || null)}
-                  />
-                  {fotoTablero && <p className="text-xs text-muted-foreground">{fotoTablero.name}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fotoCargador">Foto de Cargador</Label>
-                  <Input
-                    id="fotoCargador"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => setFotoCargador(e.target.files?.[0] || null)}
-                  />
-                  {fotoCargador && <p className="text-xs text-muted-foreground">{fotoCargador.name}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fotoExtintor">Foto de Extintor</Label>
-                  <Input
-                    id="fotoExtintor"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => setFotoExtintor(e.target.files?.[0] || null)}
-                  />
-                  {fotoExtintor && <p className="text-xs text-muted-foreground">{fotoExtintor.name}</p>}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="odometro">Odómetro</Label>
+                <Input
+                  id="odometro"
+                  type="number"
+                  placeholder="Lectura del odómetro..."
+                  value={odometro}
+                  onChange={(e) => setOdometro(e.target.value)}
+                />
               </div>
             </div>
 
