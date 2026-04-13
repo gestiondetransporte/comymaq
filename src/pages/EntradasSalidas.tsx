@@ -699,19 +699,46 @@ export default function EntradasSalidas() {
             </div>
 
             {contratoInfo && (
-              <Card className="bg-muted/50">
+              <Card className="bg-muted/50 border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium">Último Contrato</CardTitle>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    📋 Contrato Activo Encontrado
+                    <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Folio:</span>
+                    <span className="font-medium">{contratoInfo.folio_contrato}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cliente:</span>
                     <span className="font-medium">{contratoInfo.cliente}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Número de Contrato:</span>
-                    <span className="font-medium">{contratoInfo.numero_contrato || contratoInfo.folio_contrato}</span>
-                  </div>
+                  {contratoInfo.obra && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Obra:</span>
+                      <span className="font-medium">{contratoInfo.obra}</span>
+                    </div>
+                  )}
+                  {contratoInfo.direccion && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Dirección:</span>
+                      <span className="font-medium">{contratoInfo.direccion}</span>
+                    </div>
+                  )}
+                  {contratoInfo.municipio && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Municipio:</span>
+                      <span className="font-medium">{contratoInfo.municipio}</span>
+                    </div>
+                  )}
+                  {contratoInfo.vendedor && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Vendedor:</span>
+                      <span className="font-medium">{contratoInfo.vendedor}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
