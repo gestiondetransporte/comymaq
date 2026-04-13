@@ -68,6 +68,11 @@ interface ContratoInfo {
   cliente: string;
   numero_contrato: string;
   folio_contrato: string;
+  obra: string | null;
+  vendedor: string | null;
+  direccion: string | null;
+  municipio: string | null;
+  estado_ubicacion: string | null;
 }
 
 export default function EntradasSalidas() {
@@ -234,6 +239,8 @@ export default function EntradasSalidas() {
   const fetchUltimoContrato = async (numeroEquipo: string) => {
     if (!numeroEquipo.trim()) {
       setContratoInfo(null);
+      setCliente("");
+      setObra("");
       return;
     }
 
@@ -249,26 +256,46 @@ export default function EntradasSalidas() {
         return;
       }
 
-      const { data: contratoData, error: contratoError } = await supabase
+      // Buscar contrato activo primero, luego el más reciente
+      const { data: contratoActivo, error: activoError } = await supabase
         .from('contratos')
-        .select('cliente, numero_contrato, folio_contrato')
+        .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
         .eq('equipo_id', equipoData.id)
+        .eq('status', 'activo')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (contratoError || !contratoData) {
+      let contratoData = contratoActivo;
+
+      // Si no hay contrato activo, buscar el más reciente
+      if (!contratoData || activoError) {
+        const { data: ultimoContrato } = await supabase
+          .from('contratos')
+          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
+          .eq('equipo_id', equipoData.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        contratoData = ultimoContrato;
+      }
+
+      if (!contratoData) {
         setContratoInfo(null);
         return;
       }
 
       setContratoInfo(contratoData);
-      // Auto-rellenar el cliente si existe
+      // Auto-rellenar campos del contrato activo
       if (contratoData.cliente) {
         setCliente(contratoData.cliente);
       }
+      if (contratoData.obra) {
+        setObra(contratoData.obra);
+      }
     } catch (error) {
-      console.error('Error fetching último contrato:', error);
+      console.error('Error fetching contrato activo:', error);
       setContratoInfo(null);
     }
   };
