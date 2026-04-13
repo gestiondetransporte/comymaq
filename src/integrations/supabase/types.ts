@@ -391,8 +391,10 @@ export type Database = {
           fotografia_url_2: string | null
           fotografia_url_3: string | null
           id: string
+          lleva_extintor: boolean | null
           modelo: string | null
           obra: string | null
+          odometro: number | null
           serie: string | null
           tiene_danos: boolean | null
           tipo: string
@@ -421,8 +423,10 @@ export type Database = {
           fotografia_url_2?: string | null
           fotografia_url_3?: string | null
           id?: string
+          lleva_extintor?: boolean | null
           modelo?: string | null
           obra?: string | null
+          odometro?: number | null
           serie?: string | null
           tiene_danos?: boolean | null
           tipo: string
@@ -451,8 +455,10 @@ export type Database = {
           fotografia_url_2?: string | null
           fotografia_url_3?: string | null
           id?: string
+          lleva_extintor?: boolean | null
           modelo?: string | null
           obra?: string | null
+          odometro?: number | null
           serie?: string | null
           tiene_danos?: boolean | null
           tipo?: string
