@@ -856,7 +856,7 @@ export function EquipoDetailsDialog({
                 </div>
               </div>
 
-              <div className="flex justify-between gap-2">
+              <div className="sticky bottom-0 -mx-6 px-6 py-3 bg-background border-t flex flex-col-reverse sm:flex-row sm:justify-between gap-2 z-10">
                 <Button
                   type="button"
                   variant="destructive"
