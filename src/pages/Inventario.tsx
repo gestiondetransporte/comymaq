@@ -13,6 +13,7 @@ import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
 import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface Almacen {
   id: string;
   nombre: string;
