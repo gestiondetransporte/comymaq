@@ -21,7 +21,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, ArrowRightLeft, Wrench, FileText, QrCode } from "lucide-react";
+import { Loader2, Save, ArrowRightLeft, Wrench, FileText, QrCode, Ban } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { EquipoArchivosTab } from "./EquipoArchivosTab";
 import { MultipleFileUpload } from "./MultipleFileUpload";
