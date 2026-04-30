@@ -87,6 +87,9 @@ export function EquipoDetailsDialog({
   const [formData, setFormData] = useState<Partial<Equipo>>({});
   const [loading, setLoading] = useState(false);
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
+  const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
+  const [motivoBaja, setMotivoBaja] = useState("");
+  const [bajaLoading, setBajaLoading] = useState(false);
   
   // Entrada/Salida form
   const [movimientoTipo, setMovimientoTipo] = useState<"entrada" | "salida">("salida");
