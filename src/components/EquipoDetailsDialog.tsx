@@ -1116,6 +1116,51 @@ export function EquipoDetailsDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={bajaDialogOpen} onOpenChange={setBajaDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dar de baja este equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El equipo <strong>{equipo?.numero_equipo}</strong> se marcará como
+              FUERA DE SERVICIO y dejará de aparecer en el inventario principal.
+              Esta acción se puede revertir cambiando el estado del equipo más adelante.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="motivo_baja">Motivo de baja (opcional)</Label>
+            <Textarea
+              id="motivo_baja"
+              value={motivoBaja}
+              onChange={(e) => setMotivoBaja(e.target.value)}
+              placeholder="Ej: Daño irreparable, vendido, robo, etc."
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bajaLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDarDeBaja();
+              }}
+              disabled={bajaLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bajaLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Ban className="mr-2 h-4 w-4" />
+                  Confirmar Baja
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
