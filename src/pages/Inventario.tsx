@@ -556,6 +556,78 @@ export default function Inventario() {
           <ExcelEquiposImport onImportComplete={fetchEquipos} />
         </CollapsibleContent>
       </Collapsible>
+        </TabsContent>
+
+        <TabsContent value="baja" className="space-y-6 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Equipos Fuera de Servicio</CardTitle>
+              <CardDescription>
+                Equipos dados de baja. Total: {equiposBaja.length}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Folio</TableHead>
+                      <TableHead>N° Equipo</TableHead>
+                      <TableHead>Descripción</TableHead>
+                      <TableHead>Marca</TableHead>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Serie</TableHead>
+                      <TableHead>Motivo / Ubicación</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {equiposBaja.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          No hay equipos fuera de servicio
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      equiposBaja.map((equipo) => (
+                        <TableRow key={equipo.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-mono text-sm font-bold">{equipo.folio}</TableCell>
+                          <TableCell className="font-medium">{equipo.numero_equipo}</TableCell>
+                          <TableCell>{equipo.descripcion}</TableCell>
+                          <TableCell>{equipo.marca || "N/A"}</TableCell>
+                          <TableCell>{equipo.modelo || "N/A"}</TableCell>
+                          <TableCell className="font-mono text-sm">{equipo.serie || "N/A"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                            {equipo.ubicacion_actual || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="destructive">BAJA</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedEquipo(equipo as any);
+                                setInitialTab("detalles");
+                                setDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver detalles
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <EquipoDetailsDialog
         equipo={selectedEquipo as any}
