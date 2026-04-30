@@ -21,7 +21,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Save, ArrowRightLeft, Wrench, FileText, QrCode } from "lucide-react";
+import { Loader2, Save, ArrowRightLeft, Wrench, FileText, QrCode, Ban } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { EquipoArchivosTab } from "./EquipoArchivosTab";
 import { MultipleFileUpload } from "./MultipleFileUpload";
@@ -77,6 +87,9 @@ export function EquipoDetailsDialog({
   const [formData, setFormData] = useState<Partial<Equipo>>({});
   const [loading, setLoading] = useState(false);
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
+  const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
+  const [motivoBaja, setMotivoBaja] = useState("");
+  const [bajaLoading, setBajaLoading] = useState(false);
   
   // Entrada/Salida form
   const [movimientoTipo, setMovimientoTipo] = useState<"entrada" | "salida">("salida");
@@ -260,6 +273,41 @@ export function EquipoDetailsDialog({
   const handleTabChange = (value: string) => {
     if (value === "detalles" || value === "movimiento" || value === "mantenimiento" || value === "archivos" || value === "qr") {
       setActiveTab(value);
+    }
+  };
+
+  const handleDarDeBaja = async () => {
+    if (!equipo) return;
+    setBajaLoading(true);
+    try {
+      const comentario = motivoBaja.trim()
+        ? `${formData.ubicacion_actual ? formData.ubicacion_actual + ' | ' : ''}BAJA: ${motivoBaja.trim()}`
+        : formData.ubicacion_actual;
+      const { error } = await supabase
+        .from("equipos")
+        .update({
+          estado: "BAJA",
+          ubicacion_actual: comentario,
+        })
+        .eq("id", equipo.id);
+      if (error) throw error;
+      toast({
+        title: "Equipo dado de baja",
+        description: `${equipo.numero_equipo} se movió a Fuera de Servicio`,
+      });
+      setBajaDialogOpen(false);
+      setMotivoBaja("");
+      onUpdate();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error dando de baja equipo:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo dar de baja el equipo",
+      });
+    } finally {
+      setBajaLoading(false);
     }
   };
 
@@ -808,28 +856,39 @@ export function EquipoDetailsDialog({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-between gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
+                  variant="destructive"
+                  onClick={() => setBajaDialogOpen(true)}
+                  disabled={loading || formData.estado?.toUpperCase() === "BAJA"}
                 >
-                  Cancelar
+                  <Ban className="mr-2 h-4 w-4" />
+                  {formData.estado?.toUpperCase() === "BAJA" ? "Equipo de Baja" : "Dar de Baja"}
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Guardar Cambios
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Cambios
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </form>
           </TabsContent>
@@ -1057,6 +1116,51 @@ export function EquipoDetailsDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={bajaDialogOpen} onOpenChange={setBajaDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dar de baja este equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El equipo <strong>{equipo?.numero_equipo}</strong> se marcará como
+              FUERA DE SERVICIO y dejará de aparecer en el inventario principal.
+              Esta acción se puede revertir cambiando el estado del equipo más adelante.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="motivo_baja">Motivo de baja (opcional)</Label>
+            <Textarea
+              id="motivo_baja"
+              value={motivoBaja}
+              onChange={(e) => setMotivoBaja(e.target.value)}
+              placeholder="Ej: Daño irreparable, vendido, robo, etc."
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bajaLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDarDeBaja();
+              }}
+              disabled={bajaLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bajaLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Ban className="mr-2 h-4 w-4" />
+                  Confirmar Baja
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
