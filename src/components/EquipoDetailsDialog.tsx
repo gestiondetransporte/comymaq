@@ -276,6 +276,41 @@ export function EquipoDetailsDialog({
     }
   };
 
+  const handleDarDeBaja = async () => {
+    if (!equipo) return;
+    setBajaLoading(true);
+    try {
+      const comentario = motivoBaja.trim()
+        ? `${formData.ubicacion_actual ? formData.ubicacion_actual + ' | ' : ''}BAJA: ${motivoBaja.trim()}`
+        : formData.ubicacion_actual;
+      const { error } = await supabase
+        .from("equipos")
+        .update({
+          estado: "BAJA",
+          ubicacion_actual: comentario,
+        })
+        .eq("id", equipo.id);
+      if (error) throw error;
+      toast({
+        title: "Equipo dado de baja",
+        description: `${equipo.numero_equipo} se movió a Fuera de Servicio`,
+      });
+      setBajaDialogOpen(false);
+      setMotivoBaja("");
+      onUpdate();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error dando de baja equipo:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo dar de baja el equipo",
+      });
+    } finally {
+      setBajaLoading(false);
+    }
+  };
+
 
   const handleUpdateEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
