@@ -856,28 +856,39 @@ export function EquipoDetailsDialog({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-between gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
+                  variant="destructive"
+                  onClick={() => setBajaDialogOpen(true)}
+                  disabled={loading || formData.estado?.toUpperCase() === "BAJA"}
                 >
-                  Cancelar
+                  <Ban className="mr-2 h-4 w-4" />
+                  {formData.estado?.toUpperCase() === "BAJA" ? "Equipo de Baja" : "Dar de Baja"}
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Guardar Cambios
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Cambios
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </form>
           </TabsContent>
