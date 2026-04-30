@@ -211,7 +211,8 @@ export default function Inventario() {
   };
 
   const filterEquipos = () => {
-    let filtered = equipos;
+    // Excluir equipos dados de baja del inventario principal
+    let filtered = equipos.filter(e => (e.estado || '').toUpperCase() !== 'BAJA');
 
     // Filter by type
     if (typeFilter !== "TODOS") {
