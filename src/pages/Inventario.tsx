@@ -300,6 +300,8 @@ export default function Inventario() {
     );
   }
 
+  const equiposBaja = equipos.filter(e => (e.estado || '').toUpperCase() === 'BAJA');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
