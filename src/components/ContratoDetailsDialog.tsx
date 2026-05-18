@@ -103,6 +103,7 @@ export function ContratoDetailsDialog({
   const [selectedClienteId, setSelectedClienteId] = useState<string>("");
   const [showNewClienteForm, setShowNewClienteForm] = useState(false);
   const [newCliente, setNewCliente] = useState({ nombre: "", telefono: "", correo_electronico: "" });
+  const [equipoComboOpen, setEquipoComboOpen] = useState(false);
   const { toast } = useToast();
   const { getCurrentPosition } = useGeolocation();
 
