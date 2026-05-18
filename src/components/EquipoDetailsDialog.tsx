@@ -816,14 +816,27 @@ export function EquipoDetailsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="precio_real_cliente">Precio Real Cliente (MXN)</Label>
+                  <Label htmlFor="altura_equipo">Altura del Equipo (m)</Label>
                   <Input
-                    id="precio_real_cliente"
+                    id="altura_equipo"
                     type="number"
                     step="0.01"
-                    value={formData.precio_real_cliente || ""}
+                    value={formData.altura_equipo ?? ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, precio_real_cliente: parseFloat(e.target.value) || null })
+                      setFormData({ ...formData, altura_equipo: e.target.value === "" ? null : parseFloat(e.target.value) })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="capacidad_carga">Capacidad de Carga (kg)</Label>
+                  <Input
+                    id="capacidad_carga"
+                    type="number"
+                    step="0.01"
+                    value={formData.capacidad_carga ?? ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacidad_carga: e.target.value === "" ? null : parseFloat(e.target.value) })
                     }
                   />
                 </div>
