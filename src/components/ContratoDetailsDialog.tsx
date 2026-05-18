@@ -499,10 +499,15 @@ export function ContratoDetailsDialog({
     }
   };
 
-  // Filter available equipos (only show available ones for new contracts)
-  const availableEquipos = isCreating 
-    ? equipos.filter(e => e.estado === 'disponible' || e.estado === null)
+  // Mostrar todos los equipos; los disponibles aparecen primero al crear contratos
+  const availableEquipos = isCreating
+    ? [...equipos].sort((a, b) => {
+        const aAvail = a.estado === 'disponible' || a.estado === null ? 0 : 1;
+        const bAvail = b.estado === 'disponible' || b.estado === null ? 0 : 1;
+        return aAvail - bAvail;
+      })
     : equipos;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
