@@ -157,7 +157,9 @@ export default function EntradasSalidas() {
           descripcion_danos,
           equipos (
             numero_equipo,
-            descripcion
+            descripcion,
+            ubicacion_actual,
+            almacenes ( nombre )
           )
         `);
 
