@@ -32,7 +32,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink, RefreshCw, Ban, FileText, History } from "lucide-react";
+import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink, RefreshCw, Ban, FileText, History, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { ContratoRenovacionDialog } from "./ContratoRenovacionDialog";
 import { ContratoBajaDialog } from "./ContratoBajaDialog";
 import { ContratoRenovacionesHistorial } from "./ContratoRenovacionesHistorial";
@@ -100,6 +103,7 @@ export function ContratoDetailsDialog({
   const [selectedClienteId, setSelectedClienteId] = useState<string>("");
   const [showNewClienteForm, setShowNewClienteForm] = useState(false);
   const [newCliente, setNewCliente] = useState({ nombre: "", telefono: "", correo_electronico: "" });
+  const [equipoComboOpen, setEquipoComboOpen] = useState(false);
   const { toast } = useToast();
   const { getCurrentPosition } = useGeolocation();
 
@@ -145,7 +149,8 @@ export function ContratoDetailsDialog({
       const { data, error } = await supabase
         .from('equipos')
         .select('id, numero_equipo, descripcion, estado')
-        .order('numero_equipo');
+        .order('numero_equipo')
+        .range(0, 9999);
       
       if (error) throw error;
       setEquipos(data || []);
@@ -153,6 +158,7 @@ export function ContratoDetailsDialog({
       console.error('Error fetching equipos:', error);
     }
   };
+
 
   const fetchClientes = async () => {
     try {
@@ -497,10 +503,15 @@ export function ContratoDetailsDialog({
     }
   };
 
-  // Filter available equipos (only show available ones for new contracts)
-  const availableEquipos = isCreating 
-    ? equipos.filter(e => e.estado === 'disponible' || e.estado === null)
+  // Mostrar todos los equipos; los disponibles aparecen primero al crear contratos
+  const availableEquipos = isCreating
+    ? [...equipos].sort((a, b) => {
+        const aAvail = a.estado === 'disponible' || a.estado === null ? 0 : 1;
+        const bAvail = b.estado === 'disponible' || b.estado === null ? 0 : 1;
+        return aAvail - bAvail;
+      })
     : equipos;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -729,28 +740,81 @@ export function ContratoDetailsDialog({
 
             <div className="space-y-2">
               <Label htmlFor="equipo_id">Equipo Asignado</Label>
-              <Select
-                value={formData.equipo_id || "none"}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, equipo_id: value === "none" ? null : value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar equipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin asignar</SelectItem>
-                  {availableEquipos.map((equipo) => (
-                    <SelectItem key={equipo.id} value={equipo.id}>
-                      {equipo.numero_equipo} - {equipo.descripcion}
-                      {equipo.estado && ` (${equipo.estado})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isCreating && (
-                <p className="text-xs text-muted-foreground">Solo se muestran equipos disponibles</p>
-              )}
+              <Popover open={equipoComboOpen} onOpenChange={setEquipoComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    {formData.equipo_id
+                      ? (() => {
+                          const eq = equipos.find((e) => e.id === formData.equipo_id);
+                          return eq
+                            ? `${eq.numero_equipo} - ${eq.descripcion}${eq.estado ? ` (${eq.estado})` : ''}`
+                            : 'Seleccionar equipo...';
+                        })()
+                      : 'Sin asignar'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command
+                    filter={(value, search) =>
+                      value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                    }
+                  >
+                    <CommandInput placeholder="Buscar por número, descripción o estado..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontraron equipos.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="sin-asignar"
+                          onSelect={() => {
+                            setFormData({ ...formData, equipo_id: null });
+                            setEquipoComboOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              !formData.equipo_id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          Sin asignar
+                        </CommandItem>
+                        {availableEquipos.map((equipo) => (
+                          <CommandItem
+                            key={equipo.id}
+                            value={`${equipo.numero_equipo} ${equipo.descripcion} ${equipo.estado ?? ''}`}
+                            onSelect={() => {
+                              setFormData({ ...formData, equipo_id: equipo.id });
+                              setEquipoComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                formData.equipo_id === equipo.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <span className="truncate">
+                              {equipo.numero_equipo} - {equipo.descripcion}
+                              {equipo.estado && (
+                                <span className="text-muted-foreground"> ({equipo.estado})</span>
+                              )}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Se muestran todos los equipos. Usa el buscador para filtrar.
+              </p>
             </div>
           </div>
 
