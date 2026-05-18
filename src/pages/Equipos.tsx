@@ -25,7 +25,8 @@ interface Equipo {
   estado: string | null;
   proveedor: string | null;
   precio_lista: number | null;
-  precio_real_cliente: number | null;
+  altura_equipo: number | null;
+  capacidad_carga: number | null;
   costo_proveedor_mxn: number | null;
   costo_proveedor_usd: number | null;
   ganancia: number | null;
@@ -106,7 +107,8 @@ export default function Equipos() {
         estado,
         proveedor,
         precio_lista,
-        precio_real_cliente,
+        altura_equipo,
+        capacidad_carga,
         costo_proveedor_mxn,
         costo_proveedor_usd,
         ganancia,

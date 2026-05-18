@@ -57,7 +57,8 @@ interface Equipo {
   anio: number | null;
   proveedor: string | null;
   precio_lista: number | null;
-  precio_real_cliente: number | null;
+  altura_equipo: number | null;
+  capacidad_carga: number | null;
   costo_proveedor_mxn: number | null;
   costo_proveedor_usd: number | null;
   ganancia: number | null;
@@ -330,7 +331,8 @@ export function EquipoDetailsDialog({
         anio: formData.anio,
         proveedor: formData.proveedor,
         precio_lista: formData.precio_lista,
-        precio_real_cliente: formData.precio_real_cliente,
+        altura_equipo: formData.altura_equipo,
+        capacidad_carga: formData.capacidad_carga,
         costo_proveedor_mxn: formData.costo_proveedor_mxn,
         costo_proveedor_usd: formData.costo_proveedor_usd,
         ganancia: formData.ganancia,
@@ -814,14 +816,27 @@ export function EquipoDetailsDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="precio_real_cliente">Precio Real Cliente (MXN)</Label>
+                  <Label htmlFor="altura_equipo">Altura del Equipo (m)</Label>
                   <Input
-                    id="precio_real_cliente"
+                    id="altura_equipo"
                     type="number"
                     step="0.01"
-                    value={formData.precio_real_cliente || ""}
+                    value={formData.altura_equipo ?? ""}
                     onChange={(e) =>
-                      setFormData({ ...formData, precio_real_cliente: parseFloat(e.target.value) || null })
+                      setFormData({ ...formData, altura_equipo: e.target.value === "" ? null : parseFloat(e.target.value) })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="capacidad_carga">Capacidad de Carga (kg)</Label>
+                  <Input
+                    id="capacidad_carga"
+                    type="number"
+                    step="0.01"
+                    value={formData.capacidad_carga ?? ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacidad_carga: e.target.value === "" ? null : parseFloat(e.target.value) })
                     }
                   />
                 </div>
