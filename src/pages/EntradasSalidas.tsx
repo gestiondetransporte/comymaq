@@ -58,6 +58,8 @@ interface EntradaSalida {
   equipos: {
     numero_equipo: string;
     descripcion: string;
+    ubicacion_actual: string | null;
+    almacenes: { nombre: string } | null;
   } | null;
 }
 
