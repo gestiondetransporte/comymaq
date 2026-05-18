@@ -74,6 +74,7 @@ export default function Equipos() {
   const { toast } = useToast();
   const [equipo, setEquipo] = useState<Equipo | null>(null);
   const [contrato, setContrato] = useState<Contrato | null>(null);
+  const [almacen, setAlmacen] = useState<{ nombre: string; ubicacion: string | null } | null>(null);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [entradasSalidas, setEntradasSalidas] = useState<EntradaSalida[]>([]);
   const [loading, setLoading] = useState(true);
