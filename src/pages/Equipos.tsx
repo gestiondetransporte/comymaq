@@ -131,6 +131,18 @@ export default function Equipos() {
 
     setEquipo(equipoData);
 
+    // Fetch almacén
+    if (equipoData?.almacen_id) {
+      const { data: almacenData } = await supabase
+        .from('almacenes')
+        .select('nombre, ubicacion')
+        .eq('id', equipoData.almacen_id)
+        .maybeSingle();
+      setAlmacen(almacenData);
+    } else {
+      setAlmacen(null);
+    }
+
     // Fetch active contract
     const { data: contratoData } = await supabase
       .from('contratos')
