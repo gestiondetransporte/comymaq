@@ -58,6 +58,8 @@ interface EntradaSalida {
   equipos: {
     numero_equipo: string;
     descripcion: string;
+    ubicacion_actual: string | null;
+    almacenes: { nombre: string } | null;
   } | null;
 }
 
@@ -155,7 +157,9 @@ export default function EntradasSalidas() {
           descripcion_danos,
           equipos (
             numero_equipo,
-            descripcion
+            descripcion,
+            ubicacion_actual,
+            almacenes ( nombre )
           )
         `);
 
@@ -1009,6 +1013,8 @@ export default function EntradasSalidas() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Obra</TableHead>
+                    <TableHead>Almacén</TableHead>
+                    <TableHead>Ubicación</TableHead>
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
                     <TableHead>Imágenes</TableHead>
@@ -1026,6 +1032,8 @@ export default function EntradasSalidas() {
                       <TableCell>{getTipoBadge(movimiento.tipo)}</TableCell>
                       <TableCell>{movimiento.cliente || 'N/A'}</TableCell>
                       <TableCell>{movimiento.obra || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.equipos?.almacenes?.nombre || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.equipos?.ubicacion_actual || 'N/A'}</TableCell>
                       <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
                       <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
                       <TableCell>
