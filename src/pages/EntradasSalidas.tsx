@@ -1013,6 +1013,8 @@ export default function EntradasSalidas() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Obra</TableHead>
+                    <TableHead>Almacén</TableHead>
+                    <TableHead>Ubicación</TableHead>
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
                     <TableHead>Imágenes</TableHead>
