@@ -238,6 +238,14 @@ export default function Equipos() {
                 <p className="text-sm text-muted-foreground">Categoría</p>
                 <p className="font-medium">{equipo.categoria || "N/A"}</p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bodega / Almacén</p>
+                <p className="font-medium">{almacen?.nombre || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Ubicación de la Bodega</p>
+                <p className="font-medium">{almacen?.ubicacion || equipo.ubicacion_actual || "N/A"}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
