@@ -1032,6 +1032,8 @@ export default function EntradasSalidas() {
                       <TableCell>{getTipoBadge(movimiento.tipo)}</TableCell>
                       <TableCell>{movimiento.cliente || 'N/A'}</TableCell>
                       <TableCell>{movimiento.obra || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.equipos?.almacenes?.nombre || 'N/A'}</TableCell>
+                      <TableCell>{movimiento.equipos?.ubicacion_actual || 'N/A'}</TableCell>
                       <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
                       <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
                       <TableCell>
