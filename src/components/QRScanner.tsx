@@ -120,10 +120,11 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
           type="button"
           variant="outline"
           onClick={startScanning}
-          className="gap-2 w-full h-12 md:h-10 md:w-auto"
+          className="gap-2 w-full h-12 md:h-10 md:w-auto px-3 text-sm md:text-base whitespace-normal text-center leading-tight"
         >
-          <Camera className="h-5 w-5 md:h-4 md:w-4" />
-          Escanear QR en Tiempo Real
+          <Camera className="h-5 w-5 md:h-4 md:w-4 shrink-0" />
+          <span className="hidden sm:inline">Escanear QR en Tiempo Real</span>
+          <span className="sm:hidden">Escanear QR</span>
         </Button>
       ) : (
         <Card>
