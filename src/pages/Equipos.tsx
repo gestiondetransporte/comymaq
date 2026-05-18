@@ -74,6 +74,7 @@ export default function Equipos() {
   const { toast } = useToast();
   const [equipo, setEquipo] = useState<Equipo | null>(null);
   const [contrato, setContrato] = useState<Contrato | null>(null);
+  const [almacen, setAlmacen] = useState<{ nombre: string; ubicacion: string | null } | null>(null);
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [entradasSalidas, setEntradasSalidas] = useState<EntradaSalida[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +130,18 @@ export default function Equipos() {
     }
 
     setEquipo(equipoData);
+
+    // Fetch almacén
+    if (equipoData?.almacen_id) {
+      const { data: almacenData } = await supabase
+        .from('almacenes')
+        .select('nombre, ubicacion')
+        .eq('id', equipoData.almacen_id)
+        .maybeSingle();
+      setAlmacen(almacenData);
+    } else {
+      setAlmacen(null);
+    }
 
     // Fetch active contract
     const { data: contratoData } = await supabase
@@ -224,6 +237,14 @@ export default function Equipos() {
               <div>
                 <p className="text-sm text-muted-foreground">Categoría</p>
                 <p className="font-medium">{equipo.categoria || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bodega / Almacén</p>
+                <p className="font-medium">{almacen?.nombre || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Ubicación de la Bodega</p>
+                <p className="font-medium">{almacen?.ubicacion || equipo.ubicacion_actual || "N/A"}</p>
               </div>
             </div>
           </CardContent>
