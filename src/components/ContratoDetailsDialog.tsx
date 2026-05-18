@@ -32,7 +32,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink, RefreshCw, Ban, FileText, History } from "lucide-react";
+import { Loader2, MapPin, Trash2, Plus, UserPlus, Link2, ExternalLink, RefreshCw, Ban, FileText, History, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { ContratoRenovacionDialog } from "./ContratoRenovacionDialog";
 import { ContratoBajaDialog } from "./ContratoBajaDialog";
 import { ContratoRenovacionesHistorial } from "./ContratoRenovacionesHistorial";
