@@ -70,34 +70,19 @@ export function SyncButton() {
 
   return (
     <div className="flex items-center gap-2">
-      <Badge variant={isOnline ? 'default' : 'secondary'} className="gap-1">
-        {isOnline ? (
-          <>
-            <Wifi className="h-3 w-3" />
-            En línea
-          </>
-        ) : (
-          <>
-            <WifiOff className="h-3 w-3" />
-            Sin conexión
-          </>
-        )}
-      </Badge>
-      
       {pendingCount > 0 && (
         <Badge variant="outline">
           {pendingCount} pendientes
         </Badge>
       )}
-      
+
       <Button
         variant="outline"
         size="sm"
-        onClick={handleSync}
-        disabled={!isOnline || isSyncing}
+        onClick={() => window.location.reload()}
         className="gap-2"
       >
-        <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+        <RefreshCw className="h-4 w-4" />
         Sincronizar
       </Button>
     </div>
