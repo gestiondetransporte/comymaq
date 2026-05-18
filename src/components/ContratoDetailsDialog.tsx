@@ -145,7 +145,8 @@ export function ContratoDetailsDialog({
       const { data, error } = await supabase
         .from('equipos')
         .select('id, numero_equipo, descripcion, estado')
-        .order('numero_equipo');
+        .order('numero_equipo')
+        .range(0, 9999);
       
       if (error) throw error;
       setEquipos(data || []);
@@ -153,6 +154,7 @@ export function ContratoDetailsDialog({
       console.error('Error fetching equipos:', error);
     }
   };
+
 
   const fetchClientes = async () => {
     try {
