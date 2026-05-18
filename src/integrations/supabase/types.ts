@@ -525,8 +525,10 @@ export type Database = {
       equipos: {
         Row: {
           almacen_id: string | null
+          altura_equipo: number | null
           anio: number | null
           asegurado: string | null
+          capacidad_carga: number | null
           categoria: string | null
           clase: string | null
           codigo_qr: string | null
@@ -552,8 +554,10 @@ export type Database = {
         }
         Insert: {
           almacen_id?: string | null
+          altura_equipo?: number | null
           anio?: number | null
           asegurado?: string | null
+          capacidad_carga?: number | null
           categoria?: string | null
           clase?: string | null
           codigo_qr?: string | null
@@ -579,8 +583,10 @@ export type Database = {
         }
         Update: {
           almacen_id?: string | null
+          altura_equipo?: number | null
           anio?: number | null
           asegurado?: string | null
+          capacidad_carga?: number | null
           categoria?: string | null
           clase?: string | null
           codigo_qr?: string | null
