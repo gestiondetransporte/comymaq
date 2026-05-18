@@ -454,34 +454,34 @@ export default function Equipos() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full h-auto min-h-12 px-2 text-xs sm:text-sm whitespace-normal text-center leading-tight"
           onClick={() => handleOpenDialog("movimiento")}
         >
-          <TruckIcon className="mr-2 h-4 w-4" />
+          <TruckIcon className="mr-2 h-4 w-4 shrink-0" />
           Movimiento de Almacén
         </Button>
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full h-auto min-h-12 px-2 text-xs sm:text-sm whitespace-normal text-center leading-tight"
           onClick={() => handleOpenDialog("movimiento")}
         >
-          <ArrowRightLeft className="mr-2 h-4 w-4" />
+          <ArrowRightLeft className="mr-2 h-4 w-4 shrink-0" />
           Entrada de Equipo
         </Button>
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full h-auto min-h-12 px-2 text-xs sm:text-sm whitespace-normal text-center leading-tight"
           onClick={() => handleOpenDialog("movimiento")}
         >
-          <ArrowRightLeft className="mr-2 h-4 w-4" />
+          <ArrowRightLeft className="mr-2 h-4 w-4 shrink-0" />
           Salida de Equipo
         </Button>
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full h-auto min-h-12 px-2 text-xs sm:text-sm whitespace-normal text-center leading-tight"
           onClick={() => handleOpenDialog("movimiento")}
         >
-          <TruckIcon className="mr-2 h-4 w-4" />
+          <TruckIcon className="mr-2 h-4 w-4 shrink-0" />
           Traspaso de Equipo
         </Button>
       </div>
