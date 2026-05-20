@@ -248,7 +248,7 @@ export default function Contratos() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Folio</TableHead>
+                    <TableHead>Número Contrato</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Equipo</TableHead>
                     <TableHead>Obra</TableHead>
