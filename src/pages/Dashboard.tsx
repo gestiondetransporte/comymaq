@@ -16,7 +16,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty, nowMty } from "@/lib/timezone";
+
 
 interface DashboardStats {
   totalEquipos: number;
