@@ -271,74 +271,116 @@ export default function EntradasSalidas() {
     }
   };
 
-  const fetchUltimoContrato = async (numeroEquipo: string) => {
+  const fetchEquipoInfo = async (numeroEquipo: string) => {
     if (!numeroEquipo.trim()) {
       setContratoInfo(null);
+      setEquipoInfo(null);
+      setUltimoMantenimiento(null);
+      setRecoleccionInfo(null);
+      setUltimoOdometro(null);
       setCliente("");
       setObra("");
+      setChofer("");
+      setTransporte("");
       return;
     }
 
+    setLoadingInfo(true);
     try {
-      const { data: equipoData, error: equipoError } = await supabase
+      // 1. Equipo + almacén
+      const { data: equipoData } = await supabase
         .from('equipos')
-        .select('id')
+        .select(`
+          id, numero_equipo, descripcion, marca, modelo, serie, estado, ubicacion_actual,
+          almacenes ( nombre )
+        `)
         .eq('numero_equipo', numeroEquipo.trim())
         .maybeSingle();
 
-      if (equipoError || !equipoData) {
+      if (!equipoData) {
+        setEquipoInfo(null);
         setContratoInfo(null);
+        setUltimoMantenimiento(null);
+        setRecoleccionInfo(null);
+        setUltimoOdometro(null);
+        setLoadingInfo(false);
         return;
       }
 
-      // Buscar contrato activo primero, luego el más reciente
-      const { data: contratoActivo, error: activoError } = await supabase
-        .from('contratos')
-        .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
-        .eq('equipo_id', equipoData.id)
-        .eq('status', 'activo')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      setEquipoInfo({
+        id: equipoData.id,
+        numero_equipo: equipoData.numero_equipo,
+        descripcion: equipoData.descripcion,
+        marca: equipoData.marca,
+        modelo: equipoData.modelo,
+        serie: equipoData.serie,
+        estado: equipoData.estado,
+        ubicacion_actual: equipoData.ubicacion_actual,
+        almacen_nombre: (equipoData.almacenes as any)?.nombre ?? null,
+      });
 
-      let contratoData = contratoActivo;
-
-      // Si no hay contrato activo, buscar el más reciente
-      if (!contratoData || activoError) {
-        const { data: ultimoContrato } = await supabase
+      // 2. Contrato activo o más reciente (en paralelo con los demás)
+      const [contratoRes, mantRes, recolRes, odoRes] = await Promise.all([
+        supabase
           .from('contratos')
-          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
+          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
           .eq('equipo_id', equipoData.id)
+          .order('status', { ascending: true }) // 'activo' viene antes alfabéticamente que otros comunes
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .maybeSingle(),
+        supabase
+          .from('mantenimientos')
+          .select('fecha, tipo_servicio, descripcion, tecnico')
+          .eq('equipo_id', equipoData.id)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('recolecciones')
+          .select('fecha_programada, status, chofer, transporte, cliente, direccion')
+          .eq('equipo_id', equipoData.id)
+          .in('status', ['pendiente', 'programada', 'en_proceso'])
+          .order('fecha_programada', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('entradas_salidas')
+          .select('odometro, fecha, tipo')
+          .eq('equipo_id', equipoData.id)
+          .not('odometro', 'is', null)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-        contratoData = ultimoContrato;
-      }
+      const contratoData = contratoRes.data;
+      setContratoInfo(contratoData ?? null);
+      setUltimoMantenimiento(mantRes.data ?? null);
+      setRecoleccionInfo(recolRes.data ?? null);
+      setUltimoOdometro(odoRes.data ?? null);
 
-      if (!contratoData) {
-        setContratoInfo(null);
-        return;
-      }
+      // Auto-rellenar: prioridad recolección > contrato
+      const autoCliente = recolRes.data?.cliente || contratoData?.cliente || "";
+      const autoObra = contratoData?.obra || "";
+      const autoChofer = recolRes.data?.chofer || "";
+      const autoTransporte = recolRes.data?.transporte || "";
 
-      setContratoInfo(contratoData);
-      // Auto-rellenar campos del contrato activo
-      if (contratoData.cliente) {
-        setCliente(contratoData.cliente);
-      }
-      if (contratoData.obra) {
-        setObra(contratoData.obra);
-      }
+      if (autoCliente) setCliente(autoCliente);
+      if (autoObra) setObra(autoObra);
+      if (autoChofer) setChofer(autoChofer);
+      if (autoTransporte) setTransporte(autoTransporte);
     } catch (error) {
-      console.error('Error fetching contrato activo:', error);
-      setContratoInfo(null);
+      console.error('Error fetching equipo info:', error);
+    } finally {
+      setLoadingInfo(false);
     }
   };
 
-  // Efecto para buscar el último contrato cuando cambia el número de equipo
+  // Efecto para buscar info completa cuando cambia el número de equipo
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchUltimoContrato(equipoId);
+      fetchEquipoInfo(equipoId);
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
