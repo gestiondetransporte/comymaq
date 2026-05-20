@@ -636,6 +636,10 @@ export default function EntradasSalidas() {
       setTieneDanos(false);
       setDescripcionDanos("");
       setContratoInfo(null);
+      setEquipoInfo(null);
+      setUltimoMantenimiento(null);
+      setRecoleccionInfo(null);
+      setUltimoOdometro(null);
     } catch (error: any) {
       console.error('Error registrando movimiento:', error);
       const errorMsg = error?.message || error?.error_description || 'Error desconocido';
