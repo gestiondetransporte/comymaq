@@ -328,7 +328,7 @@ export default function Recolecciones() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     try {
-      return format(new Date(dateString), "dd/MMM/yyyy", { locale: es });
+      return formatMty(dateString, "dd/MMM/yyyy");
     } catch {
       return dateString;
     }
