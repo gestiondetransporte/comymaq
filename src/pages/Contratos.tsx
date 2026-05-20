@@ -91,40 +91,34 @@ export default function Contratos() {
 
   const calculateContratoStatus = (contrato: Contrato): string => {
     if (!contrato.fecha_vencimiento) return contrato.status || 'activo';
-    
-    const now = new Date();
-    const fechaVencimiento = new Date(contrato.fecha_vencimiento);
-    const diasParaVencer = differenceInDays(fechaVencimiento, now);
-    
+
+    const diasParaVencer = diffDaysMty(contrato.fecha_vencimiento, nowMty());
+
     // Si el contrato está explícitamente cancelado, respetar ese estado
     if (contrato.status === 'cancelado') return 'cancelado';
-    
+
     // Si ya venció
-    if (isPast(fechaVencimiento) && diasParaVencer < 0) {
+    if (diasParaVencer < 0) {
       return 'vencido';
     }
-    
+
     // Si está por vencer (7 días o menos)
     if (diasParaVencer >= 0 && diasParaVencer <= 7) {
       return 'por vencer';
     }
-    
+
     // Si está activo
     return 'activo';
   };
 
   const calculateDiasTranscurridos = (fechaInicio: string | null): number => {
     if (!fechaInicio) return 0;
-    const inicio = new Date(fechaInicio);
-    const now = new Date();
-    return differenceInDays(now, inicio);
+    return diffDaysMty(nowMty(), fechaInicio);
   };
 
   const calculateDiasRestantes = (fechaVencimiento: string | null): number => {
     if (!fechaVencimiento) return 0;
-    const vencimiento = new Date(fechaVencimiento);
-    const now = new Date();
-    return Math.max(0, differenceInDays(vencimiento, now));
+    return Math.max(0, diffDaysMty(fechaVencimiento, nowMty()));
   };
 
   const filterContratos = () => {
