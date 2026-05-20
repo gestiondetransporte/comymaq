@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Wrench, AlertCircle, Search, Download, RefreshCw } from "lucide-react";
-import { differenceInDays, parseISO, format } from "date-fns";
-import { es } from "date-fns/locale";
+import { differenceInDays, parseISO } from "date-fns";
+import { formatMty, nowMty } from "@/lib/timezone";
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
