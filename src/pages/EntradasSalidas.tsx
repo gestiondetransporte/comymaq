@@ -109,6 +109,17 @@ interface UltimoOdometro {
   tipo: string;
 }
 
+interface UltimaEntradaSalida {
+  fecha: string;
+  tipo: string;
+  odometro: number | null;
+  chofer: string | null;
+  transporte: string | null;
+  cliente: string | null;
+  obra: string | null;
+}
+
+
 export default function EntradasSalidas() {
   const [searchParams] = useSearchParams();
   const equipoIdParam = searchParams.get('equipo_id');
