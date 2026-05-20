@@ -145,6 +145,8 @@ export default function EntradasSalidas() {
   const [ultimoMantenimiento, setUltimoMantenimiento] = useState<MantenimientoInfo | null>(null);
   const [recoleccionInfo, setRecoleccionInfo] = useState<RecoleccionInfo | null>(null);
   const [ultimoOdometro, setUltimoOdometro] = useState<UltimoOdometro | null>(null);
+  const [ultimaEntradaSalida, setUltimaEntradaSalida] = useState<UltimaEntradaSalida | null>(null);
+
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [llevaExtintor, setLlevaExtintor] = useState<boolean>(false);
   const [odometro, setOdometro] = useState<string>("");
