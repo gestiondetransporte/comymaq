@@ -291,11 +291,13 @@ export default function EntradasSalidas() {
       setUltimoMantenimiento(null);
       setRecoleccionInfo(null);
       setUltimoOdometro(null);
+      setUltimaEntradaSalida(null);
       setCliente("");
       setObra("");
       setChofer("");
       setTransporte("");
       return;
+
     }
 
     setLoadingInfo(true);
