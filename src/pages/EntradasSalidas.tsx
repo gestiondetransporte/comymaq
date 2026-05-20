@@ -13,8 +13,8 @@ import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon, Trash2 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty } from "@/lib/timezone";
+
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
