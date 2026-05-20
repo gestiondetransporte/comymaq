@@ -109,6 +109,17 @@ interface UltimoOdometro {
   tipo: string;
 }
 
+interface UltimaEntradaSalida {
+  fecha: string;
+  tipo: string;
+  odometro: number | null;
+  chofer: string | null;
+  transporte: string | null;
+  cliente: string | null;
+  obra: string | null;
+}
+
+
 export default function EntradasSalidas() {
   const [searchParams] = useSearchParams();
   const equipoIdParam = searchParams.get('equipo_id');
@@ -134,6 +145,8 @@ export default function EntradasSalidas() {
   const [ultimoMantenimiento, setUltimoMantenimiento] = useState<MantenimientoInfo | null>(null);
   const [recoleccionInfo, setRecoleccionInfo] = useState<RecoleccionInfo | null>(null);
   const [ultimoOdometro, setUltimoOdometro] = useState<UltimoOdometro | null>(null);
+  const [ultimaEntradaSalida, setUltimaEntradaSalida] = useState<UltimaEntradaSalida | null>(null);
+
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [llevaExtintor, setLlevaExtintor] = useState<boolean>(false);
   const [odometro, setOdometro] = useState<string>("");
@@ -278,11 +291,13 @@ export default function EntradasSalidas() {
       setUltimoMantenimiento(null);
       setRecoleccionInfo(null);
       setUltimoOdometro(null);
+      setUltimaEntradaSalida(null);
       setCliente("");
       setObra("");
       setChofer("");
       setTransporte("");
       return;
+
     }
 
     setLoadingInfo(true);
@@ -303,9 +318,11 @@ export default function EntradasSalidas() {
         setUltimoMantenimiento(null);
         setRecoleccionInfo(null);
         setUltimoOdometro(null);
+        setUltimaEntradaSalida(null);
         setLoadingInfo(false);
         return;
       }
+
 
       setEquipoInfo({
         id: equipoData.id,
@@ -320,7 +337,7 @@ export default function EntradasSalidas() {
       });
 
       // 2. Contrato activo o más reciente (en paralelo con los demás)
-      const [contratoRes, mantRes, recolRes, odoRes] = await Promise.all([
+      const [contratoRes, mantRes, recolRes, odoRes, ultEsRes] = await Promise.all([
         supabase
           .from('contratos')
           .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
@@ -352,6 +369,14 @@ export default function EntradasSalidas() {
           .order('fecha', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from('entradas_salidas')
+          .select('fecha, tipo, odometro, chofer, transporte, cliente, obra')
+          .eq('equipo_id', equipoData.id)
+          .order('fecha', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const contratoData = contratoRes.data;
@@ -359,17 +384,19 @@ export default function EntradasSalidas() {
       setUltimoMantenimiento(mantRes.data ?? null);
       setRecoleccionInfo(recolRes.data ?? null);
       setUltimoOdometro(odoRes.data ?? null);
+      setUltimaEntradaSalida(ultEsRes.data ?? null);
 
-      // Auto-rellenar: prioridad recolección > contrato
-      const autoCliente = recolRes.data?.cliente || contratoData?.cliente || "";
-      const autoObra = contratoData?.obra || "";
-      const autoChofer = recolRes.data?.chofer || "";
-      const autoTransporte = recolRes.data?.transporte || "";
+      // Auto-rellenar: prioridad recolección > última entrada/salida > contrato
+      const autoCliente = recolRes.data?.cliente || ultEsRes.data?.cliente || contratoData?.cliente || "";
+      const autoObra = ultEsRes.data?.obra || contratoData?.obra || "";
+      const autoChofer = recolRes.data?.chofer || ultEsRes.data?.chofer || "";
+      const autoTransporte = recolRes.data?.transporte || ultEsRes.data?.transporte || "";
 
       if (autoCliente) setCliente(autoCliente);
       if (autoObra) setObra(autoObra);
       if (autoChofer) setChofer(autoChofer);
       if (autoTransporte) setTransporte(autoTransporte);
+
     } catch (error) {
       console.error('Error fetching equipo info:', error);
     } finally {
@@ -803,6 +830,23 @@ export default function EntradasSalidas() {
                       </div>
                     </div>
                   )}
+
+                  {ultimaEntradaSalida && (
+
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1">🔁 Última Entrada/Salida</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(ultimaEntradaSalida.fecha)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span><span className="font-medium text-right capitalize">{ultimaEntradaSalida.tipo}</span></div>
+                        {ultimaEntradaSalida.odometro != null && <div className="flex justify-between"><span className="text-muted-foreground">Odómetro:</span><span className="font-medium text-right">{ultimaEntradaSalida.odometro}</span></div>}
+                        {ultimaEntradaSalida.cliente && <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="font-medium text-right">{ultimaEntradaSalida.cliente}</span></div>}
+                        {ultimaEntradaSalida.chofer && <div className="flex justify-between"><span className="text-muted-foreground">Chofer:</span><span className="font-medium text-right">{ultimaEntradaSalida.chofer}</span></div>}
+                        {ultimaEntradaSalida.transporte && <div className="flex justify-between"><span className="text-muted-foreground">Transporte:</span><span className="font-medium text-right">{ultimaEntradaSalida.transporte}</span></div>}
+                      </div>
+                    </div>
+                  )}
+
+
 
                   {contratoInfo && (
                     <div className="pt-2 border-t">
