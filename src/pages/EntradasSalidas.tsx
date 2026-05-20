@@ -318,9 +318,11 @@ export default function EntradasSalidas() {
         setUltimoMantenimiento(null);
         setRecoleccionInfo(null);
         setUltimoOdometro(null);
+        setUltimaEntradaSalida(null);
         setLoadingInfo(false);
         return;
       }
+
 
       setEquipoInfo({
         id: equipoData.id,
