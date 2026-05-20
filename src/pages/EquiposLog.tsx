@@ -22,8 +22,8 @@ import {
   Calendar,
   User
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatMty } from '@/lib/timezone';
+
 
 interface LogEntry {
   id: string;
