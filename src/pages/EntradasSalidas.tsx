@@ -751,49 +751,96 @@ export default function EntradasSalidas() {
               />
             </div>
 
-            {contratoInfo && (
+            {loadingInfo && equipoId.trim() && (
+              <p className="text-sm text-muted-foreground">Buscando información del equipo...</p>
+            )}
+
+            {equipoInfo && (
               <Card className="bg-muted/50 border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    📋 Contrato Activo Encontrado
-                    <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                    🛠️ Información del Equipo
+                    <Badge variant="outline" className="text-xs">
+                      #{equipoInfo.numero_equipo}
+                    </Badge>
+                    {equipoInfo.estado && (
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {equipoInfo.estado}
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Folio:</span>
-                    <span className="font-medium">{contratoInfo.folio_contrato}</span>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Descripción:</span><span className="font-medium text-right">{equipoInfo.descripcion}</span></div>
+                    {equipoInfo.marca && <div className="flex justify-between"><span className="text-muted-foreground">Marca:</span><span className="font-medium text-right">{equipoInfo.marca}</span></div>}
+                    {equipoInfo.modelo && <div className="flex justify-between"><span className="text-muted-foreground">Modelo:</span><span className="font-medium text-right">{equipoInfo.modelo}</span></div>}
+                    {equipoInfo.serie && <div className="flex justify-between"><span className="text-muted-foreground">Serie:</span><span className="font-medium text-right">{equipoInfo.serie}</span></div>}
+                    {equipoInfo.almacen_nombre && <div className="flex justify-between"><span className="text-muted-foreground">Almacén:</span><span className="font-medium text-right">{equipoInfo.almacen_nombre}</span></div>}
+                    {equipoInfo.ubicacion_actual && <div className="flex justify-between"><span className="text-muted-foreground">Ubicación actual:</span><span className="font-medium text-right">{equipoInfo.ubicacion_actual}</span></div>}
+                    {ultimoOdometro && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Último odómetro:</span>
+                        <span className="font-medium text-right">
+                          {ultimoOdometro.odometro} ({formatDate(ultimoOdometro.fecha)})
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cliente:</span>
-                    <span className="font-medium">{contratoInfo.cliente}</span>
-                  </div>
-                  {contratoInfo.obra && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Obra:</span>
-                      <span className="font-medium">{contratoInfo.obra}</span>
+
+                  {ultimoMantenimiento && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1">🔧 Último Mantenimiento</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(ultimoMantenimiento.fecha)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span><span className="font-medium text-right">{ultimoMantenimiento.tipo_servicio}</span></div>
+                        {ultimoMantenimiento.tecnico && <div className="flex justify-between"><span className="text-muted-foreground">Técnico:</span><span className="font-medium text-right">{ultimoMantenimiento.tecnico}</span></div>}
+                        {ultimoMantenimiento.descripcion && <div className="md:col-span-2 text-muted-foreground italic">"{ultimoMantenimiento.descripcion}"</div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.direccion && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Dirección:</span>
-                      <span className="font-medium">{contratoInfo.direccion}</span>
+
+                  {contratoInfo && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1 flex items-center gap-2">
+                        📋 Contrato {contratoInfo.status === 'activo' ? 'Activo' : `(${contratoInfo.status ?? 'histórico'})`}
+                        {contratoInfo.status === 'activo' && <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Folio:</span><span className="font-medium text-right">{contratoInfo.folio_contrato}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="font-medium text-right">{contratoInfo.cliente}</span></div>
+                        {contratoInfo.obra && <div className="flex justify-between"><span className="text-muted-foreground">Obra:</span><span className="font-medium text-right">{contratoInfo.obra}</span></div>}
+                        {contratoInfo.direccion && <div className="flex justify-between"><span className="text-muted-foreground">Dirección:</span><span className="font-medium text-right">{contratoInfo.direccion}</span></div>}
+                        {contratoInfo.municipio && <div className="flex justify-between"><span className="text-muted-foreground">Municipio:</span><span className="font-medium text-right">{contratoInfo.municipio}</span></div>}
+                        {contratoInfo.vendedor && <div className="flex justify-between"><span className="text-muted-foreground">Vendedor:</span><span className="font-medium text-right">{contratoInfo.vendedor}</span></div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.municipio && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Municipio:</span>
-                      <span className="font-medium">{contratoInfo.municipio}</span>
+
+                  {recoleccionInfo && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1 flex items-center gap-2">
+                        🚚 Recolección programada
+                        <Badge variant="outline" className="text-xs capitalize">{recoleccionInfo.status}</Badge>
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(recoleccionInfo.fecha_programada)}</span></div>
+                        {recoleccionInfo.chofer && <div className="flex justify-between"><span className="text-muted-foreground">Chofer:</span><span className="font-medium text-right">{recoleccionInfo.chofer}</span></div>}
+                        {recoleccionInfo.transporte && <div className="flex justify-between"><span className="text-muted-foreground">Transporte:</span><span className="font-medium text-right">{recoleccionInfo.transporte}</span></div>}
+                        {recoleccionInfo.direccion && <div className="flex justify-between"><span className="text-muted-foreground">Dirección:</span><span className="font-medium text-right">{recoleccionInfo.direccion}</span></div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.vendedor && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vendedor:</span>
-                      <span className="font-medium">{contratoInfo.vendedor}</span>
-                    </div>
-                  )}
+
+                  <p className="text-xs text-muted-foreground italic pt-1">
+                    ℹ️ Cliente, obra, chofer y transporte se han pre-llenado automáticamente. Puedes editarlos en "Datos del movimiento" si es necesario.
+                  </p>
                 </CardContent>
               </Card>
+            )}
+
+            {equipoId.trim() && !loadingInfo && !equipoInfo && (
+              <p className="text-sm text-destructive">⚠️ No se encontró el equipo con número {equipoId}</p>
             )}
 
             <div className="space-y-2">
