@@ -757,10 +757,11 @@ export default function EntradasSalidas() {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-sm font-medium">
-                  {format(currentDateTime, "dd/MMM/yyyy", { locale: es })}
+                  {formatMty(currentDateTime, "dd/MMM/yyyy")}
                 </div>
                 <div className="text-lg font-bold tabular-nums">
-                  {format(currentDateTime, "HH:mm:ss", { locale: es })}
+                  {formatMty(currentDateTime, "HH:mm:ss")}
+
                 </div>
               </div>
               <Badge variant={isOnline ? "default" : "secondary"}>
