@@ -171,14 +171,7 @@ export default function Contratos() {
     }).format(amount);
   };
 
-  const formatDate = (date: string | null) => {
-    if (!date) return 'N/A';
-    try {
-      return format(new Date(date), 'dd/MMM/yyyy', { locale: es });
-    } catch {
-      return 'N/A';
-    }
-  };
+  const formatDate = (date: string | null) => formatMty(date, 'dd/MMM/yyyy');
 
   const handleCreateContrato = () => {
     setSelectedContrato(null);
