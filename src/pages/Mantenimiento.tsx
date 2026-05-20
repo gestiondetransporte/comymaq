@@ -13,7 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, startOfMonth } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty } from "@/lib/timezone";
+
 
 interface Equipo {
   id: string;
