@@ -72,6 +72,41 @@ interface ContratoInfo {
   direccion: string | null;
   municipio: string | null;
   estado_ubicacion: string | null;
+  status: string | null;
+}
+
+interface EquipoInfo {
+  id: string;
+  numero_equipo: string;
+  descripcion: string;
+  marca: string | null;
+  modelo: string | null;
+  serie: string | null;
+  estado: string | null;
+  ubicacion_actual: string | null;
+  almacen_nombre: string | null;
+}
+
+interface MantenimientoInfo {
+  fecha: string;
+  tipo_servicio: string;
+  descripcion: string;
+  tecnico: string | null;
+}
+
+interface RecoleccionInfo {
+  fecha_programada: string;
+  status: string;
+  chofer: string | null;
+  transporte: string | null;
+  cliente: string | null;
+  direccion: string | null;
+}
+
+interface UltimoOdometro {
+  odometro: number;
+  fecha: string;
+  tipo: string;
 }
 
 export default function EntradasSalidas() {
