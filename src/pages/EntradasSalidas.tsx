@@ -829,7 +829,21 @@ export default function EntradasSalidas() {
                         {ultimoMantenimiento.descripcion && <div className="md:col-span-2 text-muted-foreground italic">"{ultimoMantenimiento.descripcion}"</div>}
                       </div>
                     </div>
+                  {ultimaEntradaSalida && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1">🔁 Última Entrada/Salida</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(ultimaEntradaSalida.fecha)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span><span className="font-medium text-right capitalize">{ultimaEntradaSalida.tipo}</span></div>
+                        {ultimaEntradaSalida.odometro != null && <div className="flex justify-between"><span className="text-muted-foreground">Odómetro:</span><span className="font-medium text-right">{ultimaEntradaSalida.odometro}</span></div>}
+                        {ultimaEntradaSalida.cliente && <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="font-medium text-right">{ultimaEntradaSalida.cliente}</span></div>}
+                        {ultimaEntradaSalida.chofer && <div className="flex justify-between"><span className="text-muted-foreground">Chofer:</span><span className="font-medium text-right">{ultimaEntradaSalida.chofer}</span></div>}
+                        {ultimaEntradaSalida.transporte && <div className="flex justify-between"><span className="text-muted-foreground">Transporte:</span><span className="font-medium text-right">{ultimaEntradaSalida.transporte}</span></div>}
+                      </div>
+                    </div>
                   )}
+
+
 
                   {contratoInfo && (
                     <div className="pt-2 border-t">
