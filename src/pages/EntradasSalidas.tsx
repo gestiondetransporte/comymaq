@@ -337,7 +337,7 @@ export default function EntradasSalidas() {
       });
 
       // 2. Contrato activo o más reciente (en paralelo con los demás)
-      const [contratoRes, mantRes, recolRes, odoRes] = await Promise.all([
+      const [contratoRes, mantRes, recolRes, odoRes, ultEsRes] = await Promise.all([
         supabase
           .from('contratos')
           .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
@@ -369,6 +369,14 @@ export default function EntradasSalidas() {
           .order('fecha', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from('entradas_salidas')
+          .select('fecha, tipo, odometro, chofer, transporte, cliente, obra')
+          .eq('equipo_id', equipoData.id)
+          .order('fecha', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
 
       const contratoData = contratoRes.data;
@@ -376,17 +384,19 @@ export default function EntradasSalidas() {
       setUltimoMantenimiento(mantRes.data ?? null);
       setRecoleccionInfo(recolRes.data ?? null);
       setUltimoOdometro(odoRes.data ?? null);
+      setUltimaEntradaSalida(ultEsRes.data ?? null);
 
-      // Auto-rellenar: prioridad recolección > contrato
-      const autoCliente = recolRes.data?.cliente || contratoData?.cliente || "";
-      const autoObra = contratoData?.obra || "";
-      const autoChofer = recolRes.data?.chofer || "";
-      const autoTransporte = recolRes.data?.transporte || "";
+      // Auto-rellenar: prioridad recolección > última entrada/salida > contrato
+      const autoCliente = recolRes.data?.cliente || ultEsRes.data?.cliente || contratoData?.cliente || "";
+      const autoObra = ultEsRes.data?.obra || contratoData?.obra || "";
+      const autoChofer = recolRes.data?.chofer || ultEsRes.data?.chofer || "";
+      const autoTransporte = recolRes.data?.transporte || ultEsRes.data?.transporte || "";
 
       if (autoCliente) setCliente(autoCliente);
       if (autoObra) setObra(autoObra);
       if (autoChofer) setChofer(autoChofer);
       if (autoTransporte) setTransporte(autoTransporte);
+
     } catch (error) {
       console.error('Error fetching equipo info:', error);
     } finally {
