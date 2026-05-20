@@ -16,7 +16,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty, nowMty } from "@/lib/timezone";
+
 
 interface DashboardStats {
   totalEquipos: number;
@@ -221,7 +222,7 @@ export default function Dashboard() {
       title: "Salidas del Mes",
       value: stats.salidasMes,
       icon: ArrowUpRight,
-      description: format(new Date(), 'MMMM yyyy', { locale: es }),
+      description: formatMty(new Date(), 'MMMM yyyy'),
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       link: "/entradas-salidas",
@@ -230,7 +231,7 @@ export default function Dashboard() {
       title: "Entradas del Mes",
       value: stats.entradasMes,
       icon: ArrowDownRight,
-      description: format(new Date(), 'MMMM yyyy', { locale: es }),
+      description: formatMty(new Date(), 'MMMM yyyy'),
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
       link: "/entradas-salidas",
@@ -239,7 +240,7 @@ export default function Dashboard() {
       title: "Mantenimientos del Mes",
       value: stats.mantenimientosMes,
       icon: Wrench,
-      description: format(new Date(), 'MMMM yyyy', { locale: es }),
+      description: formatMty(new Date(), 'MMMM yyyy'),
       color: "text-amber-600",
       bgColor: "bg-amber-50",
       link: "/mantenimiento",
@@ -274,7 +275,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold">Dashboard Administrativo</h1>
           <p className="text-muted-foreground mt-1">
-            Resumen general del sistema - {format(new Date(), "d 'de' MMMM, yyyy", { locale: es })}
+            Resumen general del sistema - {formatMty(new Date(), "d 'de' MMMM, yyyy")}
           </p>
         </div>
       </div>
@@ -361,7 +362,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Movimientos del Mes</CardTitle>
             <CardDescription>
-              {format(new Date(), 'MMMM yyyy', { locale: es })}
+              {formatMty(new Date(), 'MMMM yyyy')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -402,7 +403,7 @@ export default function Dashboard() {
           onClick={() => navigate('/mantenimiento')}
         >
           <CardHeader>
-            <CardTitle>Mantenimientos - {format(new Date(), 'MMMM', { locale: es })}</CardTitle>
+            <CardTitle>Mantenimientos - {formatMty(new Date(), 'MMMM')}</CardTitle>
             <CardDescription>Comparativa programados vs realizados</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

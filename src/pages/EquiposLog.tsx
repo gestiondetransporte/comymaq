@@ -22,8 +22,8 @@ import {
   Calendar,
   User
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatMty } from '@/lib/timezone';
+
 
 interface LogEntry {
   id: string;
@@ -131,7 +131,7 @@ export default function EquiposLog() {
 
   const formatDateTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd MMM yyyy, HH:mm", { locale: es });
+      return formatMty(dateString, "dd MMM yyyy, HH:mm");
     } catch {
       return dateString;
     }

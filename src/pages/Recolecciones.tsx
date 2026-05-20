@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { format, differenceInDays, addDays } from "date-fns";
-import { es } from "date-fns/locale";
+import { addDays } from "date-fns";
+import { formatMty } from "@/lib/timezone";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -327,7 +328,7 @@ export default function Recolecciones() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     try {
-      return format(new Date(dateString), "dd/MMM/yyyy", { locale: es });
+      return formatMty(dateString, "dd/MMM/yyyy");
     } catch {
       return dateString;
     }

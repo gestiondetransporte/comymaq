@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Wrench, AlertCircle, Search, Download, RefreshCw } from "lucide-react";
-import { differenceInDays, parseISO, format } from "date-fns";
-import { es } from "date-fns/locale";
+import { differenceInDays, parseISO } from "date-fns";
+import { formatMty, nowMty } from "@/lib/timezone";
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -42,7 +43,7 @@ interface EquipoInventario {
 }
 
 const today = new Date();
-const todayStr = format(today, "dd/MM/yyyy", { locale: es });
+const todayStr = formatMty(nowMty(), "dd/MM/yyyy");
 
 export default function InventarioFisico() {
   const [disponibles, setDisponibles] = useState<EquipoInventario[]>([]);
@@ -206,7 +207,7 @@ export default function InventarioFisico() {
         r.marca || "",
         r.anio || 0,
         r.modelo || "",
-        r.mantenimiento_fecha ? format(parseISO(r.mantenimiento_fecha), "dd/MM/yyyy") : "",
+        r.mantenimiento_fecha ? formatMty(r.mantenimiento_fecha, "dd/MM/yyyy") : "",
         r.dias_en_taller ?? "",
         r.mantenimiento_descripcion || "",
         r.mantenimiento_tecnico || "",
@@ -223,7 +224,7 @@ export default function InventarioFisico() {
         r.anio || 0,
         r.modelo || "",
         r.contrato_cliente || "",
-        r.fecha_regreso ? format(parseISO(r.fecha_regreso), "dd/MM/yyyy") : "",
+        r.fecha_regreso ? formatMty(r.fecha_regreso, "dd/MM/yyyy") : "",
         r.dias_como ?? "",
       ]);
     } else {
@@ -475,7 +476,7 @@ export default function InventarioFisico() {
                           <TableCell className="text-xs">{eq.modelo || "—"}</TableCell>
                           <TableCell className="text-xs">
                             {eq.mantenimiento_fecha
-                              ? format(parseISO(eq.mantenimiento_fecha), "dd/MM/yyyy")
+                              ? formatMty(eq.mantenimiento_fecha, "dd/MM/yyyy")
                               : "—"}
                           </TableCell>
                           <TableCell className="text-center">
@@ -566,7 +567,7 @@ export default function InventarioFisico() {
                           <TableCell className="text-xs">{eq.modelo || "—"}</TableCell>
                           <TableCell className="text-xs">
                             {eq.fecha_regreso
-                              ? format(parseISO(eq.fecha_regreso), "dd/MM/yyyy")
+                              ? formatMty(eq.fecha_regreso, "dd/MM/yyyy")
                               : "—"}
                           </TableCell>
                           <TableCell className="text-center">

@@ -13,8 +13,8 @@ import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon, Trash2 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty } from "@/lib/timezone";
+
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -702,7 +702,7 @@ export default function EntradasSalidas() {
   const formatDate = (date: string | null) => {
     if (!date) return 'N/A';
     try {
-      return format(new Date(date), 'dd/MMM/yyyy HH:mm', { locale: es });
+      return formatMty(date, 'dd/MMM/yyyy HH:mm');
     } catch {
       return 'N/A';
     }
@@ -757,10 +757,11 @@ export default function EntradasSalidas() {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-sm font-medium">
-                  {format(currentDateTime, "dd/MMM/yyyy", { locale: es })}
+                  {formatMty(currentDateTime, "dd/MMM/yyyy")}
                 </div>
                 <div className="text-lg font-bold tabular-nums">
-                  {format(currentDateTime, "HH:mm:ss", { locale: es })}
+                  {formatMty(currentDateTime, "HH:mm:ss")}
+
                 </div>
               </div>
               <Badge variant={isOnline ? "default" : "secondary"}>
