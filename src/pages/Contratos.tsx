@@ -248,7 +248,7 @@ export default function Contratos() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Folio</TableHead>
+                    <TableHead>Número Contrato</TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Equipo</TableHead>
                     <TableHead>Obra</TableHead>
@@ -269,7 +269,7 @@ export default function Contratos() {
                     
                     return (
                       <TableRow key={contrato.id}>
-                        <TableCell className="font-medium">{contrato.folio_contrato}</TableCell>
+                        <TableCell className="font-medium">{contrato.numero_contrato || contrato.folio_contrato}</TableCell>
                         <TableCell>{contrato.cliente}</TableCell>
                         <TableCell>
                           {contrato.equipos ? (
