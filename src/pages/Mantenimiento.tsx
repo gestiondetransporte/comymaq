@@ -467,7 +467,7 @@ export default function Mantenimiento() {
   const formatDate = (date: string | null) => {
     if (!date) return 'N/A';
     try {
-      return format(new Date(date), 'dd/MMM/yyyy', { locale: es });
+      return formatMty(date, 'dd/MMM/yyyy');
     } catch {
       return 'N/A';
     }
