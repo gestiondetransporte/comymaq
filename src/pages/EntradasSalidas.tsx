@@ -829,7 +829,10 @@ export default function EntradasSalidas() {
                         {ultimoMantenimiento.descripcion && <div className="md:col-span-2 text-muted-foreground italic">"{ultimoMantenimiento.descripcion}"</div>}
                       </div>
                     </div>
+                  )}
+
                   {ultimaEntradaSalida && (
+
                     <div className="pt-2 border-t">
                       <p className="font-semibold text-xs mb-1">🔁 Última Entrada/Salida</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
