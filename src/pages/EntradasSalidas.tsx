@@ -72,6 +72,41 @@ interface ContratoInfo {
   direccion: string | null;
   municipio: string | null;
   estado_ubicacion: string | null;
+  status: string | null;
+}
+
+interface EquipoInfo {
+  id: string;
+  numero_equipo: string;
+  descripcion: string;
+  marca: string | null;
+  modelo: string | null;
+  serie: string | null;
+  estado: string | null;
+  ubicacion_actual: string | null;
+  almacen_nombre: string | null;
+}
+
+interface MantenimientoInfo {
+  fecha: string;
+  tipo_servicio: string;
+  descripcion: string;
+  tecnico: string | null;
+}
+
+interface RecoleccionInfo {
+  fecha_programada: string;
+  status: string;
+  chofer: string | null;
+  transporte: string | null;
+  cliente: string | null;
+  direccion: string | null;
+}
+
+interface UltimoOdometro {
+  odometro: number;
+  fecha: string;
+  tipo: string;
 }
 
 export default function EntradasSalidas() {
@@ -95,6 +130,11 @@ export default function EntradasSalidas() {
   const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
+  const [equipoInfo, setEquipoInfo] = useState<EquipoInfo | null>(null);
+  const [ultimoMantenimiento, setUltimoMantenimiento] = useState<MantenimientoInfo | null>(null);
+  const [recoleccionInfo, setRecoleccionInfo] = useState<RecoleccionInfo | null>(null);
+  const [ultimoOdometro, setUltimoOdometro] = useState<UltimoOdometro | null>(null);
+  const [loadingInfo, setLoadingInfo] = useState(false);
   const [llevaExtintor, setLlevaExtintor] = useState<boolean>(false);
   const [odometro, setOdometro] = useState<string>("");
   const [tieneDanos, setTieneDanos] = useState(false);
@@ -231,74 +271,116 @@ export default function EntradasSalidas() {
     }
   };
 
-  const fetchUltimoContrato = async (numeroEquipo: string) => {
+  const fetchEquipoInfo = async (numeroEquipo: string) => {
     if (!numeroEquipo.trim()) {
       setContratoInfo(null);
+      setEquipoInfo(null);
+      setUltimoMantenimiento(null);
+      setRecoleccionInfo(null);
+      setUltimoOdometro(null);
       setCliente("");
       setObra("");
+      setChofer("");
+      setTransporte("");
       return;
     }
 
+    setLoadingInfo(true);
     try {
-      const { data: equipoData, error: equipoError } = await supabase
+      // 1. Equipo + almacén
+      const { data: equipoData } = await supabase
         .from('equipos')
-        .select('id')
+        .select(`
+          id, numero_equipo, descripcion, marca, modelo, serie, estado, ubicacion_actual,
+          almacenes ( nombre )
+        `)
         .eq('numero_equipo', numeroEquipo.trim())
         .maybeSingle();
 
-      if (equipoError || !equipoData) {
+      if (!equipoData) {
+        setEquipoInfo(null);
         setContratoInfo(null);
+        setUltimoMantenimiento(null);
+        setRecoleccionInfo(null);
+        setUltimoOdometro(null);
+        setLoadingInfo(false);
         return;
       }
 
-      // Buscar contrato activo primero, luego el más reciente
-      const { data: contratoActivo, error: activoError } = await supabase
-        .from('contratos')
-        .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
-        .eq('equipo_id', equipoData.id)
-        .eq('status', 'activo')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      setEquipoInfo({
+        id: equipoData.id,
+        numero_equipo: equipoData.numero_equipo,
+        descripcion: equipoData.descripcion,
+        marca: equipoData.marca,
+        modelo: equipoData.modelo,
+        serie: equipoData.serie,
+        estado: equipoData.estado,
+        ubicacion_actual: equipoData.ubicacion_actual,
+        almacen_nombre: (equipoData.almacenes as any)?.nombre ?? null,
+      });
 
-      let contratoData = contratoActivo;
-
-      // Si no hay contrato activo, buscar el más reciente
-      if (!contratoData || activoError) {
-        const { data: ultimoContrato } = await supabase
+      // 2. Contrato activo o más reciente (en paralelo con los demás)
+      const [contratoRes, mantRes, recolRes, odoRes] = await Promise.all([
+        supabase
           .from('contratos')
-          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion')
+          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
           .eq('equipo_id', equipoData.id)
+          .order('status', { ascending: true }) // 'activo' viene antes alfabéticamente que otros comunes
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .maybeSingle(),
+        supabase
+          .from('mantenimientos')
+          .select('fecha, tipo_servicio, descripcion, tecnico')
+          .eq('equipo_id', equipoData.id)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('recolecciones')
+          .select('fecha_programada, status, chofer, transporte, cliente, direccion')
+          .eq('equipo_id', equipoData.id)
+          .in('status', ['pendiente', 'programada', 'en_proceso'])
+          .order('fecha_programada', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('entradas_salidas')
+          .select('odometro, fecha, tipo')
+          .eq('equipo_id', equipoData.id)
+          .not('odometro', 'is', null)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-        contratoData = ultimoContrato;
-      }
+      const contratoData = contratoRes.data;
+      setContratoInfo(contratoData ?? null);
+      setUltimoMantenimiento(mantRes.data ?? null);
+      setRecoleccionInfo(recolRes.data ?? null);
+      setUltimoOdometro(odoRes.data ?? null);
 
-      if (!contratoData) {
-        setContratoInfo(null);
-        return;
-      }
+      // Auto-rellenar: prioridad recolección > contrato
+      const autoCliente = recolRes.data?.cliente || contratoData?.cliente || "";
+      const autoObra = contratoData?.obra || "";
+      const autoChofer = recolRes.data?.chofer || "";
+      const autoTransporte = recolRes.data?.transporte || "";
 
-      setContratoInfo(contratoData);
-      // Auto-rellenar campos del contrato activo
-      if (contratoData.cliente) {
-        setCliente(contratoData.cliente);
-      }
-      if (contratoData.obra) {
-        setObra(contratoData.obra);
-      }
+      if (autoCliente) setCliente(autoCliente);
+      if (autoObra) setObra(autoObra);
+      if (autoChofer) setChofer(autoChofer);
+      if (autoTransporte) setTransporte(autoTransporte);
     } catch (error) {
-      console.error('Error fetching contrato activo:', error);
-      setContratoInfo(null);
+      console.error('Error fetching equipo info:', error);
+    } finally {
+      setLoadingInfo(false);
     }
   };
 
-  // Efecto para buscar el último contrato cuando cambia el número de equipo
+  // Efecto para buscar info completa cuando cambia el número de equipo
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchUltimoContrato(equipoId);
+      fetchEquipoInfo(equipoId);
     }, 500); // Debounce de 500ms
 
     return () => clearTimeout(timeoutId);
@@ -554,6 +636,10 @@ export default function EntradasSalidas() {
       setTieneDanos(false);
       setDescripcionDanos("");
       setContratoInfo(null);
+      setEquipoInfo(null);
+      setUltimoMantenimiento(null);
+      setRecoleccionInfo(null);
+      setUltimoOdometro(null);
     } catch (error: any) {
       console.error('Error registrando movimiento:', error);
       const errorMsg = error?.message || error?.error_description || 'Error desconocido';
@@ -669,49 +755,96 @@ export default function EntradasSalidas() {
               />
             </div>
 
-            {contratoInfo && (
+            {loadingInfo && equipoId.trim() && (
+              <p className="text-sm text-muted-foreground">Buscando información del equipo...</p>
+            )}
+
+            {equipoInfo && (
               <Card className="bg-muted/50 border-primary/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    📋 Contrato Activo Encontrado
-                    <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>
+                  <CardTitle className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                    🛠️ Información del Equipo
+                    <Badge variant="outline" className="text-xs">
+                      #{equipoInfo.numero_equipo}
+                    </Badge>
+                    {equipoInfo.estado && (
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {equipoInfo.estado}
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Folio:</span>
-                    <span className="font-medium">{contratoInfo.folio_contrato}</span>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Descripción:</span><span className="font-medium text-right">{equipoInfo.descripcion}</span></div>
+                    {equipoInfo.marca && <div className="flex justify-between"><span className="text-muted-foreground">Marca:</span><span className="font-medium text-right">{equipoInfo.marca}</span></div>}
+                    {equipoInfo.modelo && <div className="flex justify-between"><span className="text-muted-foreground">Modelo:</span><span className="font-medium text-right">{equipoInfo.modelo}</span></div>}
+                    {equipoInfo.serie && <div className="flex justify-between"><span className="text-muted-foreground">Serie:</span><span className="font-medium text-right">{equipoInfo.serie}</span></div>}
+                    {equipoInfo.almacen_nombre && <div className="flex justify-between"><span className="text-muted-foreground">Almacén:</span><span className="font-medium text-right">{equipoInfo.almacen_nombre}</span></div>}
+                    {equipoInfo.ubicacion_actual && <div className="flex justify-between"><span className="text-muted-foreground">Ubicación actual:</span><span className="font-medium text-right">{equipoInfo.ubicacion_actual}</span></div>}
+                    {ultimoOdometro && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Último odómetro:</span>
+                        <span className="font-medium text-right">
+                          {ultimoOdometro.odometro} ({formatDate(ultimoOdometro.fecha)})
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cliente:</span>
-                    <span className="font-medium">{contratoInfo.cliente}</span>
-                  </div>
-                  {contratoInfo.obra && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Obra:</span>
-                      <span className="font-medium">{contratoInfo.obra}</span>
+
+                  {ultimoMantenimiento && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1">🔧 Último Mantenimiento</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(ultimoMantenimiento.fecha)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Tipo:</span><span className="font-medium text-right">{ultimoMantenimiento.tipo_servicio}</span></div>
+                        {ultimoMantenimiento.tecnico && <div className="flex justify-between"><span className="text-muted-foreground">Técnico:</span><span className="font-medium text-right">{ultimoMantenimiento.tecnico}</span></div>}
+                        {ultimoMantenimiento.descripcion && <div className="md:col-span-2 text-muted-foreground italic">"{ultimoMantenimiento.descripcion}"</div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.direccion && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Dirección:</span>
-                      <span className="font-medium">{contratoInfo.direccion}</span>
+
+                  {contratoInfo && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1 flex items-center gap-2">
+                        📋 Contrato {contratoInfo.status === 'activo' ? 'Activo' : `(${contratoInfo.status ?? 'histórico'})`}
+                        {contratoInfo.status === 'activo' && <Badge variant="default" className="bg-green-600 text-xs">Activo</Badge>}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Folio:</span><span className="font-medium text-right">{contratoInfo.folio_contrato}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Cliente:</span><span className="font-medium text-right">{contratoInfo.cliente}</span></div>
+                        {contratoInfo.obra && <div className="flex justify-between"><span className="text-muted-foreground">Obra:</span><span className="font-medium text-right">{contratoInfo.obra}</span></div>}
+                        {contratoInfo.direccion && <div className="flex justify-between"><span className="text-muted-foreground">Dirección:</span><span className="font-medium text-right">{contratoInfo.direccion}</span></div>}
+                        {contratoInfo.municipio && <div className="flex justify-between"><span className="text-muted-foreground">Municipio:</span><span className="font-medium text-right">{contratoInfo.municipio}</span></div>}
+                        {contratoInfo.vendedor && <div className="flex justify-between"><span className="text-muted-foreground">Vendedor:</span><span className="font-medium text-right">{contratoInfo.vendedor}</span></div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.municipio && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Municipio:</span>
-                      <span className="font-medium">{contratoInfo.municipio}</span>
+
+                  {recoleccionInfo && (
+                    <div className="pt-2 border-t">
+                      <p className="font-semibold text-xs mb-1 flex items-center gap-2">
+                        🚚 Recolección programada
+                        <Badge variant="outline" className="text-xs capitalize">{recoleccionInfo.status}</Badge>
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Fecha:</span><span className="font-medium text-right">{formatDate(recoleccionInfo.fecha_programada)}</span></div>
+                        {recoleccionInfo.chofer && <div className="flex justify-between"><span className="text-muted-foreground">Chofer:</span><span className="font-medium text-right">{recoleccionInfo.chofer}</span></div>}
+                        {recoleccionInfo.transporte && <div className="flex justify-between"><span className="text-muted-foreground">Transporte:</span><span className="font-medium text-right">{recoleccionInfo.transporte}</span></div>}
+                        {recoleccionInfo.direccion && <div className="flex justify-between"><span className="text-muted-foreground">Dirección:</span><span className="font-medium text-right">{recoleccionInfo.direccion}</span></div>}
+                      </div>
                     </div>
                   )}
-                  {contratoInfo.vendedor && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vendedor:</span>
-                      <span className="font-medium">{contratoInfo.vendedor}</span>
-                    </div>
-                  )}
+
+                  <p className="text-xs text-muted-foreground italic pt-1">
+                    ℹ️ Cliente, obra, chofer y transporte se han pre-llenado automáticamente. Puedes editarlos en "Datos del movimiento" si es necesario.
+                  </p>
                 </CardContent>
               </Card>
+            )}
+
+            {equipoId.trim() && !loadingInfo && !equipoInfo && (
+              <p className="text-sm text-destructive">⚠️ No se encontró el equipo con número {equipoId}</p>
             )}
 
             <div className="space-y-2">
@@ -767,65 +900,79 @@ export default function EntradasSalidas() {
               </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
-              <Select value={cliente} onValueChange={setCliente}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.nombre}>
-                      {c.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <details className="border rounded-lg bg-muted/30 group">
+              <summary className="cursor-pointer p-4 font-semibold text-sm flex items-center justify-between list-none">
+                <span>Datos del movimiento (cliente, obra, chofer, transporte)</span>
+                <span className="text-xs text-muted-foreground group-open:hidden">▸ Editar</span>
+                <span className="text-xs text-muted-foreground hidden group-open:inline">▾ Ocultar</span>
+              </summary>
+              <div className="p-4 pt-0 space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Estos datos se pre-llenan automáticamente desde el contrato y la recolección del equipo. Edítalos solo si es necesario.
+                </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="obra">Obra</Label>
-              <Input
-                id="obra"
-                placeholder="Nombre de la obra..."
-                value={obra}
-                onChange={(e) => setObra(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Select value={cliente} onValueChange={setCliente}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((c) => (
+                        <SelectItem key={c.id} value={c.nombre}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="chofer">Chofer</Label>
-              <Select value={chofer} onValueChange={setChofer}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar chofer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {choferes.map((c) => (
-                    <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="obra">Obra</Label>
+                  <Input
+                    id="obra"
+                    placeholder="Nombre de la obra..."
+                    value={obra}
+                    onChange={(e) => setObra(e.target.value)}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="transporte">Transporte</Label>
-              <Input
-                id="transporte"
-                placeholder="Tipo o placas del transporte..."
-                value={transporte}
-                onChange={(e) => setTransporte(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="chofer">Chofer</Label>
+                  <Select value={chofer} onValueChange={setChofer}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar chofer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {choferes.map((c) => (
+                        <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="observaciones">Observaciones (opcional)</Label>
-              <Input
-                id="observaciones"
-                placeholder="Detalles adicionales..."
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transporte">Transporte</Label>
+                  <Input
+                    id="transporte"
+                    placeholder="Tipo o placas del transporte..."
+                    value={transporte}
+                    onChange={(e) => setTransporte(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="observaciones">Observaciones (opcional)</Label>
+                  <Input
+                    id="observaciones"
+                    placeholder="Detalles adicionales..."
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                  />
+                </div>
+              </div>
+            </details>
+
 
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between">
