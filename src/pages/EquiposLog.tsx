@@ -131,7 +131,7 @@ export default function EquiposLog() {
 
   const formatDateTime = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd MMM yyyy, HH:mm", { locale: es });
+      return formatMty(dateString, "dd MMM yyyy, HH:mm");
     } catch {
       return dateString;
     }
