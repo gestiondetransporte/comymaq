@@ -144,7 +144,7 @@ export function EntradaSalidaDetailsDialog({
 
   const formatDate = (date: string) => {
     try {
-      return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: es });
+      return formatMty(date, "dd 'de' MMMM 'de' yyyy");
     } catch {
       return date;
     }
