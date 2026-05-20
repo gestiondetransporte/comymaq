@@ -12,8 +12,8 @@ import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus, Cam
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMty } from "@/lib/timezone";
+
 import { Switch } from "@/components/ui/switch";
 import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Camera as CapCamera, CameraResultType, CameraSource } from "@capacitor/camera";
