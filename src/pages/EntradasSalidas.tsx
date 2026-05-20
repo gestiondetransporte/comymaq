@@ -900,12 +900,10 @@ export default function EntradasSalidas() {
               </>
             )}
 
-            <details className="border rounded-lg bg-muted/30 group">
-              <summary className="cursor-pointer p-4 font-semibold text-sm flex items-center justify-between list-none">
-                <span>Datos del movimiento (cliente, obra, chofer, transporte)</span>
-                <span className="text-xs text-muted-foreground group-open:hidden">▸ Editar</span>
-                <span className="text-xs text-muted-foreground hidden group-open:inline">▾ Ocultar</span>
-              </summary>
+            <div className="border rounded-lg bg-muted/30">
+              <div className="p-4 font-semibold text-sm">
+                Datos del movimiento (cliente, obra, chofer, transporte)
+              </div>
               <div className="p-4 pt-0 space-y-4">
                 <p className="text-xs text-muted-foreground">
                   Estos datos se pre-llenan automáticamente desde el contrato y la recolección del equipo. Edítalos solo si es necesario.
@@ -971,7 +969,8 @@ export default function EntradasSalidas() {
                   />
                 </div>
               </div>
-            </details>
+            </div>
+
 
 
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
