@@ -8,8 +8,8 @@ import { Search, FileText, Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, differenceInDays, isPast, isWithinInterval, addDays } from "date-fns";
-import { es } from "date-fns/locale";
+import { isPast } from "date-fns";
+import { formatMty, nowMty, diffDaysMty } from "@/lib/timezone";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 import { ExcelContratosImport } from "@/components/ExcelContratosImport";
 
