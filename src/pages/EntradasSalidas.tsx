@@ -896,65 +896,79 @@ export default function EntradasSalidas() {
               </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
-              <Select value={cliente} onValueChange={setCliente}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.nombre}>
-                      {c.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <details className="border rounded-lg bg-muted/30 group">
+              <summary className="cursor-pointer p-4 font-semibold text-sm flex items-center justify-between list-none">
+                <span>Datos del movimiento (cliente, obra, chofer, transporte)</span>
+                <span className="text-xs text-muted-foreground group-open:hidden">▸ Editar</span>
+                <span className="text-xs text-muted-foreground hidden group-open:inline">▾ Ocultar</span>
+              </summary>
+              <div className="p-4 pt-0 space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Estos datos se pre-llenan automáticamente desde el contrato y la recolección del equipo. Edítalos solo si es necesario.
+                </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="obra">Obra</Label>
-              <Input
-                id="obra"
-                placeholder="Nombre de la obra..."
-                value={obra}
-                onChange={(e) => setObra(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Select value={cliente} onValueChange={setCliente}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((c) => (
+                        <SelectItem key={c.id} value={c.nombre}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="chofer">Chofer</Label>
-              <Select value={chofer} onValueChange={setChofer}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar chofer..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {choferes.map((c) => (
-                    <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="obra">Obra</Label>
+                  <Input
+                    id="obra"
+                    placeholder="Nombre de la obra..."
+                    value={obra}
+                    onChange={(e) => setObra(e.target.value)}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="transporte">Transporte</Label>
-              <Input
-                id="transporte"
-                placeholder="Tipo o placas del transporte..."
-                value={transporte}
-                onChange={(e) => setTransporte(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="chofer">Chofer</Label>
+                  <Select value={chofer} onValueChange={setChofer}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar chofer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {choferes.map((c) => (
+                        <SelectItem key={c.id} value={c.nombre}>{c.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="observaciones">Observaciones (opcional)</Label>
-              <Input
-                id="observaciones"
-                placeholder="Detalles adicionales..."
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transporte">Transporte</Label>
+                  <Input
+                    id="transporte"
+                    placeholder="Tipo o placas del transporte..."
+                    value={transporte}
+                    onChange={(e) => setTransporte(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="observaciones">Observaciones (opcional)</Label>
+                  <Input
+                    id="observaciones"
+                    placeholder="Detalles adicionales..."
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                  />
+                </div>
+              </div>
+            </details>
+
 
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between">
