@@ -269,7 +269,7 @@ export default function Contratos() {
                     
                     return (
                       <TableRow key={contrato.id}>
-                        <TableCell className="font-medium">{contrato.folio_contrato}</TableCell>
+                        <TableCell className="font-medium">{contrato.numero_contrato || contrato.folio_contrato}</TableCell>
                         <TableCell>{contrato.cliente}</TableCell>
                         <TableCell>
                           {contrato.equipos ? (
