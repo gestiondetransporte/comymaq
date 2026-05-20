@@ -51,14 +51,7 @@ export function ContratoRenovacionesHistorial({
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    try {
-      return format(new Date(dateString), "dd/MMM/yyyy", { locale: es });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string | null) => formatMty(dateString, "dd/MMM/yyyy");
 
   const formatCurrency = (amount: number | null) => {
     if (!amount) return "N/A";
