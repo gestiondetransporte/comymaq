@@ -63,6 +63,19 @@ export default function Contratos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
+
+  const handleDeleteContrato = async (contrato: Contrato) => {
+    try {
+      const { error } = await supabase.from("contratos").delete().eq("id", contrato.id);
+      if (error) throw error;
+      toast({ title: "Contrato eliminado", description: `${contrato.numero_contrato || contrato.folio_contrato} fue eliminado.` });
+      fetchContratos();
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el contrato" });
+    }
+  };
 
   useEffect(() => {
     fetchContratos();
