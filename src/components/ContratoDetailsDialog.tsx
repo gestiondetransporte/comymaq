@@ -353,11 +353,12 @@ export function ContratoDetailsDialog({
 
         if (error) throw error;
 
-        // Update equipment status to 'dentro' if assigned
+        // Update equipment status to 'contratado' if assigned
+        // (pasará a 'dentro' cuando almacén registre la salida en Entradas/Salidas)
         if (formData.equipo_id) {
           await supabase
             .from('equipos')
-            .update({ estado: 'dentro' })
+            .update({ estado: 'contratado' })
             .eq('id', formData.equipo_id);
         }
 
