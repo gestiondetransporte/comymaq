@@ -323,9 +323,25 @@ export function EquipoDetailsDialog({
     e.preventDefault();
     if (!equipo) return;
 
+    const wasBaja = (originalEstado || "").toUpperCase() === "BAJA";
+    const newEstado = (formData.estado || "").toUpperCase();
+    const reactivating = wasBaja && newEstado !== "BAJA";
+
+    if (reactivating) {
+      const newNum = (formData.numero_equipo || "").trim();
+      if (!newNum || newNum === originalNumeroEquipo.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Número de equipo requerido",
+          description: "Para reactivar un equipo dado de baja debes asignarle un nuevo número de equipo.",
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const updatePayload = {
+      const updatePayload: any = {
         descripcion: formData.descripcion,
         marca: formData.marca,
         modelo: formData.modelo,
@@ -347,6 +363,10 @@ export function EquipoDetailsDialog({
         ubicacion_actual: formData.ubicacion_actual,
         almacen_id: formData.almacen_id || null,
       };
+
+      if (reactivating) {
+        updatePayload.numero_equipo = (formData.numero_equipo || "").trim();
+      }
 
       const { data: updatedEquipo, error } = await supabase
         .from("equipos")
