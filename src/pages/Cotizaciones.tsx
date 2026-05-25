@@ -412,11 +412,11 @@ export default function Cotizaciones() {
 
       if (contratoError) throw contratoError;
 
-      // 5. Update equipment status to 'dentro'
+      // 5. Update equipment status to 'contratado' (entra a "DENTRO" cuando se le registre la salida en Entradas/Salidas)
       if (selectedCotizacion.equipo_id) {
         await supabase
           .from('equipos')
-          .update({ estado: 'dentro' })
+          .update({ estado: 'contratado' })
           .eq('id', selectedCotizacion.equipo_id);
       }
 
