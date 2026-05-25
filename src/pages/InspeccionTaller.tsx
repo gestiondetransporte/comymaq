@@ -104,7 +104,7 @@ export default function InspeccionTaller() {
       const { data: equiposData, error: equiposError } = await supabase
         .from('equipos')
         .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
-        .in('estado', ['en_inspeccion', 'taller'])
+        .in('estado', ['taller', 'checklist_no_ok', 'checklist_ok'])
         .order('numero_equipo', { ascending: true });
 
       if (equiposError) throw equiposError;
@@ -320,10 +320,10 @@ export default function InspeccionTaller() {
 
       // 2. Update equipment based on check list result
       if (resultadoCheckList === "ok") {
-        // CHECK LIST OK → DISPONIBLE
+        // CHECK LIST OK → estado CHECKLIST OK (listo para volver a DISPONIBLE)
         const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
-        const updateData: Record<string, string | null> = { 
-          estado: 'disponible',
+        const updateData: Record<string, string | null> = {
+          estado: 'checklist_ok',
         };
         if (almacenDestino) {
           updateData.ubicacion_actual = `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`;
@@ -336,11 +336,11 @@ export default function InspeccionTaller() {
 
         if (equipoError) throw equipoError;
       } else {
-        // CHECK LIST NO OK → TALLER
+        // CHECK LIST NO OK → estado CHECKLIST NO OK
         const { error: equipoError } = await supabase
           .from('equipos')
-          .update({ 
-            estado: 'taller',
+          .update({
+            estado: 'checklist_no_ok',
             ubicacion_actual: 'Taller - Requiere reparación',
           })
           .eq('id', selectedEquipo.id);
@@ -349,10 +349,10 @@ export default function InspeccionTaller() {
       }
 
       toast({
-        title: resultadoCheckList === "ok" ? "CHECK LIST OK - Equipo liberado" : "CHECK LIST NO OK - Regresa a Taller",
+        title: resultadoCheckList === "ok" ? "CHECK LIST OK" : "CHECK LIST NO OK",
         description: resultadoCheckList === "ok"
-          ? `El equipo #${selectedEquipo.numero_equipo} ha sido aprobado y está DISPONIBLE`
-          : `El equipo #${selectedEquipo.numero_equipo} requiere reparación y regresa a TALLER`,
+          ? `El equipo #${selectedEquipo.numero_equipo} pasó el check list (CHECKLIST OK)`
+          : `El equipo #${selectedEquipo.numero_equipo} requiere reparación (CHECKLIST NO OK)`,
       });
 
       setShowInspeccionDialog(false);

@@ -412,11 +412,11 @@ export default function Cotizaciones() {
 
       if (contratoError) throw contratoError;
 
-      // 5. Update equipment status to 'dentro'
+      // 5. Update equipment status to 'contratado' (entra a "DENTRO" cuando se le registre la salida en Entradas/Salidas)
       if (selectedCotizacion.equipo_id) {
         await supabase
           .from('equipos')
-          .update({ estado: 'dentro' })
+          .update({ estado: 'contratado' })
           .eq('id', selectedCotizacion.equipo_id);
       }
 
@@ -1918,7 +1918,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  El equipo cambiará a estado <strong>"Dentro"</strong>
+                  El equipo cambiará a estado <strong>"Contratado"</strong> (pasará a "Dentro" cuando almacén registre la salida)
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />

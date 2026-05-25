@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +76,7 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const form = useForm<EquipoFormValues>({
     resolver: zodResolver(equipoSchema),
@@ -85,7 +87,7 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
       modelo: "",
       serie: "",
       tipo: "",
-      estado: "",
+      estado: "DISPONIBLE",
       categoria: "",
       clase: "",
       almacen_id: "",
@@ -360,7 +362,25 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
                   <FormItem>
                     <FormLabel>Estado</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ej: Nuevo" />
+                      {isAdmin ? (
+                        <Select onValueChange={field.onChange} value={field.value || "DISPONIBLE"}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
+                            <SelectItem value="CONTRATADO">CONTRATADO</SelectItem>
+                            <SelectItem value="DENTRO">DENTRO</SelectItem>
+                            <SelectItem value="TALLER">TALLER</SelectItem>
+                            <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
+                            <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
+                            <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
+                            <SelectItem value="BAJA">BAJA</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value="DISPONIBLE" disabled readOnly />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>

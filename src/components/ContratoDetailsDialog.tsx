@@ -353,11 +353,12 @@ export function ContratoDetailsDialog({
 
         if (error) throw error;
 
-        // Update equipment status to 'dentro' if assigned
+        // Update equipment status to 'contratado' if assigned
+        // (pasará a 'dentro' cuando almacén registre la salida en Entradas/Salidas)
         if (formData.equipo_id) {
           await supabase
             .from('equipos')
-            .update({ estado: 'dentro' })
+            .update({ estado: 'contratado' })
             .eq('id', formData.equipo_id);
         }
 
@@ -411,11 +412,11 @@ export function ContratoDetailsDialog({
             .eq('id', previousEquipoId);
         }
         
-        // If contract status changed from non-active to active, set equipment to 'rentado'
+        // If contract status changed from non-active to active, set equipment to 'contratado'
         if (!wasActive && isNowActive && newEquipoId) {
           await supabase
             .from('equipos')
-            .update({ estado: 'dentro' })
+            .update({ estado: 'contratado' })
             .eq('id', newEquipoId);
         }
 
@@ -428,11 +429,11 @@ export function ContratoDetailsDialog({
               .update({ estado: 'disponible' })
               .eq('id', previousEquipoId);
           }
-          // New equipment becomes rented
+          // New equipment becomes 'contratado'
           if (newEquipoId && previousEquipoId !== newEquipoId) {
             await supabase
               .from('equipos')
-              .update({ estado: 'dentro' })
+              .update({ estado: 'contratado' })
               .eq('id', newEquipoId);
           }
         }

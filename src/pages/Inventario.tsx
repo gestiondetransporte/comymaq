@@ -270,12 +270,18 @@ export default function Inventario() {
         case 'TALLER':
         case 'EN TALLER':
           return <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">TALLER</Badge>;
+        case 'CHECKLIST OK':
+          return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">CHECKLIST OK</Badge>;
+        case 'CHECKLIST NO OK':
+          return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">CHECKLIST NO OK</Badge>;
         case 'TALLER EXTERNO':
           return <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">TALLER EXTERNO</Badge>;
+        case 'CONTRATADO':
+          return <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">CONTRATADO</Badge>;
         case 'DENTRO':
         case 'RENTADO':
         case 'EN RENTA':
-          return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">RENTADO</Badge>;
+          return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">DENTRO</Badge>;
         case 'DISPONIBLE':
         case 'LIBRE':
           return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
