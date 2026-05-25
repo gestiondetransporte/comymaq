@@ -86,6 +86,8 @@ export function EquipoDetailsDialog({
 }: EquipoDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState<Partial<Equipo>>({});
+  const [originalEstado, setOriginalEstado] = useState<string>("");
+  const [originalNumeroEquipo, setOriginalNumeroEquipo] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
   const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
