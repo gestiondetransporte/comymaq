@@ -123,7 +123,7 @@ export function EquipoDetailsDialog({
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   useEffect(() => {
     if (equipo && open) {
