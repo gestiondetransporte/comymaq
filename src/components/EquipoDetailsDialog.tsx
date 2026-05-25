@@ -652,12 +652,27 @@ export function EquipoDetailsDialog({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="numero_equipo">Número de Equipo</Label>
-                  <Input
-                    id="numero_equipo"
-                    value={formData.numero_equipo || ""}
-                    disabled
-                    className="bg-muted"
-                  />
+                  {isAdmin && (originalEstado || "").toUpperCase() === "BAJA" && (formData.estado || "").toUpperCase() !== "BAJA" ? (
+                    <>
+                      <Input
+                        id="numero_equipo"
+                        value={formData.numero_equipo || ""}
+                        onChange={(e) => setFormData({ ...formData, numero_equipo: e.target.value })}
+                        placeholder="Asigna un nuevo número de equipo"
+                        required
+                      />
+                      <p className="text-xs text-amber-600">
+                        Equipo dado de baja. Asigna un nuevo número de equipo para reactivarlo (debe ser distinto a {originalNumeroEquipo}).
+                      </p>
+                    </>
+                  ) : (
+                    <Input
+                      id="numero_equipo"
+                      value={formData.numero_equipo || ""}
+                      disabled
+                      className="bg-muted"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">
