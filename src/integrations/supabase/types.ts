@@ -985,6 +985,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      current_user_email: { Args: never; Returns: string }
       generate_contrato_folio: { Args: never; Returns: string }
       generate_cotizacion_folio: { Args: never; Returns: string }
       generate_mantenimiento_id: { Args: never; Returns: string }
