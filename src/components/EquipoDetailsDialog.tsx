@@ -86,6 +86,8 @@ export function EquipoDetailsDialog({
 }: EquipoDetailsDialogProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState<Partial<Equipo>>({});
+  const [originalEstado, setOriginalEstado] = useState<string>("");
+  const [originalNumeroEquipo, setOriginalNumeroEquipo] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
   const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
@@ -137,8 +139,12 @@ export function EquipoDetailsDialog({
         
         if (!error && data) {
           setFormData(data as Equipo);
+          setOriginalEstado((data.estado || "").toString());
+          setOriginalNumeroEquipo((data.numero_equipo || "").toString());
         } else {
           setFormData(equipo);
+          setOriginalEstado((equipo.estado || "").toString());
+          setOriginalNumeroEquipo((equipo.numero_equipo || "").toString());
         }
       };
       fetchFullEquipo();
@@ -317,9 +323,25 @@ export function EquipoDetailsDialog({
     e.preventDefault();
     if (!equipo) return;
 
+    const wasBaja = (originalEstado || "").toUpperCase() === "BAJA";
+    const newEstado = (formData.estado || "").toUpperCase();
+    const reactivating = wasBaja && newEstado !== "BAJA";
+
+    if (reactivating) {
+      const newNum = (formData.numero_equipo || "").trim();
+      if (!newNum || newNum === originalNumeroEquipo.trim()) {
+        toast({
+          variant: "destructive",
+          title: "Número de equipo requerido",
+          description: "Para reactivar un equipo dado de baja debes asignarle un nuevo número de equipo.",
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const updatePayload = {
+      const updatePayload: any = {
         descripcion: formData.descripcion,
         marca: formData.marca,
         modelo: formData.modelo,
@@ -342,6 +364,10 @@ export function EquipoDetailsDialog({
         almacen_id: formData.almacen_id || null,
       };
 
+      if (reactivating) {
+        updatePayload.numero_equipo = (formData.numero_equipo || "").trim();
+      }
+
       const { data: updatedEquipo, error } = await supabase
         .from("equipos")
         .update(updatePayload)
@@ -353,6 +379,8 @@ export function EquipoDetailsDialog({
 
       if (updatedEquipo) {
         setFormData(updatedEquipo as Equipo);
+        setOriginalEstado((updatedEquipo.estado || "").toString());
+        setOriginalNumeroEquipo((updatedEquipo.numero_equipo || "").toString());
       }
 
       toast({
@@ -624,12 +652,27 @@ export function EquipoDetailsDialog({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="numero_equipo">Número de Equipo</Label>
-                  <Input
-                    id="numero_equipo"
-                    value={formData.numero_equipo || ""}
-                    disabled
-                    className="bg-muted"
-                  />
+                  {isAdmin && (originalEstado || "").toUpperCase() === "BAJA" && (formData.estado || "").toUpperCase() !== "BAJA" ? (
+                    <>
+                      <Input
+                        id="numero_equipo"
+                        value={formData.numero_equipo || ""}
+                        onChange={(e) => setFormData({ ...formData, numero_equipo: e.target.value })}
+                        placeholder="Asigna un nuevo número de equipo"
+                        required
+                      />
+                      <p className="text-xs text-amber-600">
+                        Equipo dado de baja. Asigna un nuevo número de equipo para reactivarlo (debe ser distinto a {originalNumeroEquipo}).
+                      </p>
+                    </>
+                  ) : (
+                    <Input
+                      id="numero_equipo"
+                      value={formData.numero_equipo || ""}
+                      disabled
+                      className="bg-muted"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">
