@@ -1918,7 +1918,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  El equipo cambiará a estado <strong>"Dentro"</strong>
+                  El equipo cambiará a estado <strong>"Contratado"</strong> (pasará a "Dentro" cuando almacén registre la salida)
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
