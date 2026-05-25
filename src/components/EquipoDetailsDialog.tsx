@@ -139,8 +139,12 @@ export function EquipoDetailsDialog({
         
         if (!error && data) {
           setFormData(data as Equipo);
+          setOriginalEstado((data.estado || "").toString());
+          setOriginalNumeroEquipo((data.numero_equipo || "").toString());
         } else {
           setFormData(equipo);
+          setOriginalEstado((equipo.estado || "").toString());
+          setOriginalNumeroEquipo((equipo.numero_equipo || "").toString());
         }
       };
       fetchFullEquipo();
