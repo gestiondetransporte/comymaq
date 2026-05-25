@@ -87,7 +87,7 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
       modelo: "",
       serie: "",
       tipo: "",
-      estado: "",
+      estado: "DISPONIBLE",
       categoria: "",
       clase: "",
       almacen_id: "",
