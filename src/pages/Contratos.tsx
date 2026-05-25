@@ -4,13 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Eye, Plus } from "lucide-react";
+import { Search, FileText, Eye, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatMty, nowMty, diffDaysMty } from "@/lib/timezone";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 import { ExcelContratosImport } from "@/components/ExcelContratosImport";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Contrato {
   id: string;
@@ -51,6 +63,19 @@ export default function Contratos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
+
+  const handleDeleteContrato = async (contrato: Contrato) => {
+    try {
+      const { error } = await supabase.from("contratos").delete().eq("id", contrato.id);
+      if (error) throw error;
+      toast({ title: "Contrato eliminado", description: `${contrato.numero_contrato || contrato.folio_contrato} fue eliminado.` });
+      fetchContratos();
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar el contrato" });
+    }
+  };
 
   useEffect(() => {
     fetchContratos();
@@ -299,15 +324,44 @@ export default function Contratos() {
                         <TableCell>{getStatusBadge(contrato)}</TableCell>
                         <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDialog(contrato)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalles
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDialog(contrato)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalles
+                            </Button>
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar contrato?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción no se puede deshacer. Se eliminará permanentemente el contrato {contrato.numero_contrato || contrato.folio_contrato}.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteContrato(contrato)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </TableCell>
+
                       </TableRow>
                     );
                   })}
