@@ -1,56 +1,69 @@
 
+## Objetivo
 
-## Plan: Agregar Folio a Cotizaciones
+El campo **Estado** del equipo debe cambiarse únicamente:
+1. **Automáticamente** por eventos del flujo de trabajo (contratos, entradas/salidas, recolecciones, inspecciones).
+2. **Manualmente solo por un administrador** desde la ficha del equipo.
 
-### Objetivo
-Agregar un folio automático secuencial a cada cotización (similar al sistema de folios de contratos: `COT-2026-0001`).
+Unificar el catálogo de estados, agregar **CONTRATADO** y los dos estados de checklist (**CHECKLIST OK** / **CHECKLIST NO OK**).
 
-### Cambios
+---
 
-**1. Migración de base de datos**
-- Agregar columna `folio_cotizacion TEXT` a la tabla `cotizaciones`
-- Crear función `generate_cotizacion_folio()` que genere folios con formato `COT-YYYY-XXXX`
-- Crear trigger para asignar el folio automáticamente al insertar
+## Catálogo único de estados (final)
 
-**2. Actualizar `src/pages/Cotizaciones.tsx`**
-- Agregar `folio_cotizacion` al query de `fetchHistorial` y a la interfaz `CotizacionHistorial`
-- Mostrar columna "Folio" como primera columna en la tabla del historial
-- Incluir el folio en el PDF generado
+| Estado | Cuándo se asigna (automático) |
+|---|---|
+| `DISPONIBLE` | Equipo nuevo en bodega listo para rentar |
+| `CONTRATADO` | **NUEVO** — Se crea un contrato (desde Contratos o al convertir una Cotización), pero el equipo aún no sale de bodega |
+| `DENTRO` | Se registra la **Salida a Renta** en Entradas/Salidas |
+| `TALLER` | Entrada de equipo o Regreso de Renta (recolección completada) — esperando revisión |
+| `CHECKLIST OK` | **NUEVO** — Taller revisó el equipo y está en buenas condiciones (listo para volver a DISPONIBLE) |
+| `CHECKLIST NO OK` | **NUEVO** — Taller revisó y encontró fallas; requiere reparación |
+| `TALLER EXTERNO` | Se registra Salida a Taller Externo |
+| `BAJA` | Salida Venta o baja manual de admin |
 
-### Detalle técnico
+Se eliminan los valores sueltos `LIBRE` y `en_inspeccion` que aparecen hoy en la UI. Todo se mostrará en mayúsculas y el código normalizará a minúsculas con guión bajo para guardar (`checklist_ok`, `checklist_no_ok`, `taller_externo`, etc.).
 
-SQL de migración:
-```sql
-ALTER TABLE cotizaciones ADD COLUMN folio_cotizacion TEXT;
+Flujo natural del estado en taller:
+`TALLER` (pendiente de inspección) → al completar inspección → `CHECKLIST OK` o `CHECKLIST NO OK` → cuando se repara/aprueba → `DISPONIBLE` (admin o automático tras reparación).
 
-CREATE OR REPLACE FUNCTION generate_cotizacion_folio()
-RETURNS TEXT AS $$
-DECLARE
-  year_str TEXT;
-  next_num INT;
-BEGIN
-  year_str := TO_CHAR(CURRENT_DATE, 'YYYY');
-  SELECT COALESCE(MAX(CAST(SUBSTRING(folio_cotizacion FROM '[0-9]+$') AS INTEGER)), 0) + 1
-  INTO next_num FROM cotizaciones
-  WHERE folio_cotizacion LIKE 'COT-' || year_str || '-%';
-  RETURN 'COT-' || year_str || '-' || LPAD(next_num::TEXT, 4, '0');
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+---
 
-CREATE OR REPLACE FUNCTION set_cotizacion_folio()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.folio_cotizacion IS NULL THEN
-    NEW.folio_cotizacion := generate_cotizacion_folio();
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+## Cambios en el flujo automático
 
-CREATE TRIGGER trigger_set_cotizacion_folio
-BEFORE INSERT ON cotizaciones
-FOR EACH ROW EXECUTE FUNCTION set_cotizacion_folio();
-```
+1. **Contratos** y **Cotizaciones (conversión a contrato)**: al crear contrato → `equipos.estado = 'contratado'` (hoy Cotizaciones pone `'dentro'`; se quita).
+2. **Entradas/Salidas** (se conserva el mapeo actual):
+   - `salida_renta` → `dentro`
+   - `salida_venta` → `baja`
+   - `salida_taller_externo` → `taller_externo`
+   - `entrada_equipo` / `regreso_renta` → `taller`
+3. **Recolecciones**: recolección completada → `taller` (ya lo hace).
+4. **Inspección Taller** (`src/pages/InspeccionTaller.tsx`):
+   - Resultado **OK** → `checklist_ok` (antes ponía `disponible` directo).
+   - Resultado **NO OK** → `checklist_no_ok` (antes ponía `taller`).
+   - El listado de equipos a inspeccionar incluirá `taller`, `checklist_no_ok` y `checklist_ok` (por si requiere re-inspección).
+5. **Baja desde ficha de equipo**: solo admin (ya está).
 
-Cambios en la tabla del historial: agregar columna "Folio" antes de "Fecha", mostrando el valor `folio_cotizacion` con un badge.
+---
 
+## Cambios para bloquear edición manual
+
+- **`src/components/EquipoDetailsDialog.tsx`**: el selector de Estado se renderiza:
+  - **Admin**: `<Select>` editable con las 8 opciones del catálogo unificado.
+  - **No admin**: solo lectura (Badge), con leyenda "Solo administradores pueden cambiar el estado manualmente".
+- **`src/components/AgregarEquipoDialog.tsx`**: al crear un equipo nuevo, el estado se fija en `disponible` y se oculta el selector para usuarios no admin (admin puede elegir).
+- En filtros existentes (Inventario, Inspección Taller, Cotizaciones para equipo "disponible") se reemplaza cualquier referencia a `'en_inspeccion'` por el nuevo catálogo y se considera `checklist_ok` como equivalente operativo a "listo para volver a disponible".
+
+---
+
+## Resumen de archivos a tocar
+
+- `src/components/EquipoDetailsDialog.tsx` — selector condicional por rol + nuevas opciones (CONTRATADO, CHECKLIST OK, CHECKLIST NO OK).
+- `src/components/AgregarEquipoDialog.tsx` — estado por defecto `disponible`, selector solo para admin.
+- `src/pages/Contratos.tsx` — actualizar equipo a `contratado` al crear contrato.
+- `src/pages/Cotizaciones.tsx` — al convertir cotización en contrato, poner `contratado` en vez de `dentro`.
+- `src/pages/InspeccionTaller.tsx` — guardar `checklist_ok` / `checklist_no_ok`; ampliar filtro de equipos a inspeccionar.
+- `src/components/ui` / lugares con badge de estado — agregar colores para los nuevos estados (CONTRATADO en azul, CHECKLIST OK en verde, CHECKLIST NO OK en rojo/ámbar).
+- Memoria del proyecto: actualizar la regla central de transiciones para incluir los 3 nuevos estados.
+
+No se requieren migraciones de base de datos (el campo `estado` es texto libre).
