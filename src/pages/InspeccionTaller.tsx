@@ -104,7 +104,7 @@ export default function InspeccionTaller() {
       const { data: equiposData, error: equiposError } = await supabase
         .from('equipos')
         .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
-        .in('estado', ['en_inspeccion', 'taller'])
+        .in('estado', ['taller', 'checklist_no_ok', 'checklist_ok'])
         .order('numero_equipo', { ascending: true });
 
       if (equiposError) throw equiposError;
