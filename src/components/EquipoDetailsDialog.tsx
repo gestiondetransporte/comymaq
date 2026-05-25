@@ -697,23 +697,45 @@ export function EquipoDetailsDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="estado">Estado</Label>
-                  <Select
-                    value={formData.estado || ""}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, estado: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TALLER">TALLER</SelectItem>
-                      <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
-                      <SelectItem value="LIBRE">LIBRE</SelectItem>
-                      <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
-                      <SelectItem value="DENTRO">DENTRO</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isAdmin ? (
+                    <>
+                      <Select
+                        value={formData.estado || ""}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, estado: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
+                          <SelectItem value="CONTRATADO">CONTRATADO</SelectItem>
+                          <SelectItem value="DENTRO">DENTRO</SelectItem>
+                          <SelectItem value="TALLER">TALLER</SelectItem>
+                          <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
+                          <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
+                          <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
+                          <SelectItem value="BAJA">BAJA</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Como administrador puedes cambiar el estado manualmente. Lo normal es que se actualice automáticamente por contratos, entradas/salidas e inspecciones.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Input
+                        id="estado"
+                        value={(formData.estado || "").toUpperCase()}
+                        disabled
+                        readOnly
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Solo administradores pueden cambiar el estado manualmente.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-2">
