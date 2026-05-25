@@ -76,6 +76,7 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
   const [modelosConfig, setModelosConfig] = useState<ModeloConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const form = useForm<EquipoFormValues>({
     resolver: zodResolver(equipoSchema),
