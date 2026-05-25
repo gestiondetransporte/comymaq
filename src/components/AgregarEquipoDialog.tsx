@@ -362,7 +362,25 @@ export function AgregarEquipoDialog({ open, onOpenChange, onSuccess }: AgregarEq
                   <FormItem>
                     <FormLabel>Estado</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ej: Nuevo" />
+                      {isAdmin ? (
+                        <Select onValueChange={field.onChange} value={field.value || "DISPONIBLE"}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
+                            <SelectItem value="CONTRATADO">CONTRATADO</SelectItem>
+                            <SelectItem value="DENTRO">DENTRO</SelectItem>
+                            <SelectItem value="TALLER">TALLER</SelectItem>
+                            <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
+                            <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
+                            <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
+                            <SelectItem value="BAJA">BAJA</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value="DISPONIBLE" disabled readOnly />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
