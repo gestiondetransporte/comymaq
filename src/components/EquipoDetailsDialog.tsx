@@ -379,6 +379,8 @@ export function EquipoDetailsDialog({
 
       if (updatedEquipo) {
         setFormData(updatedEquipo as Equipo);
+        setOriginalEstado((updatedEquipo.estado || "").toString());
+        setOriginalNumeroEquipo((updatedEquipo.numero_equipo || "").toString());
       }
 
       toast({
