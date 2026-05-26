@@ -246,6 +246,13 @@ export default function Inventario() {
       filtered = filtered.filter(e => e.tipo_negocio === tipoNegocioFilter);
     }
 
+    // Filter by estado (catálogo)
+    if (estadoFilter !== "TODOS") {
+      filtered = filtered.filter(
+        e => (e.estado || '').toUpperCase().replace(/_/g, ' ') === estadoFilter
+      );
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
