@@ -321,6 +321,44 @@ export function EquipoDetailsDialog({
     }
   };
 
+  const handleConfirmComprometido = async () => {
+    if (!equipo) return;
+    if (!motivoComprometido.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Motivo requerido",
+        description: "Debes especificar por qué el equipo está comprometido.",
+      });
+      return;
+    }
+    setComprometidoLoading(true);
+    try {
+      const baseUbic = (formData.ubicacion_actual || "").replace(/\s*\|\s*COMPROMETIDO:[^|]*/i, "").trim();
+      const nuevaUbic = `${baseUbic ? baseUbic + " | " : ""}COMPROMETIDO: ${motivoComprometido.trim()}`;
+      const { data: updated, error } = await supabase
+        .from("equipos")
+        .update({ estado: "COMPROMETIDO", ubicacion_actual: nuevaUbic })
+        .eq("id", equipo.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      if (updated) {
+        setFormData(updated as Equipo);
+        setOriginalEstado((updated.estado || "").toString());
+      }
+      toast({ title: "Equipo comprometido", description: "Se registró el motivo correctamente." });
+      setComprometidoDialogOpen(false);
+      setMotivoComprometido("");
+      onUpdate();
+    } catch (err) {
+      console.error("Error marcando comprometido:", err);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el equipo." });
+    } finally {
+      setComprometidoLoading(false);
+    }
+  };
+
+
 
   const handleUpdateEquipo = async (e: React.FormEvent) => {
     e.preventDefault();
