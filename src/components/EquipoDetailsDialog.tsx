@@ -747,9 +747,14 @@ export function EquipoDetailsDialog({
                     <>
                       <Select
                         value={formData.estado || ""}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, estado: value })
-                        }
+                        onValueChange={(value) => {
+                          if (value === "COMPROMETIDO" && (formData.estado || "").toUpperCase() !== "COMPROMETIDO") {
+                            setMotivoComprometido("");
+                            setComprometidoDialogOpen(true);
+                            return;
+                          }
+                          setFormData({ ...formData, estado: value });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar estado" />
@@ -758,6 +763,7 @@ export function EquipoDetailsDialog({
                           <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
                           <SelectItem value="CONTRATADO">CONTRATADO</SelectItem>
                           <SelectItem value="DENTRO">DENTRO</SelectItem>
+                          <SelectItem value="COMPROMETIDO">COMPROMETIDO</SelectItem>
                           <SelectItem value="TALLER">TALLER</SelectItem>
                           <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
                           <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
