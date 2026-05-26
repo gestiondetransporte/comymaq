@@ -529,6 +529,8 @@ export default function Inventario() {
                         setAlmacenFilter("TODOS");
                         setTipoNegocioFilter("TODOS");
                         setEstadoFilter("TODOS");
+                        setMarcaFilter("TODOS");
+                        setModeloFilter("TODOS");
                       }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpiar
