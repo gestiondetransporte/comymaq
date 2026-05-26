@@ -256,6 +256,16 @@ export default function Inventario() {
       );
     }
 
+    // Filter by marca
+    if (marcaFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.marca || '').trim() === marcaFilter);
+    }
+
+    // Filter by modelo
+    if (modeloFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
