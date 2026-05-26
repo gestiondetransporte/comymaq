@@ -374,7 +374,7 @@ export default function Inventario() {
         dateStyle: "long",
         timeStyle: "short",
       });
-      doc.text(`Generado: ${fechaGen}`, 14, 21);
+      doc.text(`Generado: ${fechaGen}`, titleX, 21);
       doc.text(`Total registros: ${filteredEquipos.length}`, pageWidth - 14, 21, { align: "right" });
 
       // Resumen de filtros
