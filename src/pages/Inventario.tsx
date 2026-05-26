@@ -337,6 +337,7 @@ export default function Inventario() {
       const filtros: string[] = [];
       if (typeFilter !== "TODOS") filtros.push(`Tipo: ${typeFilter}`);
       if (disponibilidadFilter !== "TODOS") filtros.push(`Disponibilidad: ${disponibilidadFilter}`);
+      if (estadoFilter !== "TODOS") filtros.push(`Estado: ${estadoFilter}`);
       if (almacenFilter !== "TODOS") {
         const almacenLabel =
           almacenFilter === "TALLER"
