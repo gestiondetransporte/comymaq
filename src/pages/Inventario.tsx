@@ -226,51 +226,54 @@ export default function Inventario() {
     let filtered = equipos.filter(e => (e.estado || '').toUpperCase() !== 'BAJA');
 
     // Filter by type
-    if (typeFilter !== "TODOS") {
-      filtered = filtered.filter(e => e.tipo === typeFilter);
+    if (typeFilter.length > 0) {
+      filtered = filtered.filter(e => e.tipo && typeFilter.includes(e.tipo));
     }
 
     // Filter by disponibilidad
-    if (disponibilidadFilter === "DISPONIBLE") {
-      filtered = filtered.filter(e => !e.contrato_activo);
-    } else if (disponibilidadFilter === "RENTADO") {
-      filtered = filtered.filter(e => e.contrato_activo);
+    if (disponibilidadFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        const isDisp = !e.contrato_activo;
+        if (disponibilidadFilter.includes("DISPONIBLE") && isDisp) return true;
+        if (disponibilidadFilter.includes("RENTADO") && !isDisp) return true;
+        return false;
+      });
     }
 
-    // Filter by almacén
-    if (almacenFilter !== "TODOS") {
-      if (almacenFilter === "TALLER") {
-        filtered = filtered.filter(e => e.enMantenimiento);
-      } else {
-        filtered = filtered.filter(e => e.almacen_id === almacenFilter);
-      }
+    // Filter by almacén (admite múltiples + valor especial "TALLER")
+    if (almacenFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        if (almacenFilter.includes("TALLER") && e.enMantenimiento) return true;
+        if (e.almacen_id && almacenFilter.includes(e.almacen_id)) return true;
+        return false;
+      });
     }
 
     // Filter by tipo de negocio
-    if (tipoNegocioFilter !== "TODOS") {
-      filtered = filtered.filter(e => e.tipo_negocio === tipoNegocioFilter);
+    if (tipoNegocioFilter.length > 0) {
+      filtered = filtered.filter(e => e.tipo_negocio && tipoNegocioFilter.includes(e.tipo_negocio));
     }
 
     // Filter by estado (catálogo)
-    if (estadoFilter !== "TODOS") {
+    if (estadoFilter.length > 0) {
       filtered = filtered.filter(
-        e => (e.estado || '').toUpperCase().replace(/_/g, ' ') === estadoFilter
+        e => estadoFilter.includes((e.estado || '').toUpperCase().replace(/_/g, ' '))
       );
     }
 
     // Filter by marca
-    if (marcaFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.marca || '').trim() === marcaFilter);
+    if (marcaFilter.length > 0) {
+      filtered = filtered.filter(e => marcaFilter.includes((e.marca || '').trim()));
     }
 
     // Filter by modelo
-    if (modeloFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
+    if (modeloFilter.length > 0) {
+      filtered = filtered.filter(e => modeloFilter.includes((e.modelo || '').trim()));
     }
 
     // Filter by descripción
-    if (descripcionFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.descripcion || '').trim() === descripcionFilter);
+    if (descripcionFilter.length > 0) {
+      filtered = filtered.filter(e => descripcionFilter.includes((e.descripcion || '').trim()));
     }
 
     // Filter by search query
