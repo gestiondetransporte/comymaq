@@ -383,20 +383,21 @@ export default function Inventario() {
 
       // Resumen de filtros
       const filtros: string[] = [];
-      if (typeFilter !== "TODOS") filtros.push(`Tipo: ${typeFilter}`);
-      if (disponibilidadFilter !== "TODOS") filtros.push(`Disponibilidad: ${disponibilidadFilter}`);
-      if (estadoFilter !== "TODOS") filtros.push(`Estado: ${estadoFilter}`);
-      if (almacenFilter !== "TODOS") {
-        const almacenLabel =
-          almacenFilter === "TALLER"
-            ? "Taller"
-            : almacenes.find((a) => a.id === almacenFilter)?.nombre || almacenFilter;
-        filtros.push(`Almacén: ${almacenLabel}`);
+      const tipoLabels: Record<string, string> = { ELECTRICA: "Eléctricos", "COMBUSTIÓN": "Combustión" };
+      const dispLabels: Record<string, string> = { DISPONIBLE: "Disponibles", RENTADO: "Rentados" };
+      if (typeFilter.length > 0) filtros.push(`Tipo: ${typeFilter.map(v => tipoLabels[v] || v).join(", ")}`);
+      if (disponibilidadFilter.length > 0) filtros.push(`Disponibilidad: ${disponibilidadFilter.map(v => dispLabels[v] || v).join(", ")}`);
+      if (estadoFilter.length > 0) filtros.push(`Estado: ${estadoFilter.join(", ")}`);
+      if (almacenFilter.length > 0) {
+        const labels = almacenFilter.map(v =>
+          v === "TALLER" ? "Taller" : almacenes.find((a) => a.id === v)?.nombre || v
+        );
+        filtros.push(`Almacén: ${labels.join(", ")}`);
       }
-      if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
-      if (marcaFilter !== "TODOS") filtros.push(`Marca: ${marcaFilter}`);
-      if (modeloFilter !== "TODOS") filtros.push(`Modelo: ${modeloFilter}`);
-      if (descripcionFilter !== "TODOS") filtros.push(`Descripción: ${descripcionFilter}`);
+      if (tipoNegocioFilter.length > 0) filtros.push(`Negocio: ${tipoNegocioFilter.join(", ")}`);
+      if (marcaFilter.length > 0) filtros.push(`Marca: ${marcaFilter.join(", ")}`);
+      if (modeloFilter.length > 0) filtros.push(`Modelo: ${modeloFilter.join(", ")}`);
+      if (descripcionFilter.length > 0) filtros.push(`Descripción: ${descripcionFilter.join(", ")}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
