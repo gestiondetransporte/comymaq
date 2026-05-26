@@ -19,6 +19,7 @@ import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 interface Almacen {
   id: string;
   nombre: string;
@@ -66,14 +67,14 @@ export default function Inventario() {
   const [tiposNegocio, setTiposNegocio] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<string>("TODOS");
-  const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
-  const [almacenFilter, setAlmacenFilter] = useState<string>("TODOS");
-  const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
-  const [estadoFilter, setEstadoFilter] = useState<string>("TODOS");
-  const [marcaFilter, setMarcaFilter] = useState<string>("TODOS");
-  const [modeloFilter, setModeloFilter] = useState<string>("TODOS");
-  const [descripcionFilter, setDescripcionFilter] = useState<string>("TODOS");
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [disponibilidadFilter, setDisponibilidadFilter] = useState<string[]>([]);
+  const [almacenFilter, setAlmacenFilter] = useState<string[]>([]);
+  const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string[]>([]);
+  const [estadoFilter, setEstadoFilter] = useState<string[]>([]);
+  const [marcaFilter, setMarcaFilter] = useState<string[]>([]);
+  const [modeloFilter, setModeloFilter] = useState<string[]>([]);
+  const [descripcionFilter, setDescripcionFilter] = useState<string[]>([]);
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -225,51 +226,54 @@ export default function Inventario() {
     let filtered = equipos.filter(e => (e.estado || '').toUpperCase() !== 'BAJA');
 
     // Filter by type
-    if (typeFilter !== "TODOS") {
-      filtered = filtered.filter(e => e.tipo === typeFilter);
+    if (typeFilter.length > 0) {
+      filtered = filtered.filter(e => e.tipo && typeFilter.includes(e.tipo));
     }
 
     // Filter by disponibilidad
-    if (disponibilidadFilter === "DISPONIBLE") {
-      filtered = filtered.filter(e => !e.contrato_activo);
-    } else if (disponibilidadFilter === "RENTADO") {
-      filtered = filtered.filter(e => e.contrato_activo);
+    if (disponibilidadFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        const isDisp = !e.contrato_activo;
+        if (disponibilidadFilter.includes("DISPONIBLE") && isDisp) return true;
+        if (disponibilidadFilter.includes("RENTADO") && !isDisp) return true;
+        return false;
+      });
     }
 
-    // Filter by almacén
-    if (almacenFilter !== "TODOS") {
-      if (almacenFilter === "TALLER") {
-        filtered = filtered.filter(e => e.enMantenimiento);
-      } else {
-        filtered = filtered.filter(e => e.almacen_id === almacenFilter);
-      }
+    // Filter by almacén (admite múltiples + valor especial "TALLER")
+    if (almacenFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        if (almacenFilter.includes("TALLER") && e.enMantenimiento) return true;
+        if (e.almacen_id && almacenFilter.includes(e.almacen_id)) return true;
+        return false;
+      });
     }
 
     // Filter by tipo de negocio
-    if (tipoNegocioFilter !== "TODOS") {
-      filtered = filtered.filter(e => e.tipo_negocio === tipoNegocioFilter);
+    if (tipoNegocioFilter.length > 0) {
+      filtered = filtered.filter(e => e.tipo_negocio && tipoNegocioFilter.includes(e.tipo_negocio));
     }
 
     // Filter by estado (catálogo)
-    if (estadoFilter !== "TODOS") {
+    if (estadoFilter.length > 0) {
       filtered = filtered.filter(
-        e => (e.estado || '').toUpperCase().replace(/_/g, ' ') === estadoFilter
+        e => estadoFilter.includes((e.estado || '').toUpperCase().replace(/_/g, ' '))
       );
     }
 
     // Filter by marca
-    if (marcaFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.marca || '').trim() === marcaFilter);
+    if (marcaFilter.length > 0) {
+      filtered = filtered.filter(e => marcaFilter.includes((e.marca || '').trim()));
     }
 
     // Filter by modelo
-    if (modeloFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
+    if (modeloFilter.length > 0) {
+      filtered = filtered.filter(e => modeloFilter.includes((e.modelo || '').trim()));
     }
 
     // Filter by descripción
-    if (descripcionFilter !== "TODOS") {
-      filtered = filtered.filter(e => (e.descripcion || '').trim() === descripcionFilter);
+    if (descripcionFilter.length > 0) {
+      filtered = filtered.filter(e => descripcionFilter.includes((e.descripcion || '').trim()));
     }
 
     // Filter by search query
@@ -379,20 +383,21 @@ export default function Inventario() {
 
       // Resumen de filtros
       const filtros: string[] = [];
-      if (typeFilter !== "TODOS") filtros.push(`Tipo: ${typeFilter}`);
-      if (disponibilidadFilter !== "TODOS") filtros.push(`Disponibilidad: ${disponibilidadFilter}`);
-      if (estadoFilter !== "TODOS") filtros.push(`Estado: ${estadoFilter}`);
-      if (almacenFilter !== "TODOS") {
-        const almacenLabel =
-          almacenFilter === "TALLER"
-            ? "Taller"
-            : almacenes.find((a) => a.id === almacenFilter)?.nombre || almacenFilter;
-        filtros.push(`Almacén: ${almacenLabel}`);
+      const tipoLabels: Record<string, string> = { ELECTRICA: "Eléctricos", "COMBUSTIÓN": "Combustión" };
+      const dispLabels: Record<string, string> = { DISPONIBLE: "Disponibles", RENTADO: "Rentados" };
+      if (typeFilter.length > 0) filtros.push(`Tipo: ${typeFilter.map(v => tipoLabels[v] || v).join(", ")}`);
+      if (disponibilidadFilter.length > 0) filtros.push(`Disponibilidad: ${disponibilidadFilter.map(v => dispLabels[v] || v).join(", ")}`);
+      if (estadoFilter.length > 0) filtros.push(`Estado: ${estadoFilter.join(", ")}`);
+      if (almacenFilter.length > 0) {
+        const labels = almacenFilter.map(v =>
+          v === "TALLER" ? "Taller" : almacenes.find((a) => a.id === v)?.nombre || v
+        );
+        filtros.push(`Almacén: ${labels.join(", ")}`);
       }
-      if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
-      if (marcaFilter !== "TODOS") filtros.push(`Marca: ${marcaFilter}`);
-      if (modeloFilter !== "TODOS") filtros.push(`Modelo: ${modeloFilter}`);
-      if (descripcionFilter !== "TODOS") filtros.push(`Descripción: ${descripcionFilter}`);
+      if (tipoNegocioFilter.length > 0) filtros.push(`Negocio: ${tipoNegocioFilter.join(", ")}`);
+      if (marcaFilter.length > 0) filtros.push(`Marca: ${marcaFilter.join(", ")}`);
+      if (modeloFilter.length > 0) filtros.push(`Modelo: ${modeloFilter.join(", ")}`);
+      if (descripcionFilter.length > 0) filtros.push(`Descripción: ${descripcionFilter.join(", ")}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
@@ -530,14 +535,14 @@ export default function Inventario() {
                   Filtros
                   {(() => {
                     const active =
-                      (typeFilter !== "TODOS" ? 1 : 0) +
-                      (disponibilidadFilter !== "TODOS" ? 1 : 0) +
-                      (almacenFilter !== "TODOS" ? 1 : 0) +
-                      (tipoNegocioFilter !== "TODOS" ? 1 : 0) +
-                      (estadoFilter !== "TODOS" ? 1 : 0) +
-                      (marcaFilter !== "TODOS" ? 1 : 0) +
-                      (modeloFilter !== "TODOS" ? 1 : 0) +
-                      (descripcionFilter !== "TODOS" ? 1 : 0);
+                      (typeFilter.length > 0 ? 1 : 0) +
+                      (disponibilidadFilter.length > 0 ? 1 : 0) +
+                      (almacenFilter.length > 0 ? 1 : 0) +
+                      (tipoNegocioFilter.length > 0 ? 1 : 0) +
+                      (estadoFilter.length > 0 ? 1 : 0) +
+                      (marcaFilter.length > 0 ? 1 : 0) +
+                      (modeloFilter.length > 0 ? 1 : 0) +
+                      (descripcionFilter.length > 0 ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
@@ -547,7 +552,7 @@ export default function Inventario() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-[min(95vw,520px)] max-h-[80vh] overflow-y-auto">
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-semibold text-sm">Filtros de búsqueda</h4>
                     <Button
@@ -555,214 +560,150 @@ export default function Inventario() {
                       size="sm"
                       className="h-7 text-xs"
                       onClick={() => {
-                        setTypeFilter("TODOS");
-                        setDisponibilidadFilter("TODOS");
-                        setAlmacenFilter("TODOS");
-                        setTipoNegocioFilter("TODOS");
-                        setEstadoFilter("TODOS");
-                        setMarcaFilter("TODOS");
-                        setModeloFilter("TODOS");
-                        setDescripcionFilter("TODOS");
+                        setTypeFilter([]);
+                        setDisponibilidadFilter([]);
+                        setAlmacenFilter([]);
+                        setTipoNegocioFilter([]);
+                        setEstadoFilter([]);
+                        setMarcaFilter([]);
+                        setModeloFilter([]);
+                        setDescripcionFilter([]);
                       }}
                     >
-                      <X className="h-3 w-3 mr-1" /> Limpiar
+                      <X className="h-3 w-3 mr-1" /> Limpiar todo
                     </Button>
                   </div>
 
-                  <div>
-                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Tipo</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      {[
-                        { v: "TODOS", l: "Todos" },
-                        { v: "ELECTRICA", l: "Eléctricos" },
-                        { v: "COMBUSTIÓN", l: "Combustión" },
-                      ].map((o) => (
-                        <Button
-                          key={o.v}
-                          variant={typeFilter === o.v ? "default" : "outline"}
-                          onClick={() => setTypeFilter(o.v)}
-                          size="sm"
-                        >
-                          {o.l}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Disponibilidad</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      {[
-                        { v: "TODOS", l: "Todos" },
-                        { v: "DISPONIBLE", l: "Disponibles" },
-                        { v: "RENTADO", l: "Rentados" },
-                      ].map((o) => (
-                        <Button
-                          key={o.v}
-                          variant={disponibilidadFilter === o.v ? "default" : "outline"}
-                          onClick={() => setDisponibilidadFilter(o.v)}
-                          size="sm"
-                        >
-                          {o.l}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Estado del equipo</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      {[
-                        "TODOS",
-                        "DISPONIBLE",
-                        "CONTRATADO",
-                        "DENTRO",
-                        "COMPROMETIDO",
-                        "TALLER",
-                        "CHECKLIST OK",
-                        "CHECKLIST NO OK",
-                        "TALLER EXTERNO",
-                      ].map((e) => (
-                        <Button
-                          key={e}
-                          variant={estadoFilter === e ? "default" : "outline"}
-                          onClick={() => setEstadoFilter(e)}
-                          size="sm"
-                        >
-                          {e === "TODOS" ? "Todos" : e}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Almacén</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant={almacenFilter === "TODOS" ? "default" : "outline"}
-                        onClick={() => setAlmacenFilter("TODOS")}
-                        size="sm"
-                      >
-                        Todos
-                      </Button>
-                      <Button
-                        variant={almacenFilter === "TALLER" ? "default" : "outline"}
-                        onClick={() => setAlmacenFilter("TALLER")}
-                        size="sm"
-                      >
-                        Taller
-                      </Button>
-                      {almacenes.map((almacen) => (
-                        <Button
-                          key={almacen.id}
-                          variant={almacenFilter === almacen.id ? "default" : "outline"}
-                          onClick={() => setAlmacenFilter(almacen.id)}
-                          size="sm"
-                        >
-                          {almacen.nombre}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {tiposNegocio.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Tipo de Negocio</Label>
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          variant={tipoNegocioFilter === "TODOS" ? "default" : "outline"}
-                          onClick={() => setTipoNegocioFilter("TODOS")}
-                          size="sm"
-                        >
-                          Todos
-                        </Button>
-                        {tiposNegocio.map((tipo) => (
-                          <Button
-                            key={tipo}
-                            variant={tipoNegocioFilter === tipo ? "default" : "outline"}
-                            onClick={() => setTipoNegocioFilter(tipo)}
-                            size="sm"
-                          >
-                            {tipo}
-                          </Button>
-                        ))}
-                      </div>
+                      <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Tipo</Label>
+                      <MultiSelectFilter
+                        options={[
+                          { value: "ELECTRICA", label: "Eléctricos" },
+                          { value: "COMBUSTIÓN", label: "Combustión" },
+                        ]}
+                        selected={typeFilter}
+                        onChange={setTypeFilter}
+                        placeholder="Todos"
+                      />
                     </div>
-                  )}
 
-                  {(() => {
-                    const marcasUnicas = Array.from(
-                      new Set(equipos.map(e => (e.marca || '').trim()).filter(Boolean))
-                    ).sort();
-                    const modelosUnicos = Array.from(
-                      new Set(
-                        equipos
-                          .filter(e => marcaFilter === "TODOS" || (e.marca || '').trim() === marcaFilter)
-                          .map(e => (e.modelo || '').trim())
-                          .filter(Boolean)
-                      )
-                    ).sort();
-                    return (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Marca</Label>
-                          <Select
-                            value={marcaFilter}
-                            onValueChange={(v) => {
-                              setMarcaFilter(v);
-                              setModeloFilter("TODOS");
-                            }}
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Todas" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="TODOS">Todas</SelectItem>
-                              {marcasUnicas.map((m) => (
-                                <SelectItem key={m} value={m}>{m}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Modelo</Label>
-                          <Select value={modeloFilter} onValueChange={setModeloFilter}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Todos" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="TODOS">Todos</SelectItem>
-                              {modelosUnicos.map((m) => (
-                                <SelectItem key={m} value={m}>{m}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                    <div>
+                      <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Disponibilidad</Label>
+                      <MultiSelectFilter
+                        options={[
+                          { value: "DISPONIBLE", label: "Disponibles" },
+                          { value: "RENTADO", label: "Rentados" },
+                        ]}
+                        selected={disponibilidadFilter}
+                        onChange={setDisponibilidadFilter}
+                        placeholder="Todos"
+                      />
+                    </div>
 
-                  {(() => {
-                    const descripcionesUnicas = Array.from(
-                      new Set(equipos.map(e => (e.descripcion || '').trim()).filter(Boolean))
-                    ).sort();
-                    return (
+                    <div>
+                      <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Estado del equipo</Label>
+                      <MultiSelectFilter
+                        options={[
+                          "DISPONIBLE",
+                          "CONTRATADO",
+                          "DENTRO",
+                          "COMPROMETIDO",
+                          "TALLER",
+                          "CHECKLIST OK",
+                          "CHECKLIST NO OK",
+                          "TALLER EXTERNO",
+                        ].map(v => ({ value: v, label: v }))}
+                        selected={estadoFilter}
+                        onChange={setEstadoFilter}
+                        placeholder="Todos"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Almacén</Label>
+                      <MultiSelectFilter
+                        options={[
+                          { value: "TALLER", label: "Taller" },
+                          ...almacenes.map(a => ({ value: a.id, label: a.nombre })),
+                        ]}
+                        selected={almacenFilter}
+                        onChange={setAlmacenFilter}
+                        placeholder="Todos"
+                      />
+                    </div>
+
+                    {tiposNegocio.length > 0 && (
                       <div>
-                        <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Descripción</Label>
-                        <Select value={descripcionFilter} onValueChange={setDescripcionFilter}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Todas" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="TODOS">Todas</SelectItem>
-                            {descripcionesUnicas.map((d) => (
-                              <SelectItem key={d} value={d}>{d}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Tipo de Negocio</Label>
+                        <MultiSelectFilter
+                          options={tiposNegocio.map(t => ({ value: t, label: t }))}
+                          selected={tipoNegocioFilter}
+                          onChange={setTipoNegocioFilter}
+                          placeholder="Todos"
+                        />
                       </div>
-                    );
-                  })()}
+                    )}
+
+                    {(() => {
+                      const marcasUnicas = Array.from(
+                        new Set(equipos.map(e => (e.marca || '').trim()).filter(Boolean))
+                      ).sort();
+                      return (
+                        <div>
+                          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Marca</Label>
+                          <MultiSelectFilter
+                            options={marcasUnicas.map(m => ({ value: m, label: m }))}
+                            selected={marcaFilter}
+                            onChange={(next) => {
+                              setMarcaFilter(next);
+                              setModeloFilter([]);
+                            }}
+                            placeholder="Todas"
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const modelosUnicos = Array.from(
+                        new Set(
+                          equipos
+                            .filter(e => marcaFilter.length === 0 || marcaFilter.includes((e.marca || '').trim()))
+                            .map(e => (e.modelo || '').trim())
+                            .filter(Boolean)
+                        )
+                      ).sort();
+                      return (
+                        <div>
+                          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Modelo</Label>
+                          <MultiSelectFilter
+                            options={modelosUnicos.map(m => ({ value: m, label: m }))}
+                            selected={modeloFilter}
+                            onChange={setModeloFilter}
+                            placeholder="Todos"
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const descripcionesUnicas = Array.from(
+                        new Set(equipos.map(e => (e.descripcion || '').trim()).filter(Boolean))
+                      ).sort();
+                      return (
+                        <div className="sm:col-span-2">
+                          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Descripción</Label>
+                          <MultiSelectFilter
+                            options={descripcionesUnicas.map(d => ({ value: d, label: d }))}
+                            selected={descripcionFilter}
+                            onChange={setDescripcionFilter}
+                            placeholder="Todas"
+                          />
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
