@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, QrCode, Plus, Upload } from "lucide-react";
+import { Search, Eye, QrCode, Plus, Upload, FileDown, Loader2 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useToast } from "@/hooks/use-toast";
 import { EquipoDetailsDialog } from "@/components/EquipoDetailsDialog";
 import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
