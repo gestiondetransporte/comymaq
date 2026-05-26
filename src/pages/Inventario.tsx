@@ -69,6 +69,7 @@ export default function Inventario() {
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<string>("TODOS");
   const [almacenFilter, setAlmacenFilter] = useState<string>("TODOS");
   const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
+  const [estadoFilter, setEstadoFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
