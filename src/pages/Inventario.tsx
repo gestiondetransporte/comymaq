@@ -73,6 +73,7 @@ export default function Inventario() {
   const [estadoFilter, setEstadoFilter] = useState<string>("TODOS");
   const [marcaFilter, setMarcaFilter] = useState<string>("TODOS");
   const [modeloFilter, setModeloFilter] = useState<string>("TODOS");
+  const [descripcionFilter, setDescripcionFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -88,7 +89,7 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter, descripcionFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
@@ -266,6 +267,11 @@ export default function Inventario() {
       filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
     }
 
+    // Filter by descripción
+    if (descripcionFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.descripcion || '').trim() === descripcionFilter);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -363,6 +369,7 @@ export default function Inventario() {
       if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
       if (marcaFilter !== "TODOS") filtros.push(`Marca: ${marcaFilter}`);
       if (modeloFilter !== "TODOS") filtros.push(`Modelo: ${modeloFilter}`);
+      if (descripcionFilter !== "TODOS") filtros.push(`Descripción: ${descripcionFilter}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
@@ -506,7 +513,8 @@ export default function Inventario() {
                       (tipoNegocioFilter !== "TODOS" ? 1 : 0) +
                       (estadoFilter !== "TODOS" ? 1 : 0) +
                       (marcaFilter !== "TODOS" ? 1 : 0) +
-                      (modeloFilter !== "TODOS" ? 1 : 0);
+                      (modeloFilter !== "TODOS" ? 1 : 0) +
+                      (descripcionFilter !== "TODOS" ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
@@ -531,6 +539,7 @@ export default function Inventario() {
                         setEstadoFilter("TODOS");
                         setMarcaFilter("TODOS");
                         setModeloFilter("TODOS");
+                        setDescripcionFilter("TODOS");
                       }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpiar
@@ -706,6 +715,28 @@ export default function Inventario() {
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+                    );
+                  })()}
+
+                  {(() => {
+                    const descripcionesUnicas = Array.from(
+                      new Set(equipos.map(e => (e.descripcion || '').trim()).filter(Boolean))
+                    ).sort();
+                    return (
+                      <div>
+                        <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Descripción</Label>
+                        <Select value={descripcionFilter} onValueChange={setDescripcionFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TODOS">Todas</SelectItem>
+                            {descripcionesUnicas.map((d) => (
+                              <SelectItem key={d} value={d}>{d}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     );
                   })()}
