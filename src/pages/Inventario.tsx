@@ -88,7 +88,7 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
