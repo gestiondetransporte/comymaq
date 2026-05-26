@@ -1334,5 +1334,3 @@ export function EquipoDetailsDialog({
     </Dialog>
   );
 }
-  );
-}
