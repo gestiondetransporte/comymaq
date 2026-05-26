@@ -1288,6 +1288,51 @@ export function EquipoDetailsDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={comprometidoDialogOpen} onOpenChange={(open) => {
+        setComprometidoDialogOpen(open);
+        if (!open) setMotivoComprometido("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar equipo como COMPROMETIDO</AlertDialogTitle>
+            <AlertDialogDescription>
+              Especifica el motivo por el cual el equipo <strong>{equipo?.numero_equipo}</strong> queda comprometido (apartado para un cliente, en proceso de cotización, reservado, etc.).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="motivo_comprometido">Motivo del compromiso *</Label>
+            <Textarea
+              id="motivo_comprometido"
+              value={motivoComprometido}
+              onChange={(e) => setMotivoComprometido(e.target.value)}
+              placeholder="Ej: Apartado para cliente Juan Pérez, reservado para obra X..."
+              required
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={comprometidoLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmComprometido();
+              }}
+              disabled={comprometidoLoading || !motivoComprometido.trim()}
+            >
+              {comprometidoLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Confirmar"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
+  );
+}
   );
 }
