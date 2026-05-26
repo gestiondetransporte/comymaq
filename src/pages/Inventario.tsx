@@ -340,10 +340,33 @@ export default function Inventario() {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
+      // Logo en esquina superior izquierda
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+        logoImg.src = '/comymaq-cotizacion-logo.png';
+      });
+      let titleX = 14;
+      if (logoImg.complete && logoImg.naturalWidth > 0) {
+        const logoMaxWidth = 35;
+        const logoMaxHeight = 18;
+        const aspectRatio = logoImg.naturalWidth / logoImg.naturalHeight;
+        let logoWidth = logoMaxWidth;
+        let logoHeight = logoWidth / aspectRatio;
+        if (logoHeight > logoMaxHeight) {
+          logoHeight = logoMaxHeight;
+          logoWidth = logoHeight * aspectRatio;
+        }
+        doc.addImage(logoImg, 'PNG', 10, 8, logoWidth, logoHeight);
+        titleX = 10 + logoWidth + 6;
+      }
+
       // Encabezado
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Reporte de Inventario de Equipos", 14, 15);
+      doc.text("Reporte de Inventario de Equipos", titleX, 15);
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
@@ -351,7 +374,7 @@ export default function Inventario() {
         dateStyle: "long",
         timeStyle: "short",
       });
-      doc.text(`Generado: ${fechaGen}`, 14, 21);
+      doc.text(`Generado: ${fechaGen}`, titleX, 21);
       doc.text(`Total registros: ${filteredEquipos.length}`, pageWidth - 14, 21, { align: "right" });
 
       // Resumen de filtros
