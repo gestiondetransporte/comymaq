@@ -19,6 +19,7 @@ import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 interface Almacen {
   id: string;
   nombre: string;
