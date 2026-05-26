@@ -301,6 +301,111 @@ export default function Inventario() {
     return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
   };
 
+  const generarReportePDF = async () => {
+    try {
+      setGeneratingPDF(true);
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Encabezado
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Reporte de Inventario de Equipos", 14, 15);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const fechaGen = new Date().toLocaleString("es-MX", {
+        dateStyle: "long",
+        timeStyle: "short",
+      });
+      doc.text(`Generado: ${fechaGen}`, 14, 21);
+      doc.text(`Total registros: ${filteredEquipos.length}`, pageWidth - 14, 21, { align: "right" });
+
+      // Resumen de filtros
+      const filtros: string[] = [];
+      if (typeFilter !== "TODOS") filtros.push(`Tipo: ${typeFilter}`);
+      if (disponibilidadFilter !== "TODOS") filtros.push(`Disponibilidad: ${disponibilidadFilter}`);
+      if (almacenFilter !== "TODOS") {
+        const almacenLabel =
+          almacenFilter === "TALLER"
+            ? "Taller"
+            : almacenes.find((a) => a.id === almacenFilter)?.nombre || almacenFilter;
+        filtros.push(`Almacén: ${almacenLabel}`);
+      }
+      if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
+      if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
+
+      const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(filtrosTexto, 14, 27);
+      doc.setTextColor(0);
+
+      // Tabla
+      const body = filteredEquipos.map((e) => [
+        e.numero_equipo || "",
+        e.descripcion || "",
+        e.modelo || "",
+        e.serie || "",
+        e.almacenes?.nombre || "",
+        e.ubicacion_actual || "",
+        (e.estado || "").toUpperCase().replace(/_/g, " "),
+      ]);
+
+      autoTable(doc, {
+        head: [["N° Económico", "Descripción", "Modelo", "Serie", "Almacén", "Bodega", "Estado"]],
+        body,
+        startY: 32,
+        margin: { left: 10, right: 10, bottom: 15 },
+        styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
+        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 80 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 35 },
+          5: { cellWidth: 30 },
+          6: { cellWidth: 35 },
+        },
+        didDrawPage: (data) => {
+          const pageCount = doc.getNumberOfPages();
+          const current = data.pageNumber;
+          doc.setFontSize(8);
+          doc.setTextColor(120);
+          doc.text(
+            `Página ${current} de ${pageCount}`,
+            pageWidth - 14,
+            pageHeight - 8,
+            { align: "right" }
+          );
+          doc.text("Reporte de Inventario", 14, pageHeight - 8);
+          doc.setTextColor(0);
+        },
+      });
+
+      const fecha = new Date().toISOString().split("T")[0];
+      doc.save(`inventario-${fecha}.pdf`);
+
+      toast({
+        title: "Reporte generado",
+        description: "El PDF se ha descargado correctamente",
+      });
+    } catch (err) {
+      console.error("Error generando PDF:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo generar el reporte PDF",
+      });
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
