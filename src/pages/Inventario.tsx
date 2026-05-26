@@ -463,126 +463,184 @@ export default function Inventario() {
 
         <TabsContent value="activos" className="space-y-6 mt-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Filtros de Búsqueda</CardTitle>
-          <CardDescription>
-            Busca por número, descripción, marca, modelo, serie o cliente
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 flex-col">
-            <div className="flex-1">
+        <CardContent className="p-4">
+          <div className="flex gap-2 items-center flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar equipo o cliente..."
+                placeholder="Buscar por número, descripción, marca, modelo, serie o cliente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                className="pl-9"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <div className="flex gap-2">
-                <Button
-                  variant={typeFilter === "TODOS" ? "default" : "outline"}
-                  onClick={() => setTypeFilter("TODOS")}
-                  size="sm"
-                >
-                  Todos
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filtros
+                  {(() => {
+                    const active =
+                      (typeFilter !== "TODOS" ? 1 : 0) +
+                      (disponibilidadFilter !== "TODOS" ? 1 : 0) +
+                      (almacenFilter !== "TODOS" ? 1 : 0) +
+                      (tipoNegocioFilter !== "TODOS" ? 1 : 0) +
+                      (estadoFilter !== "TODOS" ? 1 : 0);
+                    return active > 0 ? (
+                      <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
+                        {active}
+                      </BadgeUI>
+                    ) : null;
+                  })()}
                 </Button>
-                <Button
-                  variant={typeFilter === "ELECTRICA" ? "default" : "outline"}
-                  onClick={() => setTypeFilter("ELECTRICA")}
-                  size="sm"
-                >
-                  Eléctricos
-                </Button>
-                <Button
-                  variant={typeFilter === "COMBUSTIÓN" ? "default" : "outline"}
-                  onClick={() => setTypeFilter("COMBUSTIÓN")}
-                  size="sm"
-                >
-                  Combustión
-                </Button>
-              </div>
-              <div className="flex gap-2 ml-auto">
-                <Button
-                  variant={disponibilidadFilter === "TODOS" ? "default" : "outline"}
-                  onClick={() => setDisponibilidadFilter("TODOS")}
-                  size="sm"
-                >
-                  Todos
-                </Button>
-                <Button
-                  variant={disponibilidadFilter === "DISPONIBLE" ? "default" : "outline"}
-                  onClick={() => setDisponibilidadFilter("DISPONIBLE")}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Disponibles
-                </Button>
-                <Button
-                  variant={disponibilidadFilter === "RENTADO" ? "default" : "outline"}
-                  onClick={() => setDisponibilidadFilter("RENTADO")}
-                  size="sm"
-                >
-                  Rentados
-                </Button>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Label className="mb-2 block text-sm font-medium">Filtrar por Almacén</Label>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={almacenFilter === "TODOS" ? "default" : "outline"}
-                  onClick={() => setAlmacenFilter("TODOS")}
-                  size="sm"
-                >
-                  Todos
-                </Button>
-                <Button
-                  variant={almacenFilter === "TALLER" ? "default" : "outline"}
-                  onClick={() => setAlmacenFilter("TALLER")}
-                  size="sm"
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  Taller
-                </Button>
-                {almacenes.map((almacen) => (
-                  <Button
-                    key={almacen.id}
-                    variant={almacenFilter === almacen.id ? "default" : "outline"}
-                    onClick={() => setAlmacenFilter(almacen.id)}
-                    size="sm"
-                  >
-                    {almacen.nombre}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-4">
-              <Label className="mb-2 block text-sm font-medium">Filtrar por Tipo de Negocio</Label>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={tipoNegocioFilter === "TODOS" ? "default" : "outline"}
-                  onClick={() => setTipoNegocioFilter("TODOS")}
-                  size="sm"
-                >
-                  Todos
-                </Button>
-                {tiposNegocio.map((tipo) => (
-                  <Button
-                    key={tipo}
-                    variant={tipoNegocioFilter === tipo ? "default" : "outline"}
-                    onClick={() => setTipoNegocioFilter(tipo)}
-                    size="sm"
-                  >
-                    {tipo}
-                  </Button>
-                ))}
-              </div>
-            </div>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[min(95vw,520px)] max-h-[80vh] overflow-y-auto">
+                <div className="space-y-5">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-sm">Filtros de búsqueda</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setTypeFilter("TODOS");
+                        setDisponibilidadFilter("TODOS");
+                        setAlmacenFilter("TODOS");
+                        setTipoNegocioFilter("TODOS");
+                        setEstadoFilter("TODOS");
+                      }}
+                    >
+                      <X className="h-3 w-3 mr-1" /> Limpiar
+                    </Button>
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Tipo</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { v: "TODOS", l: "Todos" },
+                        { v: "ELECTRICA", l: "Eléctricos" },
+                        { v: "COMBUSTIÓN", l: "Combustión" },
+                      ].map((o) => (
+                        <Button
+                          key={o.v}
+                          variant={typeFilter === o.v ? "default" : "outline"}
+                          onClick={() => setTypeFilter(o.v)}
+                          size="sm"
+                        >
+                          {o.l}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Disponibilidad</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { v: "TODOS", l: "Todos" },
+                        { v: "DISPONIBLE", l: "Disponibles" },
+                        { v: "RENTADO", l: "Rentados" },
+                      ].map((o) => (
+                        <Button
+                          key={o.v}
+                          variant={disponibilidadFilter === o.v ? "default" : "outline"}
+                          onClick={() => setDisponibilidadFilter(o.v)}
+                          size="sm"
+                        >
+                          {o.l}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Estado del equipo</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        "TODOS",
+                        "DISPONIBLE",
+                        "CONTRATADO",
+                        "DENTRO",
+                        "TALLER",
+                        "CHECKLIST OK",
+                        "CHECKLIST NO OK",
+                        "TALLER EXTERNO",
+                      ].map((e) => (
+                        <Button
+                          key={e}
+                          variant={estadoFilter === e ? "default" : "outline"}
+                          onClick={() => setEstadoFilter(e)}
+                          size="sm"
+                        >
+                          {e === "TODOS" ? "Todos" : e}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Almacén</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant={almacenFilter === "TODOS" ? "default" : "outline"}
+                        onClick={() => setAlmacenFilter("TODOS")}
+                        size="sm"
+                      >
+                        Todos
+                      </Button>
+                      <Button
+                        variant={almacenFilter === "TALLER" ? "default" : "outline"}
+                        onClick={() => setAlmacenFilter("TALLER")}
+                        size="sm"
+                      >
+                        Taller
+                      </Button>
+                      {almacenes.map((almacen) => (
+                        <Button
+                          key={almacen.id}
+                          variant={almacenFilter === almacen.id ? "default" : "outline"}
+                          onClick={() => setAlmacenFilter(almacen.id)}
+                          size="sm"
+                        >
+                          {almacen.nombre}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {tiposNegocio.length > 0 && (
+                    <div>
+                      <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Tipo de Negocio</Label>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant={tipoNegocioFilter === "TODOS" ? "default" : "outline"}
+                          onClick={() => setTipoNegocioFilter("TODOS")}
+                          size="sm"
+                        >
+                          Todos
+                        </Button>
+                        {tiposNegocio.map((tipo) => (
+                          <Button
+                            key={tipo}
+                            variant={tipoNegocioFilter === tipo ? "default" : "outline"}
+                            onClick={() => setTipoNegocioFilter(tipo)}
+                            size="sm"
+                          >
+                            {tipo}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </CardContent>
       </Card>
+
 
       <Card>
         <CardContent className="p-0">
