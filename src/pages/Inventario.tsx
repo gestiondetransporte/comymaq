@@ -564,6 +564,7 @@ export default function Inventario() {
                         "DISPONIBLE",
                         "CONTRATADO",
                         "DENTRO",
+                        "COMPROMETIDO",
                         "TALLER",
                         "CHECKLIST OK",
                         "CHECKLIST NO OK",
