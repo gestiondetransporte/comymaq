@@ -92,6 +92,9 @@ export function EquipoDetailsDialog({
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
   const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
   const [motivoBaja, setMotivoBaja] = useState("");
+  const [comprometidoDialogOpen, setComprometidoDialogOpen] = useState(false);
+  const [motivoComprometido, setMotivoComprometido] = useState("");
+  const [comprometidoLoading, setComprometidoLoading] = useState(false);
   const [bajaLoading, setBajaLoading] = useState(false);
   
   // Entrada/Salida form
@@ -317,6 +320,44 @@ export function EquipoDetailsDialog({
       setBajaLoading(false);
     }
   };
+
+  const handleConfirmComprometido = async () => {
+    if (!equipo) return;
+    if (!motivoComprometido.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Motivo requerido",
+        description: "Debes especificar por qué el equipo está comprometido.",
+      });
+      return;
+    }
+    setComprometidoLoading(true);
+    try {
+      const baseUbic = (formData.ubicacion_actual || "").replace(/\s*\|\s*COMPROMETIDO:[^|]*/i, "").trim();
+      const nuevaUbic = `${baseUbic ? baseUbic + " | " : ""}COMPROMETIDO: ${motivoComprometido.trim()}`;
+      const { data: updated, error } = await supabase
+        .from("equipos")
+        .update({ estado: "COMPROMETIDO", ubicacion_actual: nuevaUbic })
+        .eq("id", equipo.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      if (updated) {
+        setFormData(updated as Equipo);
+        setOriginalEstado((updated.estado || "").toString());
+      }
+      toast({ title: "Equipo comprometido", description: "Se registró el motivo correctamente." });
+      setComprometidoDialogOpen(false);
+      setMotivoComprometido("");
+      onUpdate();
+    } catch (err) {
+      console.error("Error marcando comprometido:", err);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar el equipo." });
+    } finally {
+      setComprometidoLoading(false);
+    }
+  };
+
 
 
   const handleUpdateEquipo = async (e: React.FormEvent) => {
@@ -744,9 +785,14 @@ export function EquipoDetailsDialog({
                     <>
                       <Select
                         value={formData.estado || ""}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, estado: value })
-                        }
+                        onValueChange={(value) => {
+                          if (value === "COMPROMETIDO" && (formData.estado || "").toUpperCase() !== "COMPROMETIDO") {
+                            setMotivoComprometido("");
+                            setComprometidoDialogOpen(true);
+                            return;
+                          }
+                          setFormData({ ...formData, estado: value });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar estado" />
@@ -755,6 +801,7 @@ export function EquipoDetailsDialog({
                           <SelectItem value="DISPONIBLE">DISPONIBLE</SelectItem>
                           <SelectItem value="CONTRATADO">CONTRATADO</SelectItem>
                           <SelectItem value="DENTRO">DENTRO</SelectItem>
+                          <SelectItem value="COMPROMETIDO">COMPROMETIDO</SelectItem>
                           <SelectItem value="TALLER">TALLER</SelectItem>
                           <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
                           <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
@@ -1236,6 +1283,49 @@ export function EquipoDetailsDialog({
                   <Ban className="mr-2 h-4 w-4" />
                   Confirmar Baja
                 </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={comprometidoDialogOpen} onOpenChange={(open) => {
+        setComprometidoDialogOpen(open);
+        if (!open) setMotivoComprometido("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar equipo como COMPROMETIDO</AlertDialogTitle>
+            <AlertDialogDescription>
+              Especifica el motivo por el cual el equipo <strong>{equipo?.numero_equipo}</strong> queda comprometido (apartado para un cliente, en proceso de cotización, reservado, etc.).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="motivo_comprometido">Motivo del compromiso *</Label>
+            <Textarea
+              id="motivo_comprometido"
+              value={motivoComprometido}
+              onChange={(e) => setMotivoComprometido(e.target.value)}
+              placeholder="Ej: Apartado para cliente Juan Pérez, reservado para obra X..."
+              required
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={comprometidoLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmComprometido();
+              }}
+              disabled={comprometidoLoading || !motivoComprometido.trim()}
+            >
+              {comprometidoLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                "Confirmar"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
