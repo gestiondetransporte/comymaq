@@ -718,6 +718,28 @@ export default function Inventario() {
                       </div>
                     );
                   })()}
+
+                  {(() => {
+                    const descripcionesUnicas = Array.from(
+                      new Set(equipos.map(e => (e.descripcion || '').trim()).filter(Boolean))
+                    ).sort();
+                    return (
+                      <div>
+                        <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Descripción</Label>
+                        <Select value={descripcionFilter} onValueChange={setDescripcionFilter}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TODOS">Todas</SelectItem>
+                            {descripcionesUnicas.map((d) => (
+                              <SelectItem key={d} value={d}>{d}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    );
+                  })()}
                 </div>
               </PopoverContent>
             </Popover>
