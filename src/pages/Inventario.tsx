@@ -361,6 +361,8 @@ export default function Inventario() {
         filtros.push(`Almacén: ${almacenLabel}`);
       }
       if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
+      if (marcaFilter !== "TODOS") filtros.push(`Marca: ${marcaFilter}`);
+      if (modeloFilter !== "TODOS") filtros.push(`Modelo: ${modeloFilter}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
