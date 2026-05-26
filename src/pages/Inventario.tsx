@@ -426,6 +426,18 @@ export default function Inventario() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={generarReportePDF}
+            disabled={generatingPDF || filteredEquipos.length === 0}
+          >
+            {generatingPDF ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4 mr-2" />
+            )}
+            Generar Reporte
+          </Button>
           <Button onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Agregar Equipo
