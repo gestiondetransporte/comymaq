@@ -826,6 +826,36 @@ export function EquipoDetailsDialog({
                       </p>
                     </>
                   )}
+                  {(formData.estado || "").toUpperCase() === "COMPROMETIDO" && (() => {
+                    const match = (formData.ubicacion_actual || "").match(/COMPROMETIDO:\s*([^|]+)/i);
+                    const motivo = match ? match[1].trim() : "";
+                    return (
+                      <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                            Motivo del compromiso
+                          </p>
+                          {isAdmin && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                              onClick={() => {
+                                setMotivoComprometido(motivo);
+                                setComprometidoDialogOpen(true);
+                              }}
+                            >
+                              Editar
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                          {motivo || "Sin motivo registrado."}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-2">
