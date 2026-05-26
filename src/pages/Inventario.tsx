@@ -513,7 +513,8 @@ export default function Inventario() {
                       (tipoNegocioFilter !== "TODOS" ? 1 : 0) +
                       (estadoFilter !== "TODOS" ? 1 : 0) +
                       (marcaFilter !== "TODOS" ? 1 : 0) +
-                      (modeloFilter !== "TODOS" ? 1 : 0);
+                      (modeloFilter !== "TODOS" ? 1 : 0) +
+                      (descripcionFilter !== "TODOS" ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
