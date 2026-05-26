@@ -92,6 +92,9 @@ export function EquipoDetailsDialog({
   const [modeloFotoUrl, setModeloFotoUrl] = useState<string | null>(null);
   const [bajaDialogOpen, setBajaDialogOpen] = useState(false);
   const [motivoBaja, setMotivoBaja] = useState("");
+  const [comprometidoDialogOpen, setComprometidoDialogOpen] = useState(false);
+  const [motivoComprometido, setMotivoComprometido] = useState("");
+  const [comprometidoLoading, setComprometidoLoading] = useState(false);
   const [bajaLoading, setBajaLoading] = useState(false);
   
   // Entrada/Salida form
