@@ -18,6 +18,7 @@ import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
 import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 interface Almacen {
   id: string;
   nombre: string;
