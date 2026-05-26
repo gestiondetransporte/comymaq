@@ -267,6 +267,11 @@ export default function Inventario() {
       filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
     }
 
+    // Filter by descripción
+    if (descripcionFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.descripcion || '').trim() === descripcionFilter);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
