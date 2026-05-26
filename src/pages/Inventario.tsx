@@ -18,6 +18,7 @@ import { AgregarEquipoDialog } from "@/components/AgregarEquipoDialog";
 import { ExcelEquiposImport } from "@/components/ExcelEquiposImport";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 interface Almacen {
   id: string;
   nombre: string;
@@ -70,6 +71,8 @@ export default function Inventario() {
   const [almacenFilter, setAlmacenFilter] = useState<string>("TODOS");
   const [tipoNegocioFilter, setTipoNegocioFilter] = useState<string>("TODOS");
   const [estadoFilter, setEstadoFilter] = useState<string>("TODOS");
+  const [marcaFilter, setMarcaFilter] = useState<string>("TODOS");
+  const [modeloFilter, setModeloFilter] = useState<string>("TODOS");
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -85,7 +88,7 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
@@ -253,6 +256,16 @@ export default function Inventario() {
       );
     }
 
+    // Filter by marca
+    if (marcaFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.marca || '').trim() === marcaFilter);
+    }
+
+    // Filter by modelo
+    if (modeloFilter !== "TODOS") {
+      filtered = filtered.filter(e => (e.modelo || '').trim() === modeloFilter);
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -348,6 +361,8 @@ export default function Inventario() {
         filtros.push(`Almacén: ${almacenLabel}`);
       }
       if (tipoNegocioFilter !== "TODOS") filtros.push(`Negocio: ${tipoNegocioFilter}`);
+      if (marcaFilter !== "TODOS") filtros.push(`Marca: ${marcaFilter}`);
+      if (modeloFilter !== "TODOS") filtros.push(`Modelo: ${modeloFilter}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
@@ -489,7 +504,9 @@ export default function Inventario() {
                       (disponibilidadFilter !== "TODOS" ? 1 : 0) +
                       (almacenFilter !== "TODOS" ? 1 : 0) +
                       (tipoNegocioFilter !== "TODOS" ? 1 : 0) +
-                      (estadoFilter !== "TODOS" ? 1 : 0);
+                      (estadoFilter !== "TODOS" ? 1 : 0) +
+                      (marcaFilter !== "TODOS" ? 1 : 0) +
+                      (modeloFilter !== "TODOS" ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
@@ -512,6 +529,8 @@ export default function Inventario() {
                         setAlmacenFilter("TODOS");
                         setTipoNegocioFilter("TODOS");
                         setEstadoFilter("TODOS");
+                        setMarcaFilter("TODOS");
+                        setModeloFilter("TODOS");
                       }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpiar
@@ -638,6 +657,58 @@ export default function Inventario() {
                       </div>
                     </div>
                   )}
+
+                  {(() => {
+                    const marcasUnicas = Array.from(
+                      new Set(equipos.map(e => (e.marca || '').trim()).filter(Boolean))
+                    ).sort();
+                    const modelosUnicos = Array.from(
+                      new Set(
+                        equipos
+                          .filter(e => marcaFilter === "TODOS" || (e.marca || '').trim() === marcaFilter)
+                          .map(e => (e.modelo || '').trim())
+                          .filter(Boolean)
+                      )
+                    ).sort();
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Marca</Label>
+                          <Select
+                            value={marcaFilter}
+                            onValueChange={(v) => {
+                              setMarcaFilter(v);
+                              setModeloFilter("TODOS");
+                            }}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Todas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TODOS">Todas</SelectItem>
+                              {marcasUnicas.map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Modelo</Label>
+                          <Select value={modeloFilter} onValueChange={setModeloFilter}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TODOS">Todos</SelectItem>
+                              {modelosUnicos.map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </PopoverContent>
             </Popover>
