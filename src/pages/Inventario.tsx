@@ -71,6 +71,7 @@ export default function Inventario() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
+  const [generatingPDF, setGeneratingPDF] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
