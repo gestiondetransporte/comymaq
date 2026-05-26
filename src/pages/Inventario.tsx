@@ -657,6 +657,58 @@ export default function Inventario() {
                       </div>
                     </div>
                   )}
+
+                  {(() => {
+                    const marcasUnicas = Array.from(
+                      new Set(equipos.map(e => (e.marca || '').trim()).filter(Boolean))
+                    ).sort();
+                    const modelosUnicos = Array.from(
+                      new Set(
+                        equipos
+                          .filter(e => marcaFilter === "TODOS" || (e.marca || '').trim() === marcaFilter)
+                          .map(e => (e.modelo || '').trim())
+                          .filter(Boolean)
+                      )
+                    ).sort();
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Marca</Label>
+                          <Select
+                            value={marcaFilter}
+                            onValueChange={(v) => {
+                              setMarcaFilter(v);
+                              setModeloFilter("TODOS");
+                            }}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Todas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TODOS">Todas</SelectItem>
+                              {marcasUnicas.map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="mb-2 block text-xs font-medium text-muted-foreground uppercase">Modelo</Label>
+                          <Select value={modeloFilter} onValueChange={setModeloFilter}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Todos" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TODOS">Todos</SelectItem>
+                              {modelosUnicos.map((m) => (
+                                <SelectItem key={m} value={m}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </PopoverContent>
             </Popover>
