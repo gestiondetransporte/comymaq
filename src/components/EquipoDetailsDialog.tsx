@@ -663,28 +663,26 @@ export function EquipoDetailsDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 flex-shrink-0">
-            <TabsTrigger value="detalles" className="text-xs md:text-sm">
-              <Save className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden md:inline">Detalles</span>
+          <TabsList className="grid w-full grid-cols-5 gap-1 flex-shrink-0 h-auto">
+            <TabsTrigger value="detalles" className="text-xs md:text-sm flex items-center justify-center gap-1 px-1 py-2 min-w-0">
+              <Save className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline truncate">Detalles</span>
             </TabsTrigger>
-            <TabsTrigger value="movimiento" className="text-xs md:text-sm">
-              <ArrowRightLeft className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden sm:inline">E/S</span>
-              <span className="hidden md:inline sm:hidden">Entrada/Salida</span>
+            <TabsTrigger value="movimiento" className="text-xs md:text-sm flex items-center justify-center gap-1 px-1 py-2 min-w-0">
+              <ArrowRightLeft className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline truncate">Entrada/Salida</span>
             </TabsTrigger>
-            <TabsTrigger value="mantenimiento" className="text-xs md:text-sm">
-              <Wrench className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden md:inline">Mantenimiento</span>
+            <TabsTrigger value="mantenimiento" className="text-xs md:text-sm flex items-center justify-center gap-1 px-1 py-2 min-w-0">
+              <Wrench className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline truncate">Mantenimiento</span>
             </TabsTrigger>
-            <TabsTrigger value="archivos" className="text-xs md:text-sm">
-              <FileText className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden md:inline">Archivos</span>
+            <TabsTrigger value="archivos" className="text-xs md:text-sm flex items-center justify-center gap-1 px-1 py-2 min-w-0">
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline truncate">Archivos</span>
             </TabsTrigger>
-            <TabsTrigger value="qr" className="text-xs md:text-sm">
-              <QrCode className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden sm:inline">QR</span>
-              <span className="hidden md:inline sm:hidden">Código QR</span>
+            <TabsTrigger value="qr" className="text-xs md:text-sm flex items-center justify-center gap-1 px-1 py-2 min-w-0">
+              <QrCode className="h-4 w-4 shrink-0" />
+              <span className="hidden md:inline truncate">QR</span>
             </TabsTrigger>
           </TabsList>
 

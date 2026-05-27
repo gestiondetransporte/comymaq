@@ -75,6 +75,7 @@ export default function Inventario() {
   const [marcaFilter, setMarcaFilter] = useState<string[]>([]);
   const [modeloFilter, setModeloFilter] = useState<string[]>([]);
   const [descripcionFilter, setDescripcionFilter] = useState<string[]>([]);
+  const [ubicacionFilter, setUbicacionFilter] = useState<string[]>([]);
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -151,7 +152,7 @@ export default function Inventario() {
 
   useEffect(() => {
     filterEquipos();
-  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter, descripcionFilter]);
+  }, [searchQuery, equipos, typeFilter, disponibilidadFilter, almacenFilter, tipoNegocioFilter, estadoFilter, marcaFilter, modeloFilter, descripcionFilter, ubicacionFilter]);
 
   // Verificar si hay un equipo_id en la URL (desde el QR scanner)
   useEffect(() => {
@@ -337,6 +338,14 @@ export default function Inventario() {
       filtered = filtered.filter(e => descripcionFilter.includes((e.descripcion || '').trim()));
     }
 
+    // Filter by ubicación actual
+    if (ubicacionFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        const ub = (e.ubicacion_actual || '').split('COMPROMETIDO:')[0].trim();
+        return ubicacionFilter.includes(ub || 'Sin ubicación');
+      });
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -459,6 +468,7 @@ export default function Inventario() {
       if (marcaFilter.length > 0) filtros.push(`Marca: ${marcaFilter.join(", ")}`);
       if (modeloFilter.length > 0) filtros.push(`Modelo: ${modeloFilter.join(", ")}`);
       if (descripcionFilter.length > 0) filtros.push(`Descripción: ${descripcionFilter.join(", ")}`);
+      if (ubicacionFilter.length > 0) filtros.push(`Ubicación actual: ${ubicacionFilter.join(", ")}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
@@ -605,7 +615,8 @@ export default function Inventario() {
                       (estadoFilter.length > 0 ? 1 : 0) +
                       (marcaFilter.length > 0 ? 1 : 0) +
                       (modeloFilter.length > 0 ? 1 : 0) +
-                      (descripcionFilter.length > 0 ? 1 : 0);
+                      (descripcionFilter.length > 0 ? 1 : 0) +
+                      (ubicacionFilter.length > 0 ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
@@ -631,6 +642,7 @@ export default function Inventario() {
                         setMarcaFilter([]);
                         setModeloFilter([]);
                         setDescripcionFilter([]);
+                        setUbicacionFilter([]);
                       }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpiar todo
@@ -761,6 +773,27 @@ export default function Inventario() {
                             options={descripcionesUnicas.map(d => ({ value: d, label: d }))}
                             selected={descripcionFilter}
                             onChange={setDescripcionFilter}
+                            placeholder="Todas"
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const ubicacionesUnicas = Array.from(
+                        new Set(
+                          equipos
+                            .map(e => (e.ubicacion_actual || '').split('COMPROMETIDO:')[0].trim())
+                            .map(u => u || 'Sin ubicación')
+                        )
+                      ).sort();
+                      return (
+                        <div className="sm:col-span-2">
+                          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Ubicación actual</Label>
+                          <MultiSelectFilter
+                            options={ubicacionesUnicas.map(u => ({ value: u, label: u }))}
+                            selected={ubicacionFilter}
+                            onChange={setUbicacionFilter}
                             placeholder="Todas"
                           />
                         </div>
