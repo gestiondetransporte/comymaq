@@ -781,28 +781,28 @@ export default function Inventario() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Folio</TableHead>
-                  <TableHead>N° Equipo</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Marca</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Serie</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Almacén</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <SortableHead k="folio">Folio</SortableHead>
+                  <SortableHead k="numero_equipo">N° Equipo</SortableHead>
+                  <SortableHead k="descripcion">Descripción</SortableHead>
+                  <SortableHead k="marca">Marca</SortableHead>
+                  <SortableHead k="modelo">Modelo</SortableHead>
+                  <SortableHead k="serie">Serie</SortableHead>
+                  <SortableHead k="tipo">Tipo</SortableHead>
+                  <SortableHead k="almacen">Almacén</SortableHead>
+                  <SortableHead k="estado">Estado</SortableHead>
+                  <SortableHead k="cliente">Cliente</SortableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEquipos.length === 0 ? (
+                {sortedEquipos.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredEquipos.map((equipo) => (
+                  sortedEquipos.map((equipo) => (
                     <TableRow key={equipo.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-mono text-sm font-bold">{equipo.folio}</TableCell>
                       <TableCell className="font-medium">{equipo.numero_equipo}</TableCell>
