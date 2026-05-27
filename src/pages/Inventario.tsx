@@ -75,6 +75,7 @@ export default function Inventario() {
   const [marcaFilter, setMarcaFilter] = useState<string[]>([]);
   const [modeloFilter, setModeloFilter] = useState<string[]>([]);
   const [descripcionFilter, setDescripcionFilter] = useState<string[]>([]);
+  const [ubicacionFilter, setUbicacionFilter] = useState<string[]>([]);
   const [selectedEquipo, setSelectedEquipo] = useState<Equipo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
