@@ -338,6 +338,14 @@ export default function Inventario() {
       filtered = filtered.filter(e => descripcionFilter.includes((e.descripcion || '').trim()));
     }
 
+    // Filter by ubicación actual
+    if (ubicacionFilter.length > 0) {
+      filtered = filtered.filter(e => {
+        const ub = (e.ubicacion_actual || '').split('COMPROMETIDO:')[0].trim();
+        return ubicacionFilter.includes(ub || 'Sin ubicación');
+      });
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
