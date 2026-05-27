@@ -468,6 +468,7 @@ export default function Inventario() {
       if (marcaFilter.length > 0) filtros.push(`Marca: ${marcaFilter.join(", ")}`);
       if (modeloFilter.length > 0) filtros.push(`Modelo: ${modeloFilter.join(", ")}`);
       if (descripcionFilter.length > 0) filtros.push(`Descripción: ${descripcionFilter.join(", ")}`);
+      if (ubicacionFilter.length > 0) filtros.push(`Ubicación actual: ${ubicacionFilter.join(", ")}`);
       if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
 
       const filtrosTexto = filtros.length ? `Filtros: ${filtros.join("  |  ")}` : "Filtros: Ninguno (todos los equipos activos)";
