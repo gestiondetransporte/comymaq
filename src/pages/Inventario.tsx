@@ -778,6 +778,27 @@ export default function Inventario() {
                         </div>
                       );
                     })()}
+
+                    {(() => {
+                      const ubicacionesUnicas = Array.from(
+                        new Set(
+                          equipos
+                            .map(e => (e.ubicacion_actual || '').split('COMPROMETIDO:')[0].trim())
+                            .map(u => u || 'Sin ubicación')
+                        )
+                      ).sort();
+                      return (
+                        <div className="sm:col-span-2">
+                          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Ubicación actual</Label>
+                          <MultiSelectFilter
+                            options={ubicacionesUnicas.map(u => ({ value: u, label: u }))}
+                            selected={ubicacionFilter}
+                            onChange={setUbicacionFilter}
+                            placeholder="Todas"
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </PopoverContent>
