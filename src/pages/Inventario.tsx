@@ -80,6 +80,67 @@ export default function Inventario() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [sortKey, setSortKey] = useState<string | null>("folio");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const getSortValue = (e: Equipo, key: string): string | number => {
+    switch (key) {
+      case "folio": return e.folio ?? 0;
+      case "numero_equipo": return (e.numero_equipo || "").toLowerCase();
+      case "descripcion": return (e.descripcion || "").toLowerCase();
+      case "marca": return (e.marca || "").toLowerCase();
+      case "modelo": return (e.modelo || "").toLowerCase();
+      case "serie": return (e.serie || "").toLowerCase();
+      case "tipo": return (e.tipo || "").toLowerCase();
+      case "almacen": return (e.almacenes?.nombre || (e.enMantenimiento ? "Taller" : "")).toLowerCase();
+      case "estado": return (e.estado || "").toLowerCase();
+      case "cliente": return (e.contrato_activo?.cliente || "").toLowerCase();
+      default: return "";
+    }
+  };
+
+  const sortedEquipos = React.useMemo(() => {
+    if (!sortKey) return filteredEquipos;
+    const arr = [...filteredEquipos];
+    arr.sort((a, b) => {
+      const va = getSortValue(a, sortKey);
+      const vb = getSortValue(b, sortKey);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredEquipos, sortKey, sortDir]);
+
+  const SortableHead = ({ k, children, className }: { k: string; children: React.ReactNode; className?: string }) => {
+    const active = sortKey === k;
+    return (
+      <TableHead className={className}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors select-none"
+        >
+          <span>{children}</span>
+          {active ? (
+            sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+          ) : (
+            <ArrowUpDown className="h-3 w-3 opacity-40" />
+          )}
+        </button>
+      </TableHead>
+    );
+  };
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
