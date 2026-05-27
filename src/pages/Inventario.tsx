@@ -615,7 +615,8 @@ export default function Inventario() {
                       (estadoFilter.length > 0 ? 1 : 0) +
                       (marcaFilter.length > 0 ? 1 : 0) +
                       (modeloFilter.length > 0 ? 1 : 0) +
-                      (descripcionFilter.length > 0 ? 1 : 0);
+                      (descripcionFilter.length > 0 ? 1 : 0) +
+                      (ubicacionFilter.length > 0 ? 1 : 0);
                     return active > 0 ? (
                       <BadgeUI variant="secondary" className="ml-1 h-5 px-1.5">
                         {active}
