@@ -542,29 +542,31 @@ export default function Inventario() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Inventario de Equipos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Inventario de Equipos</h1>
+          <p className="text-sm text-muted-foreground">
             Total de equipos: {filteredEquipos.length} de {equipos.length}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={generarReportePDF}
             disabled={generatingPDF || filteredEquipos.length === 0}
+            className="flex-1 sm:flex-none"
           >
             {generatingPDF ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <FileDown className="h-4 w-4 mr-2" />
             )}
-            Generar Reporte
+            <span className="truncate">Generar Reporte</span>
           </Button>
-          <Button onClick={() => setAddDialogOpen(true)}>
+          <Button onClick={() => setAddDialogOpen(true)} size="sm" className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2" />
-            Agregar Equipo
+            <span className="truncate">Agregar Equipo</span>
           </Button>
         </div>
       </div>
