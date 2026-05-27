@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, QrCode, Plus, Upload, FileDown, Loader2, SlidersHorizontal, X } from "lucide-react";
+import { Search, Eye, QrCode, Plus, Upload, FileDown, Loader2, SlidersHorizontal, X, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -80,6 +80,67 @@ export default function Inventario() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<"detalles" | "movimiento" | "mantenimiento" | "archivos" | "qr">("detalles");
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [sortKey, setSortKey] = useState<string | null>("folio");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const toggleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const getSortValue = (e: Equipo, key: string): string | number => {
+    switch (key) {
+      case "folio": return e.folio ?? 0;
+      case "numero_equipo": return (e.numero_equipo || "").toLowerCase();
+      case "descripcion": return (e.descripcion || "").toLowerCase();
+      case "marca": return (e.marca || "").toLowerCase();
+      case "modelo": return (e.modelo || "").toLowerCase();
+      case "serie": return (e.serie || "").toLowerCase();
+      case "tipo": return (e.tipo || "").toLowerCase();
+      case "almacen": return (e.almacenes?.nombre || (e.enMantenimiento ? "Taller" : "")).toLowerCase();
+      case "estado": return (e.estado || "").toLowerCase();
+      case "cliente": return (e.contrato_activo?.cliente || "").toLowerCase();
+      default: return "";
+    }
+  };
+
+  const sortedEquipos = React.useMemo(() => {
+    if (!sortKey) return filteredEquipos;
+    const arr = [...filteredEquipos];
+    arr.sort((a, b) => {
+      const va = getSortValue(a, sortKey);
+      const vb = getSortValue(b, sortKey);
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filteredEquipos, sortKey, sortDir]);
+
+  const SortableHead = ({ k, children, className }: { k: string; children: React.ReactNode; className?: string }) => {
+    const active = sortKey === k;
+    return (
+      <TableHead className={className}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors select-none"
+        >
+          <span>{children}</span>
+          {active ? (
+            sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+          ) : (
+            <ArrowUpDown className="h-3 w-3 opacity-40" />
+          )}
+        </button>
+      </TableHead>
+    );
+  };
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -481,29 +542,31 @@ export default function Inventario() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Inventario de Equipos</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Inventario de Equipos</h1>
+          <p className="text-sm text-muted-foreground">
             Total de equipos: {filteredEquipos.length} de {equipos.length}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={generarReportePDF}
             disabled={generatingPDF || filteredEquipos.length === 0}
+            className="flex-1 sm:flex-none"
           >
             {generatingPDF ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <FileDown className="h-4 w-4 mr-2" />
             )}
-            Generar Reporte
+            <span className="truncate">Generar Reporte</span>
           </Button>
-          <Button onClick={() => setAddDialogOpen(true)}>
+          <Button onClick={() => setAddDialogOpen(true)} size="sm" className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4 mr-2" />
-            Agregar Equipo
+            <span className="truncate">Agregar Equipo</span>
           </Button>
         </div>
       </div>
@@ -718,28 +781,28 @@ export default function Inventario() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Folio</TableHead>
-                  <TableHead>N° Equipo</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead>Marca</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Serie</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Almacén</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <SortableHead k="folio">Folio</SortableHead>
+                  <SortableHead k="numero_equipo">N° Equipo</SortableHead>
+                  <SortableHead k="descripcion">Descripción</SortableHead>
+                  <SortableHead k="marca">Marca</SortableHead>
+                  <SortableHead k="modelo">Modelo</SortableHead>
+                  <SortableHead k="serie">Serie</SortableHead>
+                  <SortableHead k="tipo">Tipo</SortableHead>
+                  <SortableHead k="almacen">Almacén</SortableHead>
+                  <SortableHead k="estado">Estado</SortableHead>
+                  <SortableHead k="cliente">Cliente</SortableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEquipos.length === 0 ? (
+                {sortedEquipos.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredEquipos.map((equipo) => (
+                  sortedEquipos.map((equipo) => (
                     <TableRow key={equipo.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-mono text-sm font-bold">{equipo.folio}</TableCell>
                       <TableCell className="font-medium">{equipo.numero_equipo}</TableCell>
