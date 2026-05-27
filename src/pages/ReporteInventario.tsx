@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,10 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { FileBarChart, Package, Wrench, TrendingUp, Download } from "lucide-react";
+import { FileBarChart, Package, Wrench, TrendingUp, Download, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { MultiSelectFilter } from "@/components/MultiSelectFilter";
 
 interface InventoryReport {
   categoria: string;
@@ -26,134 +27,60 @@ interface InventoryReport {
   segmento_clase: number;
 }
 
+interface EquipoRaw {
+  id: string;
+  categoria: string | null;
+  clase: string | null;
+  descripcion: string;
+  estado: string | null;
+  tipo_negocio: string | null;
+  almacen_id: string | null;
+  almacenes?: { id: string; nombre: string } | null;
+}
+
+interface Almacen {
+  id: string;
+  nombre: string;
+}
+
 export default function ReporteInventario() {
-  const [reportData, setReportData] = useState<InventoryReport[]>([]);
-  const [filteredData, setFilteredData] = useState<InventoryReport[]>([]);
+  const [equiposRaw, setEquiposRaw] = useState<EquipoRaw[]>([]);
+  const [equiposEnContrato, setEquiposEnContrato] = useState<Set<string>>(new Set());
+  const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [almacenFilter, setAlmacenFilter] = useState<string[]>([]);
+  const [categoriaFilter, setCategoriaFilter] = useState<string[]>([]);
+  const [claseFilter, setClaseFilter] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchReportData();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const filtered = reportData.filter(
-        (row) =>
-          row.categoria?.toLowerCase().includes(query) ||
-          row.clase?.toLowerCase().includes(query) ||
-          row.descripcion?.toLowerCase().includes(query)
-      );
-      setFilteredData(filtered);
-    } else {
-      setFilteredData(reportData);
-    }
-  }, [searchQuery, reportData]);
-
-  const fetchReportData = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Obtener todos los equipos
-      const { data: equipos, error: equiposError } = await supabase
-        .from('equipos')
-        .select('id, categoria, clase, descripcion, estado, tipo_negocio');
+      const [equiposRes, contratosRes, almacenesRes] = await Promise.all([
+        supabase
+          .from("equipos")
+          .select("id, categoria, clase, descripcion, estado, tipo_negocio, almacen_id, almacenes(id, nombre)"),
+        supabase.from("contratos").select("equipo_id, status").eq("status", "activo"),
+        supabase.from("almacenes").select("id, nombre").order("nombre"),
+      ]);
 
-      if (equiposError) throw equiposError;
+      if (equiposRes.error) throw equiposRes.error;
+      if (contratosRes.error) throw contratosRes.error;
+      if (almacenesRes.error) throw almacenesRes.error;
 
-      // Obtener contratos activos
-      const { data: contratos, error: contratosError } = await supabase
-        .from('contratos')
-        .select('equipo_id, status')
-        .eq('status', 'activo');
-
-      if (contratosError) throw contratosError;
-
-      // Crear un Set de equipos en contrato activo
-      const equiposEnContrato = new Set(contratos?.map((c) => c.equipo_id) || []);
-
-      // Agrupar por categoría, clase y descripción
-      const grouped: Record<string, InventoryReport> = {};
-
-      equipos?.forEach((equipo) => {
-        const key = `${equipo.categoria || 'Sin categoría'}-${equipo.clase || 'Sin clase'}-${equipo.descripcion}`;
-        
-        if (!grouped[key]) {
-          grouped[key] = {
-            categoria: equipo.categoria || 'Sin categoría',
-            clase: equipo.clase || 'Sin clase',
-            descripcion: equipo.descripcion,
-            cantidad: 0,
-            dentro: 0,
-            disponible: 0,
-            taller: 0,
-            general: 0,
-            segmento_renta: 0,
-            segmento_disponible: 0,
-            segmento_taller: 0,
-            segmento_clase: 0,
-          };
-        }
-
-        grouped[key].cantidad++;
-
-        // Determinar estado del equipo
-        const enContrato = equiposEnContrato.has(equipo.id);
-        const enTaller = equipo.estado?.toLowerCase().includes('taller') || 
-                         equipo.estado?.toLowerCase().includes('mantenimiento');
-
-        if (enContrato) {
-          grouped[key].dentro++;
-        } else if (enTaller) {
-          grouped[key].taller++;
-        } else {
-          grouped[key].disponible++;
-        }
-      });
-
-      // Calcular totales por categoría y clase para segmentos
-      const totalPorCategoria: Record<string, number> = {};
-      const totalPorClase: Record<string, number> = {};
-      let totalGeneral = 0;
-
-      Object.values(grouped).forEach((item) => {
-        totalPorCategoria[item.categoria] = (totalPorCategoria[item.categoria] || 0) + item.cantidad;
-        totalPorClase[item.clase] = (totalPorClase[item.clase] || 0) + item.cantidad;
-        totalGeneral += item.cantidad;
-      });
-
-      // Calcular porcentajes
-      const reportArray = Object.values(grouped).map((item) => {
-        const general = totalGeneral > 0 ? (item.cantidad / totalGeneral) * 100 : 0;
-        const segmento_renta = item.cantidad > 0 ? (item.dentro / item.cantidad) * 100 : 0;
-        const segmento_disponible = item.cantidad > 0 ? (item.disponible / item.cantidad) * 100 : 0;
-        const segmento_taller = item.cantidad > 0 ? (item.taller / item.cantidad) * 100 : 0;
-        const segmento_clase = totalPorClase[item.clase] > 0 ? (item.cantidad / totalPorClase[item.clase]) * 100 : 0;
-
-        return {
-          ...item,
-          general: Math.round(general * 10) / 10,
-          segmento_renta: Math.round(segmento_renta * 10) / 10,
-          segmento_disponible: Math.round(segmento_disponible * 10) / 10,
-          segmento_taller: Math.round(segmento_taller * 10) / 10,
-          segmento_clase: Math.round(segmento_clase * 10) / 10,
-        };
-      });
-
-      // Ordenar por categoría y clase
-      reportArray.sort((a, b) => {
-        if (a.categoria !== b.categoria) {
-          return a.categoria.localeCompare(b.categoria);
-        }
-        return a.clase.localeCompare(b.clase);
-      });
-
-      setReportData(reportArray);
-      setFilteredData(reportArray);
+      setEquiposRaw((equiposRes.data as any) || []);
+      setEquiposEnContrato(
+        new Set(contratosRes.data?.map((c) => c.equipo_id).filter(Boolean) || [])
+      );
+      setAlmacenes(almacenesRes.data || []);
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      console.error("Error fetching report data:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -164,38 +91,195 @@ export default function ReporteInventario() {
     }
   };
 
-  // Calcular totales para las tarjetas de resumen
-  const totalCantidad = filteredData.reduce((sum, item) => sum + item.cantidad, 0);
-  const totalTaller = filteredData.reduce((sum, item) => sum + item.taller, 0);
-  const totalDisponible = filteredData.reduce((sum, item) => sum + item.disponible, 0);
+  // Aplica filtros a la lista de equipos antes de agregar
+  const filteredEquipos = useMemo(() => {
+    let list = equiposRaw;
+
+    if (almacenFilter.length > 0) {
+      list = list.filter((e) => e.almacen_id && almacenFilter.includes(e.almacen_id));
+    }
+    if (categoriaFilter.length > 0) {
+      list = list.filter((e) => categoriaFilter.includes(e.categoria || "Sin categoría"));
+    }
+    if (claseFilter.length > 0) {
+      list = list.filter((e) => claseFilter.includes(e.clase || "Sin clase"));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (e) =>
+          (e.categoria || "").toLowerCase().includes(q) ||
+          (e.clase || "").toLowerCase().includes(q) ||
+          (e.descripcion || "").toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [equiposRaw, almacenFilter, categoriaFilter, claseFilter, searchQuery]);
+
+  // Construye el reporte agregando los equipos filtrados
+  const reportData = useMemo<InventoryReport[]>(() => {
+    const grouped: Record<string, InventoryReport> = {};
+
+    filteredEquipos.forEach((equipo) => {
+      const key = `${equipo.categoria || "Sin categoría"}-${equipo.clase || "Sin clase"}-${equipo.descripcion}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          categoria: equipo.categoria || "Sin categoría",
+          clase: equipo.clase || "Sin clase",
+          descripcion: equipo.descripcion,
+          cantidad: 0,
+          dentro: 0,
+          disponible: 0,
+          taller: 0,
+          general: 0,
+          segmento_renta: 0,
+          segmento_disponible: 0,
+          segmento_taller: 0,
+          segmento_clase: 0,
+        };
+      }
+      grouped[key].cantidad++;
+      const enContrato = equiposEnContrato.has(equipo.id);
+      const enTaller =
+        equipo.estado?.toLowerCase().includes("taller") ||
+        equipo.estado?.toLowerCase().includes("mantenimiento");
+      if (enContrato) grouped[key].dentro++;
+      else if (enTaller) grouped[key].taller++;
+      else grouped[key].disponible++;
+    });
+
+    const totalPorClase: Record<string, number> = {};
+    let totalGeneral = 0;
+    Object.values(grouped).forEach((item) => {
+      totalPorClase[item.clase] = (totalPorClase[item.clase] || 0) + item.cantidad;
+      totalGeneral += item.cantidad;
+    });
+
+    const arr = Object.values(grouped).map((item) => {
+      const general = totalGeneral > 0 ? (item.cantidad / totalGeneral) * 100 : 0;
+      const segmento_renta = item.cantidad > 0 ? (item.dentro / item.cantidad) * 100 : 0;
+      const segmento_disponible = item.cantidad > 0 ? (item.disponible / item.cantidad) * 100 : 0;
+      const segmento_taller = item.cantidad > 0 ? (item.taller / item.cantidad) * 100 : 0;
+      const segmento_clase =
+        totalPorClase[item.clase] > 0 ? (item.cantidad / totalPorClase[item.clase]) * 100 : 0;
+      return {
+        ...item,
+        general: Math.round(general * 10) / 10,
+        segmento_renta: Math.round(segmento_renta * 10) / 10,
+        segmento_disponible: Math.round(segmento_disponible * 10) / 10,
+        segmento_taller: Math.round(segmento_taller * 10) / 10,
+        segmento_clase: Math.round(segmento_clase * 10) / 10,
+      };
+    });
+
+    arr.sort((a, b) => {
+      if (a.categoria !== b.categoria) return a.categoria.localeCompare(b.categoria);
+      return a.clase.localeCompare(b.clase);
+    });
+
+    return arr;
+  }, [filteredEquipos, equiposEnContrato]);
+
+  // Opciones para selects
+  const almacenOptions = useMemo(
+    () => almacenes.map((a) => ({ value: a.id, label: a.nombre })),
+    [almacenes]
+  );
+  const categoriaOptions = useMemo(() => {
+    const set = new Set<string>();
+    equiposRaw.forEach((e) => set.add(e.categoria || "Sin categoría"));
+    return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+  }, [equiposRaw]);
+  const claseOptions = useMemo(() => {
+    const set = new Set<string>();
+    equiposRaw.forEach((e) => set.add(e.clase || "Sin clase"));
+    return Array.from(set).sort().map((v) => ({ value: v, label: v }));
+  }, [equiposRaw]);
+
+  // Totales para tarjetas
+  const totalCantidad = reportData.reduce((sum, item) => sum + item.cantidad, 0);
+  const totalTaller = reportData.reduce((sum, item) => sum + item.taller, 0);
+  const totalDisponible = reportData.reduce((sum, item) => sum + item.disponible, 0);
   const porcentajeDisponibilidad = totalCantidad > 0 ? (totalDisponible / totalCantidad) * 100 : 0;
 
-  // Función para determinar si una fila es el inicio de una nueva categoría
   const isNewCategory = (index: number): boolean => {
     if (index === 0) return true;
-    return filteredData[index].categoria !== filteredData[index - 1].categoria;
+    return reportData[index].categoria !== reportData[index - 1].categoria;
   };
 
-  // Función para descargar el reporte en PDF
-  const downloadPDF = () => {
-    const doc = new jsPDF('landscape');
-    
-    // Título
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Reporte de Inventario de Equipos', 14, 20);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Disponibilidad y Taller', 14, 28);
+  const activeFilterCount =
+    (almacenFilter.length > 0 ? 1 : 0) +
+    (categoriaFilter.length > 0 ? 1 : 0) +
+    (claseFilter.length > 0 ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
+
+  const resetFilters = () => {
+    setAlmacenFilter([]);
+    setCategoriaFilter([]);
+    setClaseFilter([]);
+    setSearchQuery("");
+  };
+
+  const downloadPDF = async () => {
+    const doc = new jsPDF("landscape");
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Logo
+    const logoImg = new Image();
+    logoImg.crossOrigin = "anonymous";
+    await new Promise<void>((resolve) => {
+      logoImg.onload = () => resolve();
+      logoImg.onerror = () => resolve();
+      logoImg.src = "/comymaq-cotizacion-logo.png";
+    });
+    let titleX = 14;
+    if (logoImg.complete && logoImg.naturalWidth > 0) {
+      const maxW = 35;
+      const maxH = 18;
+      const ar = logoImg.naturalWidth / logoImg.naturalHeight;
+      let w = maxW;
+      let h = w / ar;
+      if (h > maxH) { h = maxH; w = h * ar; }
+      doc.addImage(logoImg, "PNG", 10, 8, w, h);
+      titleX = 10 + w + 6;
+    }
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Reporte de Inventario de Equipos", titleX, 15);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Disponibilidad y Taller", titleX, 21);
+
+    // Resumen de filtros
+    const filtros: string[] = [];
+    if (almacenFilter.length > 0) {
+      const labels = almacenFilter.map(
+        (v) => almacenes.find((a) => a.id === v)?.nombre || v
+      );
+      filtros.push(`Bodega: ${labels.join(", ")}`);
+    }
+    if (categoriaFilter.length > 0) filtros.push(`Categoría: ${categoriaFilter.join(", ")}`);
+    if (claseFilter.length > 0) filtros.push(`Clase: ${claseFilter.join(", ")}`);
+    if (searchQuery.trim()) filtros.push(`Búsqueda: "${searchQuery.trim()}"`);
+
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    const filtrosTexto = filtros.length
+      ? `Filtros: ${filtros.join("  |  ")}`
+      : "Filtros: Ninguno";
+    doc.text(filtrosTexto, 14, 30);
+    doc.setTextColor(0);
 
     // Resumen
     doc.setFontSize(10);
-    doc.text(`Total de Equipos: ${totalCantidad}`, 14, 38);
-    doc.text(`Total en Taller: ${totalTaller}`, 80, 38);
-    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 146, 38);
+    doc.text(`Total: ${totalCantidad}`, 14, 37);
+    doc.text(`Taller: ${totalTaller}`, 70, 37);
+    doc.text(`Disponibles: ${totalDisponible}`, 120, 37);
+    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 180, 37);
 
-    // Preparar datos de la tabla
-    const tableData = filteredData.map(row => [
+    const tableData = reportData.map((row) => [
       row.categoria,
       row.clase,
       row.descripcion,
@@ -210,60 +294,41 @@ export default function ReporteInventario() {
       `${row.segmento_clase}%`,
     ]);
 
-    // Agregar tabla
     autoTable(doc, {
-      head: [[
-        'Cat',
-        'Clase',
-        'Descripción',
-        'Cant',
-        'Dentro',
-        'Disp',
-        'Taller',
-        'General',
-        'S.Renta',
-        'S.Disp',
-        'S.Taller',
-        'S.Clase'
-      ]],
+      head: [["Cat", "Clase", "Descripción", "Cant", "Dentro", "Disp", "Taller", "General", "S.Renta", "S.Disp", "S.Taller", "S.Clase"]],
       body: tableData,
-      startY: 45,
+      startY: 42,
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' },
+      headStyles: { fillColor: [59, 130, 246], fontStyle: "bold" },
       columnStyles: {
         0: { cellWidth: 15 },
         1: { cellWidth: 15 },
         2: { cellWidth: 50 },
-        3: { cellWidth: 15, halign: 'right' },
-        4: { cellWidth: 15, halign: 'right' },
-        5: { cellWidth: 15, halign: 'right', textColor: [22, 163, 74] },
-        6: { cellWidth: 15, halign: 'right', textColor: [220, 38, 38] },
-        7: { cellWidth: 20, halign: 'right' },
-        8: { cellWidth: 20, halign: 'right' },
-        9: { cellWidth: 20, halign: 'right' },
-        10: { cellWidth: 20, halign: 'right' },
-        11: { cellWidth: 20, halign: 'right' },
+        3: { cellWidth: 15, halign: "right" },
+        4: { cellWidth: 15, halign: "right" },
+        5: { cellWidth: 15, halign: "right", textColor: [22, 163, 74] },
+        6: { cellWidth: 15, halign: "right", textColor: [220, 38, 38] },
+        7: { cellWidth: 20, halign: "right" },
+        8: { cellWidth: 20, halign: "right" },
+        9: { cellWidth: 20, halign: "right" },
+        10: { cellWidth: 20, halign: "right" },
+        11: { cellWidth: 20, halign: "right" },
       },
       didParseCell: (data: any) => {
-        // Resaltar inicio de nueva categoría
         const rowIndex = data.row.index;
-        if (rowIndex > 0 && filteredData[rowIndex]) {
+        if (rowIndex > 0 && reportData[rowIndex]) {
           if (isNewCategory(rowIndex)) {
             data.cell.styles.fillColor = [243, 244, 246];
-            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fontStyle = "bold";
           }
         }
       },
     });
 
-    // Guardar PDF
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = new Date().toISOString().split("T")[0];
     doc.save(`reporte-inventario-${fecha}.pdf`);
 
-    toast({
-      title: "PDF Generado",
-      description: "El reporte se ha descargado correctamente",
-    });
+    toast({ title: "PDF Generado", description: "El reporte se ha descargado correctamente" });
   };
 
   if (loading) {
@@ -302,9 +367,7 @@ export default function ReporteInventario() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCantidad}</div>
-            <p className="text-xs text-muted-foreground">
-              Cantidad total en inventario
-            </p>
+            <p className="text-xs text-muted-foreground">Cantidad total filtrada</p>
           </CardContent>
         </Card>
 
@@ -315,43 +378,78 @@ export default function ReporteInventario() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{totalTaller}</div>
-            <p className="text-xs text-muted-foreground">
-              Equipos en mantenimiento
-            </p>
+            <p className="text-xs text-muted-foreground">Equipos en mantenimiento</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Disponibilidad General</CardTitle>
-            <TrendingUp className={`h-4 w-4 ${porcentajeDisponibilidad > 80 ? 'text-green-600' : 'text-muted-foreground'}`} />
+            <TrendingUp className={`h-4 w-4 ${porcentajeDisponibilidad > 80 ? "text-green-600" : "text-muted-foreground"}`} />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${porcentajeDisponibilidad > 80 ? 'text-green-600' : ''}`}>
+            <div className={`text-2xl font-bold ${porcentajeDisponibilidad > 80 ? "text-green-600" : ""}`}>
               {porcentajeDisponibilidad.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground">
-              {totalDisponible} equipos disponibles
-            </p>
+            <p className="text-xs text-muted-foreground">{totalDisponible} equipos disponibles</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtro de búsqueda */}
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtrar Reporte</CardTitle>
-          <CardDescription>Buscar por categoría, clase o descripción</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Filtros</CardTitle>
+              <CardDescription>
+                Los filtros se aplican tanto a la tabla como al PDF.
+                {activeFilterCount > 0 && ` ${activeFilterCount} filtro(s) activo(s).`}
+              </CardDescription>
+            </div>
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                <X className="mr-1 h-4 w-4" /> Limpiar
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Label htmlFor="search">Búsqueda</Label>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label>Búsqueda</Label>
               <Input
-                id="search"
-                placeholder="Buscar..."
+                placeholder="Categoría, clase o descripción..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Bodega</Label>
+              <MultiSelectFilter
+                options={almacenOptions}
+                selected={almacenFilter}
+                onChange={setAlmacenFilter}
+                placeholder="Todas las bodegas"
+                searchPlaceholder="Buscar bodega..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoría</Label>
+              <MultiSelectFilter
+                options={categoriaOptions}
+                selected={categoriaFilter}
+                onChange={setCategoriaFilter}
+                placeholder="Todas las categorías"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Clase</Label>
+              <MultiSelectFilter
+                options={claseOptions}
+                selected={claseFilter}
+                onChange={setClaseFilter}
+                placeholder="Todas las clases"
               />
             </div>
           </div>
@@ -362,9 +460,7 @@ export default function ReporteInventario() {
       <Card>
         <CardHeader>
           <CardTitle>Detalle de Inventario</CardTitle>
-          <CardDescription>
-            {filteredData.length} registros {searchQuery && `(filtrados de ${reportData.length})`}
-          </CardDescription>
+          <CardDescription>{reportData.length} registros</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border overflow-auto">
@@ -386,17 +482,17 @@ export default function ReporteInventario() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.length === 0 ? (
+                {reportData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={12} className="text-center text-muted-foreground">
                       No hay datos disponibles
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((row, index) => (
-                    <TableRow 
+                  reportData.map((row, index) => (
+                    <TableRow
                       key={`${row.categoria}-${row.clase}-${row.descripcion}`}
-                      className={isNewCategory(index) ? 'bg-muted/50 border-l-4 border-l-primary' : ''}
+                      className={isNewCategory(index) ? "bg-muted/50 border-l-4 border-l-primary" : ""}
                     >
                       <TableCell className="font-medium">{row.categoria}</TableCell>
                       <TableCell>{row.clase}</TableCell>
@@ -414,12 +510,8 @@ export default function ReporteInventario() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right text-xs">{row.segmento_renta}%</TableCell>
-                      <TableCell className="text-right text-xs text-green-600 font-medium">
-                        {row.segmento_disponible}%
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-destructive font-medium">
-                        {row.segmento_taller}%
-                      </TableCell>
+                      <TableCell className="text-right text-xs text-green-600 font-medium">{row.segmento_disponible}%</TableCell>
+                      <TableCell className="text-right text-xs text-destructive font-medium">{row.segmento_taller}%</TableCell>
                       <TableCell className="text-right text-xs">{row.segmento_clase}%</TableCell>
                     </TableRow>
                   ))
