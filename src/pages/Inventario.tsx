@@ -642,6 +642,7 @@ export default function Inventario() {
                         setMarcaFilter([]);
                         setModeloFilter([]);
                         setDescripcionFilter([]);
+                        setUbicacionFilter([]);
                       }}
                     >
                       <X className="h-3 w-3 mr-1" /> Limpiar todo
