@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield, Edit2, KeyRound } from "lucide-react";
+import { UserPlus, Trash2, Shield, Edit2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { z } from "zod";
 import { APP_MODULES } from "@/lib/modules";
