@@ -212,8 +212,8 @@ export default function Contratos() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Contratos</h1>
-        <p className="text-muted-foreground">Gestión de contratos de renta de equipo</p>
+        <h1 className="text-3xl font-bold">Control</h1>
+        <p className="text-muted-foreground">Control de renta de equipo</p>
       </div>
 
           <ExcelContratosImport onImportComplete={fetchContratos} />
@@ -222,9 +222,9 @@ export default function Contratos() {
         <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <CardTitle>Vista de Contratos</CardTitle>
+              <CardTitle>Vista de Control</CardTitle>
               <CardDescription>
-                {filteredContratos.length} de {contratos.length} contratos
+                {filteredContratos.length} de {contratos.length} registros
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
