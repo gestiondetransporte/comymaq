@@ -230,7 +230,9 @@ export default function Layout({ children }: LayoutProps) {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
+                )}
 
+                {showGestion && (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Gestión</NavigationMenuTrigger>
                   <NavigationMenuContent>
