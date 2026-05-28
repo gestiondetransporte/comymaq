@@ -201,6 +201,7 @@ export default function Layout({ children }: LayoutProps) {
 
             <NavigationMenu>
               <NavigationMenuList>
+                {showOperaciones && (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Operaciones</NavigationMenuTrigger>
                   <NavigationMenuContent>
