@@ -261,6 +261,7 @@ export default function Layout({ children }: LayoutProps) {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
+                )}
 
                 {isAdmin && (
                   <NavigationMenuItem>
