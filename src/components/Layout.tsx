@@ -47,7 +47,7 @@ export default function Layout({ children }: LayoutProps) {
       { path: "/configuracion", label: "Configuración", icon: Settings },
     ],
     administracion: [
-      { path: "/contratos", label: "Contratos", icon: FileText },
+      { path: "/contratos", label: "Control", icon: FileText },
       { path: "/recolecciones", label: "Recolecciones", icon: Truck },
       { path: "/clientes", label: "Clientes", icon: Users },
       { path: "/almacenes", label: "Almacenes", icon: Building2 },

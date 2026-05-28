@@ -210,10 +210,10 @@ export default function Index() {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/contratos')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                📋 Contratos
+                📋 Control
               </CardTitle>
               <CardDescription>
-                Gestiona contratos de renta de equipo
+                Gestiona el control de renta de equipo
               </CardDescription>
             </CardHeader>
           </Card>
