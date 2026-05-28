@@ -858,18 +858,21 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          nombre: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
           id: string
+          nombre?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          nombre?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -951,6 +954,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_module_access: {
+        Row: {
+          created_at: string
+          id: string
+          module_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_key?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

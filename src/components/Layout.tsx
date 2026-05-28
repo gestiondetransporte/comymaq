@@ -28,12 +28,18 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, allowedModules } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const menuCategories = {
+  const canSee = (path: string) => {
+    if (isAdmin) return true;
+    if (allowedModules === null) return false; // still loading
+    return allowedModules.includes(path);
+  };
+
+  const rawCategories = {
     operaciones: [
       { path: "/", label: "Buscador", icon: Search },
       { path: "/inventario", label: "Inventario", icon: List },
@@ -59,11 +65,15 @@ export default function Layout({ children }: LayoutProps) {
     ],
   };
 
-  const allNavItems = [
-    ...menuCategories.operaciones,
-    ...menuCategories.gestion,
-    ...(isAdmin ? menuCategories.administracion : []),
-  ];
+  const menuCategories = {
+    operaciones: rawCategories.operaciones.filter((i) => canSee(i.path)),
+    gestion: rawCategories.gestion.filter((i) => canSee(i.path)),
+    administracion: isAdmin ? rawCategories.administracion : [],
+  };
+
+  const showOperaciones = menuCategories.operaciones.length > 0;
+  const showGestion = menuCategories.gestion.length > 0;
+  const showAdmin = isAdmin && menuCategories.administracion.length > 0;
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -72,51 +82,55 @@ export default function Layout({ children }: LayoutProps) {
 
   const NavLinks = () => (
     <>
-      <div className="mb-2">
-        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
-          OPERACIONES
-        </p>
-        {menuCategories.operaciones.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <Button
-              key={item.path}
-              variant={isActive ? "default" : "ghost"}
-              onClick={() => handleNavigation(item.path)}
-              className="w-full justify-start"
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          );
-        })}
-      </div>
+      {showOperaciones && (
+        <div className="mb-2">
+          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+            OPERACIONES
+          </p>
+          {menuCategories.operaciones.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Button
+                key={item.path}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
-      <div className="my-2 border-t" />
+      {showOperaciones && showGestion && <div className="my-2 border-t" />}
 
-      <div className="mb-2">
-        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
-          GESTIÓN
-        </p>
-        {menuCategories.gestion.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <Button
-              key={item.path}
-              variant={isActive ? "default" : "ghost"}
-              onClick={() => handleNavigation(item.path)}
-              className="w-full justify-start"
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          );
-        })}
-      </div>
+      {showGestion && (
+        <div className="mb-2">
+          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+            GESTIÓN
+          </p>
+          {menuCategories.gestion.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Button
+                key={item.path}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
-      {isAdmin && (
+      {showAdmin && (
         <>
           <div className="my-2 border-t" />
           <div className="mb-2">
@@ -187,6 +201,7 @@ export default function Layout({ children }: LayoutProps) {
 
             <NavigationMenu>
               <NavigationMenuList>
+                {showOperaciones && (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Operaciones</NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -215,7 +230,9 @@ export default function Layout({ children }: LayoutProps) {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
+                )}
 
+                {showGestion && (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Gestión</NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -244,6 +261,7 @@ export default function Layout({ children }: LayoutProps) {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
+                )}
 
                 {isAdmin && (
                   <NavigationMenuItem>

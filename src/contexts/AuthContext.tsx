@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   isVendedor: boolean;
+  allowedModules: string[] | null; // null = not yet loaded; admins ignore this
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVendedor, setIsVendedor] = useState(false);
+  const [allowedModules, setAllowedModules] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -33,20 +35,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Check user roles
+          // Check user roles + module access
           setTimeout(async () => {
-            const { data: roles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id);
-            
+            const [{ data: roles }, { data: modules }] = await Promise.all([
+              supabase.from('user_roles').select('role').eq('user_id', session.user.id),
+              supabase.from('user_module_access').select('module_key').eq('user_id', session.user.id),
+            ]);
+
             const userRoles = roles?.map(r => r.role) || [];
             setIsAdmin(userRoles.includes('admin'));
             setIsVendedor(userRoles.includes('vendedor'));
+            setAllowedModules((modules || []).map((m: any) => m.module_key));
           }, 0);
         } else {
           setIsAdmin(false);
           setIsVendedor(false);
+          setAllowedModules(null);
         }
       }
     );
@@ -152,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         isAdmin,
         isVendedor,
+        allowedModules,
         loading,
         signIn,
         signUp,
