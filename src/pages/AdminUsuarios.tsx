@@ -4,14 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield, Edit2 } from "lucide-react";
+import { UserPlus, Trash2, Shield, Edit2, KeyRound } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { z } from "zod";
+import { APP_MODULES } from "@/lib/modules";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +40,13 @@ const passwordSchema = z.string()
   .regex(/[0-9]/, "Debe contener al menos un número")
   .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial (!@#$%^&*)");
 
+type Role = 'admin' | 'moderator' | 'user' | 'vendedor';
+
 interface UserWithRole {
   id: string;
   email: string;
-  role: 'admin' | 'moderator' | 'user' | 'vendedor';
+  nombre: string | null;
+  role: Role;
   created_at: string;
 }
 
@@ -49,29 +54,32 @@ export default function AdminUsuarios() {
   const { isAdmin, createUser } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [nombreNuevo, setNombreNuevo] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<'admin' | 'moderator' | 'user' | 'vendedor'>('user');
+  const [role, setRole] = useState<Role>('user');
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
-  const [newRole, setNewRole] = useState<'admin' | 'moderator' | 'user' | 'vendedor'>('user');
+  const [editNombre, setEditNombre] = useState("");
+  const [editRole, setEditRole] = useState<Role>('user');
+  const [editModules, setEditModules] = useState<string[]>([]);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchUsers();
-    }
+    if (isAdmin) fetchUsers();
   }, [isAdmin]);
 
   const fetchUsers = async () => {
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, email, created_at');
+      .select('id, email, nombre, created_at');
 
     if (!profiles) return;
 
     const usersWithRoles = await Promise.all(
-      profiles.map(async (profile) => {
+      profiles.map(async (profile: any) => {
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
@@ -80,7 +88,7 @@ export default function AdminUsuarios() {
 
         return {
           ...profile,
-          role: roleData?.role || 'user',
+          role: (roleData?.role as Role) || 'user',
         };
       })
     );
@@ -92,16 +100,11 @@ export default function AdminUsuarios() {
     e.preventDefault();
     setLoading(true);
 
-    // Validate password strength
     try {
       passwordSchema.parse(password);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({
-          variant: "destructive",
-          title: "Contraseña inválida",
-          description: error.errors[0].message,
-        });
+        toast({ variant: "destructive", title: "Contraseña inválida", description: error.errors[0].message });
         setLoading(false);
         return;
       }
@@ -110,112 +113,114 @@ export default function AdminUsuarios() {
     const { error } = await createUser(email, password, role);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error al crear usuario",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Usuario creado",
-        description: `Se ha creado el usuario ${email} con rol ${role}`,
-      });
-      setEmail("");
-      setPassword("");
-      setRole('user');
-      fetchUsers();
+      toast({ variant: "destructive", title: "Error al crear usuario", description: error.message });
+      setLoading(false);
+      return;
     }
 
+    // Save name on profile (look up by email)
+    if (nombreNuevo.trim()) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      if (prof?.id) {
+        await supabase.from('profiles').update({ nombre: nombreNuevo.trim() } as any).eq('id', prof.id);
+      }
+    }
+
+    toast({ title: "Usuario creado", description: `Se ha creado el usuario ${email}` });
+    setEmail(""); setPassword(""); setNombreNuevo(""); setRole('user');
+    fetchUsers();
     setLoading(false);
   };
 
   const handleDeleteUser = async (userId: string) => {
-    // Delete user role
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
+    const { error: roleError } = await supabase.from('user_roles').delete().eq('user_id', userId);
     if (roleError) {
-      toast({
-        variant: "destructive",
-        title: "Error al eliminar usuario",
-        description: roleError.message,
-      });
+      toast({ variant: "destructive", title: "Error al eliminar usuario", description: roleError.message });
       return;
     }
-
-    toast({
-      title: "Usuario eliminado",
-      description: "El usuario ha sido eliminado del sistema",
-    });
-
+    await supabase.from('user_module_access').delete().eq('user_id', userId);
+    toast({ title: "Usuario eliminado", description: "El usuario ha sido eliminado del sistema" });
     fetchUsers();
     setDeleteUserId(null);
   };
 
-  const handleEditRole = (user: UserWithRole) => {
+  const openEdit = async (user: UserWithRole) => {
     setEditingUser(user);
-    setNewRole(user.role);
+    setEditNombre(user.nombre || "");
+    setEditRole(user.role);
+    const { data } = await supabase
+      .from('user_module_access')
+      .select('module_key')
+      .eq('user_id', user.id);
+    setEditModules((data || []).map((m: any) => m.module_key));
   };
 
-  const handleUpdateRole = async () => {
+  const toggleModule = (key: string) => {
+    setEditModules((prev) => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
+
+  const toggleCategory = (category: string, allKeys: string[]) => {
+    const allSelected = allKeys.every(k => editModules.includes(k));
+    if (allSelected) {
+      setEditModules(prev => prev.filter(k => !allKeys.includes(k)));
+    } else {
+      setEditModules(prev => Array.from(new Set([...prev, ...allKeys])));
+    }
+  };
+
+  const handleSaveEdit = async () => {
     if (!editingUser) return;
-
+    setSavingEdit(true);
     try {
-      // First, delete existing role
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', editingUser.id);
+      // Update name
+      await supabase.from('profiles').update({ nombre: editNombre.trim() || null } as any).eq('id', editingUser.id);
 
-      // Then insert new role
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: editingUser.id,
-          role: newRole,
-        });
+      // Update role
+      await supabase.from('user_roles').delete().eq('user_id', editingUser.id);
+      const { error: roleErr } = await supabase.from('user_roles').insert({ user_id: editingUser.id, role: editRole });
+      if (roleErr) throw roleErr;
 
-      if (error) throw error;
+      // Sync module access
+      await supabase.from('user_module_access').delete().eq('user_id', editingUser.id);
+      if (editModules.length > 0) {
+        const rows = editModules.map(k => ({ user_id: editingUser.id, module_key: k }));
+        const { error: modErr } = await supabase.from('user_module_access').insert(rows);
+        if (modErr) throw modErr;
+      }
 
-      toast({
-        title: "Rol actualizado",
-        description: `El rol de ${editingUser.email} ha sido actualizado a ${newRole}`,
-      });
-
+      toast({ title: "Usuario actualizado", description: `Cambios guardados para ${editingUser.email}` });
       setEditingUser(null);
       fetchUsers();
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error al actualizar rol",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Error al actualizar", description: error.message });
+    } finally {
+      setSavingEdit(false);
     }
   };
 
   const getRoleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      admin: "destructive",
-      moderator: "secondary",
-      vendedor: "default",
-      user: "default",
+      admin: "destructive", moderator: "secondary", vendedor: "default", user: "default",
     };
-
     const labels: Record<string, string> = {
-      admin: "Administrador",
-      moderator: "Moderador",
-      vendedor: "Vendedor",
-      user: "Usuario",
+      admin: "Administrador", moderator: "Moderador", vendedor: "Vendedor", user: "Usuario",
     };
-
     return <Badge variant={variants[role]}>{labels[role] || role}</Badge>;
   };
 
-  if (!isAdmin) {
-    return <Navigate to="/" />;
-  }
+  if (!isAdmin) return <Navigate to="/" />;
+
+  const modulesByCat = {
+    operaciones: APP_MODULES.filter(m => m.category === 'operaciones'),
+    gestion: APP_MODULES.filter(m => m.category === 'gestion'),
+    administracion: APP_MODULES.filter(m => m.category === 'administracion'),
+  };
+
+  const isAdminEdit = editRole === 'admin';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -236,39 +241,29 @@ export default function AdminUsuarios() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreateUser} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
+                <Label htmlFor="nombre-nuevo">Nombre</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="usuario@ejemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  id="nombre-nuevo"
+                  placeholder="Nombre completo"
+                  value={nombreNuevo}
+                  onChange={(e) => setNombreNuevo(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input id="email" type="email" placeholder="usuario@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={12}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 12 caracteres con mayúsculas, minúsculas, números y caracteres especiales
-                </p>
+                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={12} />
+                <p className="text-xs text-muted-foreground">Mínimo 12 caracteres con mayúsculas, minúsculas, números y caracteres especiales</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Rol</Label>
                 <Select value={role} onValueChange={(value: any) => setRole(value)}>
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder="Seleccionar rol" />
-                  </SelectTrigger>
+                  <SelectTrigger id="role"><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user">Usuario</SelectItem>
                     <SelectItem value="vendedor">Vendedor</SelectItem>
@@ -278,9 +273,10 @@ export default function AdminUsuarios() {
                 </Select>
               </div>
             </div>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creando..." : "Crear Usuario"}
-            </Button>
+            <Button type="submit" disabled={loading}>{loading ? "Creando..." : "Crear Usuario"}</Button>
+            <p className="text-xs text-muted-foreground">
+              Después de crear el usuario podrás asignar los módulos a los que tendrá acceso desde el botón de editar.
+            </p>
           </form>
         </CardContent>
       </Card>
@@ -288,14 +284,13 @@ export default function AdminUsuarios() {
       <Card>
         <CardHeader>
           <CardTitle>Usuarios Registrados</CardTitle>
-          <CardDescription>
-            Listado de todos los usuarios y sus roles en el sistema
-          </CardDescription>
+          <CardDescription>Listado de todos los usuarios y sus roles en el sistema</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Nombre</TableHead>
                 <TableHead>Correo Electrónico</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Fecha de Registro</TableHead>
@@ -304,32 +299,19 @@ export default function AdminUsuarios() {
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No hay usuarios registrados
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No hay usuarios registrados</TableCell></TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.nombre || <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditRole(user)}
-                        title="Cambiar rol"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(user)} title="Editar usuario y permisos">
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteUserId(user.id)}
-                        title="Eliminar usuario"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteUserId(user.id)} title="Eliminar usuario">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -345,49 +327,93 @@ export default function AdminUsuarios() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará el usuario del sistema. Esta acción no se puede deshacer.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta acción eliminará el usuario del sistema. Esta acción no se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteUserId && handleDeleteUser(deleteUserId)}>
-              Eliminar
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteUserId && handleDeleteUser(deleteUserId)}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cambiar Rol de Usuario</DialogTitle>
-            <DialogDescription>
-              Selecciona el nuevo rol para {editingUser?.email}
-            </DialogDescription>
+            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogDescription>{editingUser?.email}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-role">Nuevo Rol</Label>
-              <Select value={newRole} onValueChange={(value: any) => setNewRole(value)}>
-                <SelectTrigger id="new-role">
-                  <SelectValue placeholder="Seleccionar rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Usuario</SelectItem>
-                  <SelectItem value="vendedor">Vendedor</SelectItem>
-                  <SelectItem value="moderator">Moderador</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nombre">Nombre</Label>
+                <Input id="edit-nombre" value={editNombre} onChange={(e) => setEditNombre(e.target.value)} placeholder="Nombre completo" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Rol</Label>
+                <Select value={editRole} onValueChange={(value: any) => setEditRole(value)}>
+                  <SelectTrigger id="edit-role"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Usuario</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
+                    <SelectItem value="moderator">Moderador</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <div>
+                <Label className="text-base">Módulos accesibles</Label>
+                <p className="text-xs text-muted-foreground">
+                  {isAdminEdit
+                    ? "Los administradores tienen acceso a todos los módulos automáticamente."
+                    : "Selecciona los módulos que este usuario podrá ver en el menú."}
+                </p>
+              </div>
+
+              {(['operaciones', 'gestion', 'administracion'] as const).map((cat) => {
+                const items = modulesByCat[cat];
+                const allKeys = items.map(i => i.key);
+                const allSelected = allKeys.every(k => editModules.includes(k));
+                const someSelected = !allSelected && allKeys.some(k => editModules.includes(k));
+                return (
+                  <div key={cat} className="border rounded-md p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        {cat === 'operaciones' ? 'Operaciones' : cat === 'gestion' ? 'Gestión' : 'Administración'}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isAdminEdit}
+                        onClick={() => toggleCategory(cat, allKeys)}
+                      >
+                        {allSelected ? "Quitar todo" : someSelected ? "Seleccionar todo" : "Seleccionar todo"}
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {items.map((m) => (
+                        <label key={m.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={isAdminEdit ? true : editModules.includes(m.key)}
+                            disabled={isAdminEdit}
+                            onCheckedChange={() => toggleModule(m.key)}
+                          />
+                          <span>{m.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingUser(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateRole}>
-              Actualizar Rol
+            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? "Guardando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>
