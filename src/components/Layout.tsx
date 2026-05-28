@@ -82,51 +82,55 @@ export default function Layout({ children }: LayoutProps) {
 
   const NavLinks = () => (
     <>
-      <div className="mb-2">
-        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
-          OPERACIONES
-        </p>
-        {menuCategories.operaciones.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <Button
-              key={item.path}
-              variant={isActive ? "default" : "ghost"}
-              onClick={() => handleNavigation(item.path)}
-              className="w-full justify-start"
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          );
-        })}
-      </div>
+      {showOperaciones && (
+        <div className="mb-2">
+          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+            OPERACIONES
+          </p>
+          {menuCategories.operaciones.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Button
+                key={item.path}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
-      <div className="my-2 border-t" />
+      {showOperaciones && showGestion && <div className="my-2 border-t" />}
 
-      <div className="mb-2">
-        <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
-          GESTIÓN
-        </p>
-        {menuCategories.gestion.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <Button
-              key={item.path}
-              variant={isActive ? "default" : "ghost"}
-              onClick={() => handleNavigation(item.path)}
-              className="w-full justify-start"
-            >
-              <Icon className="mr-2 h-4 w-4" />
-              {item.label}
-            </Button>
-          );
-        })}
-      </div>
+      {showGestion && (
+        <div className="mb-2">
+          <p className="px-4 text-xs font-semibold text-muted-foreground mb-2">
+            GESTIÓN
+          </p>
+          {menuCategories.gestion.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Button
+                key={item.path}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
 
-      {isAdmin && (
+      {showAdmin && (
         <>
           <div className="my-2 border-t" />
           <div className="mb-2">
