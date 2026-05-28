@@ -823,14 +823,14 @@ export default function Inventario() {
                   <SortableHead k="tipo">Tipo</SortableHead>
                   <SortableHead k="almacen">Almacén</SortableHead>
                   <SortableHead k="estado">Estado</SortableHead>
-                  <SortableHead k="cliente">Cliente</SortableHead>
+                  
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedEquipos.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No se encontraron equipos
                     </TableCell>
                   </TableRow>
@@ -856,18 +856,6 @@ export default function Inventario() {
                         )}
                       </TableCell>
                       <TableCell>{getDisponibilidadBadge(equipo)}</TableCell>
-                      <TableCell>
-                        {equipo.contrato_activo ? (
-                          <div className="text-sm">
-                            <p className="font-medium">{equipo.contrato_activo.cliente}</p>
-                            <p className="text-muted-foreground text-xs">
-                              {equipo.contrato_activo.folio_contrato}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
