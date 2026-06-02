@@ -1284,6 +1284,33 @@ export default function EntradasSalidas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Diálogo de confirmación: Regreso a Proveedor (baja de equipo) */}
+      <AlertDialog open={bajaConfirmOpen} onOpenChange={setBajaConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dar de baja este equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás registrando un <strong>Regreso a Proveedor</strong> para el equipo{" "}
+              <strong>#{equipoId}</strong>. Al confirmar, el equipo se marcará como{" "}
+              <strong>BAJA</strong> y dejará de estar disponible en el inventario.
+              Esta acción puede revertirse manualmente por un administrador.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setBajaConfirmOpen(false);
+                await executeMovimiento();
+              }}
+            >
+              Confirmar y dar de baja
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
