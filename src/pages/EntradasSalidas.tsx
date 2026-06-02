@@ -1218,29 +1218,8 @@ export default function EntradasSalidas() {
                       <TableCell>{movimiento.equipos?.ubicacion_actual || 'N/A'}</TableCell>
                       <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
                       <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
-                      <TableCell>
-                        {(movimiento.fotografia_url || movimiento.fotografia_url_2 || movimiento.fotografia_url_3) ? (
-                          <div className="flex gap-1">
-                            {movimiento.fotografia_url && (
-                              <a href={movimiento.fotografia_url} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                            {movimiento.fotografia_url_2 && (
-                              <a href={movimiento.fotografia_url_2} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                            {movimiento.fotografia_url_3 && (
-                              <a href={movimiento.fotografia_url_3} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
+
+
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
