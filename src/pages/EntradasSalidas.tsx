@@ -1067,14 +1067,8 @@ export default function EntradasSalidas() {
               </div>
             </div>
 
-            <MultipleFileUpload
-              files={files}
-              onFilesChange={setFiles}
-              maxFiles={10}
-              acceptImages={true}
-              acceptDocuments={true}
-              label="Archivos e Imágenes Adicionales (hasta 10)"
-            />
+
+
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Registrando..." : "Registrar Movimiento"}
