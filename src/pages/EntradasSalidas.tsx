@@ -138,7 +138,7 @@ export default function EntradasSalidas() {
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [bajaConfirmOpen, setBajaConfirmOpen] = useState(false);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
   const [equipoInfo, setEquipoInfo] = useState<EquipoInfo | null>(null);
   const [ultimoMantenimiento, setUltimoMantenimiento] = useState<MantenimientoInfo | null>(null);
