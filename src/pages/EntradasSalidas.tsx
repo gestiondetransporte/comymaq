@@ -404,6 +404,38 @@ export default function EntradasSalidas() {
     return () => clearTimeout(timeoutId);
   }, [equipoId]);
 
+  // Clasificación del tipo de movimiento para auto-rellenar desde la fuente correcta
+  const isEntradaTipo = (t: string) =>
+    t === "entrada_equipo" || t === "regreso_renta";
+  const isSalidaTipo = (t: string) =>
+    t === "salida_renta" ||
+    t === "salida_venta" ||
+    t === "salida_taller_externo" ||
+    t === "regreso_proveedor";
+
+  // Auto-rellenar cliente/obra/chofer/transporte/observaciones según tipo:
+  // Entradas → desde la recolección programada
+  // Salidas → desde el contrato activo
+  useEffect(() => {
+    if (!equipoInfo) return;
+
+    if (isEntradaTipo(tipo) && recoleccionInfo) {
+      setCliente(recoleccionInfo.cliente || "");
+      setChofer(recoleccionInfo.chofer || "");
+      setTransporte(recoleccionInfo.transporte || "");
+      setObra(recoleccionInfo.direccion || "");
+      setObservaciones(recoleccionInfo.comentarios || "");
+    } else if (isSalidaTipo(tipo) && contratoInfo) {
+      setCliente(contratoInfo.cliente || "");
+      setObra(contratoInfo.obra || "");
+      setChofer("");
+      setTransporte("");
+      setObservaciones(contratoInfo.comentarios || "");
+    }
+  }, [tipo, equipoInfo, contratoInfo, recoleccionInfo]);
+
+
+
   const filterMovimientos = () => {
     let filtered = [...movimientos];
 
