@@ -482,7 +482,7 @@ export default function EntradasSalidas() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!equipoId.trim()) {
       toast({
         variant: "destructive",
@@ -501,6 +501,15 @@ export default function EntradasSalidas() {
       return;
     }
 
+    if (tipo === "regreso_proveedor") {
+      setBajaConfirmOpen(true);
+      return;
+    }
+
+    await executeMovimiento();
+  };
+
+  const executeMovimiento = async () => {
     setLoading(true);
 
     try {
@@ -523,28 +532,6 @@ export default function EntradasSalidas() {
         return;
       }
 
-      // Subir imágenes generales si hay
-      const imageUrls: string[] = [];
-      if (files.length > 0 && isOnline) {
-        for (let i = 0; i < files.length; i++) {
-          const fileWithPreview = files[i];
-          const file = fileWithPreview.file;
-          const fileName = `${Date.now()}-${i}-${file.name}`;
-          const { error: uploadError, data } = await supabase.storage
-            .from('fotografias')
-            .upload(fileName, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('fotografias')
-            .getPublicUrl(fileName);
-
-          imageUrls.push(publicUrl);
-        }
-      }
-
-      // Upload specific photos removed - no longer using specific photo fields
       // Mapear tipo del formulario al valor válido en la BD (CHECK constraint: entrada, salida, traspaso)
       const tipoDbMap: Record<string, string> = {
         'entrada_equipo': 'entrada',
@@ -552,6 +539,7 @@ export default function EntradasSalidas() {
         'salida_renta': 'salida',
         'salida_venta': 'salida',
         'salida_taller_externo': 'salida',
+        'regreso_proveedor': 'salida',
         'traspaso': 'traspaso',
       };
 
@@ -567,9 +555,9 @@ export default function EntradasSalidas() {
         serie: equipoData.serie,
         modelo: equipoData.modelo,
         comentarios: observaciones.trim() ? `[${tipo}] ${observaciones.trim()}` : `[${tipo}]`,
-        fotografia_url: imageUrls[0] || null,
-        fotografia_url_2: imageUrls[1] || null,
-        fotografia_url_3: imageUrls[2] || null,
+        fotografia_url: null,
+        fotografia_url_2: null,
+        fotografia_url_3: null,
         foto_odometro_url: null,
         foto_calca_url: null,
         foto_tablero_url: null,
@@ -585,7 +573,7 @@ export default function EntradasSalidas() {
 
       if (isOnline) {
         // Si hay conexión, guardar directamente
-        const { data: insertData, error } = await supabase
+        const { error } = await supabase
           .from('entradas_salidas')
           .insert(movimiento)
           .select()
@@ -600,6 +588,7 @@ export default function EntradasSalidas() {
           'salida_renta': { estado: 'dentro' },
           'salida_venta': { estado: 'baja' },
           'salida_taller_externo': { estado: 'taller_externo' },
+          'regreso_proveedor': { estado: 'baja', ubicacion: 'Regresado a Proveedor' },
         };
 
         const statusUpdate = statusMap[tipo];
@@ -626,28 +615,13 @@ export default function EntradasSalidas() {
           if (updateError) throw updateError;
         }
 
-        // Guardar archivos adicionales en la tabla de archivos
-        if (files.length > 0 && insertData) {
-          const archivos = files.map((fileWithPreview, index) => ({
-            entrada_salida_id: insertData.id,
-            archivo_url: imageUrls[index],
-            tipo_archivo: fileWithPreview.type,
-            nombre_archivo: fileWithPreview.file.name,
-          }));
-
-          const { error: archivosError } = await supabase
-            .from('entradas_salidas_archivos')
-            .insert(archivos);
-
-          if (archivosError) console.error('Error saving archivos:', archivosError);
-        }
-
         const tipoLabels: Record<string, string> = {
           'entrada_equipo': 'Entrada de Equipo',
           'regreso_renta': 'Regreso de Renta',
           'salida_renta': 'Salida a Renta',
           'salida_venta': 'Salida Venta',
           'salida_taller_externo': 'Salida a Taller Externo',
+          'regreso_proveedor': 'Regreso a Proveedor',
           'traspaso': 'Traspaso',
         };
 
@@ -655,7 +629,7 @@ export default function EntradasSalidas() {
           title: "Movimiento registrado",
           description: `${tipoLabels[tipo] || tipo} registrada exitosamente para equipo ${equipoId}`,
         });
-        
+
         fetchMovimientos();
       } else {
         // Si no hay conexión, guardar para sincronizar después
@@ -680,7 +654,6 @@ export default function EntradasSalidas() {
       setObservaciones("");
       setAlmacenOrigen("");
       setAlmacenDestino("");
-      setFiles([]);
       setLlevaExtintor(false);
       setOdometro("");
       setTieneDanos(false);
@@ -702,6 +675,7 @@ export default function EntradasSalidas() {
       setLoading(false);
     }
   };
+
 
   const getTipoBadge = (tipo: string) => {
     const badges: Record<string, { label: string; className: string; variant?: string }> = {
