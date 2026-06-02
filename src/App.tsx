@@ -179,14 +179,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/inventario-fisico"
-        element={
-          <ProtectedRoute>
-            <InventarioFisico />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/personal"
         element={
           <AdminRoute>
