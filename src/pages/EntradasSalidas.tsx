@@ -1118,6 +1118,8 @@ export default function EntradasSalidas() {
                     <SelectItem value="salida_renta">Salida a Renta</SelectItem>
                     <SelectItem value="salida_venta">Salida Venta</SelectItem>
                     <SelectItem value="salida_taller_externo">Taller Externo</SelectItem>
+                    <SelectItem value="regreso_proveedor">Regreso a Proveedor</SelectItem>
+
                     <SelectItem value="salida">Salida (legacy)</SelectItem>
                     <SelectItem value="traspaso">Traspaso</SelectItem>
                   </SelectContent>
