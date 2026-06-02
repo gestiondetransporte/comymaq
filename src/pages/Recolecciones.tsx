@@ -93,6 +93,16 @@ export default function Recolecciones() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [completarDialogOpen, setCompletarDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [crearDialogOpen, setCrearDialogOpen] = useState(false);
+  const [contratosDisponibles, setContratosDisponibles] = useState<any[]>([]);
+  const [contratoPickerOpen, setContratoPickerOpen] = useState(false);
+  const [crearFormData, setCrearFormData] = useState({
+    contrato_id: "",
+    fecha_programada: "",
+    chofer: "",
+    transporte: "",
+    comentarios: "",
+  });
   const [selectedRecoleccion, setSelectedRecoleccion] = useState<Recoleccion | null>(null);
   const [editFormData, setEditFormData] = useState({
     fecha_programada: "",
