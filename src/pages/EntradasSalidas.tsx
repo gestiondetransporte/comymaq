@@ -1199,8 +1199,8 @@ export default function EntradasSalidas() {
                     <TableHead>Ubicación</TableHead>
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
-                    <TableHead>Imágenes</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
