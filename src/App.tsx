@@ -22,7 +22,7 @@ import ReporteInventario from "./pages/ReporteInventario";
 import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
-import InventarioFisico from "./pages/InventarioFisico";
+
 import Personal from "./pages/Personal";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
