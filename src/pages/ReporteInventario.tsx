@@ -99,10 +99,10 @@ export default function ReporteInventario() {
       list = list.filter((e) => e.almacen_id && almacenFilter.includes(e.almacen_id));
     }
     if (categoriaFilter.length > 0) {
-      list = list.filter((e) => categoriaFilter.includes(e.categoria || "Sin categoría"));
+      list = list.filter((e) => categoriaFilter.includes(((e.categoria || "").replace(/\s+/g, " ").trim()) || "Sin categoría"));
     }
     if (claseFilter.length > 0) {
-      list = list.filter((e) => claseFilter.includes(e.clase || "Sin clase"));
+      list = list.filter((e) => claseFilter.includes(((e.clase || "").replace(/\s+/g, " ").trim()) || "Sin clase"));
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -122,12 +122,15 @@ export default function ReporteInventario() {
     const grouped: Record<string, InventoryReport> = {};
 
     filteredEquipos.forEach((equipo) => {
-      const key = `${equipo.categoria || "Sin categoría"}-${equipo.clase || "Sin clase"}-${equipo.descripcion}`;
+      const cat = (equipo.categoria || "").replace(/\s+/g, " ").trim() || "Sin categoría";
+      const cls = (equipo.clase || "").replace(/\s+/g, " ").trim() || "Sin clase";
+      const desc = (equipo.descripcion || "").replace(/\s+/g, " ").trim();
+      const key = `${cat}-${cls}-${desc}`;
       if (!grouped[key]) {
         grouped[key] = {
-          categoria: equipo.categoria || "Sin categoría",
-          clase: equipo.clase || "Sin clase",
-          descripcion: equipo.descripcion,
+          categoria: cat,
+          clase: cls,
+          descripcion: desc,
           cantidad: 0,
           dentro: 0,
           disponible: 0,
@@ -188,12 +191,12 @@ export default function ReporteInventario() {
   );
   const categoriaOptions = useMemo(() => {
     const set = new Set<string>();
-    equiposRaw.forEach((e) => set.add(e.categoria || "Sin categoría"));
+    equiposRaw.forEach((e) => set.add(((e.categoria || "").replace(/\s+/g, " ").trim()) || "Sin categoría"));
     return Array.from(set).sort().map((v) => ({ value: v, label: v }));
   }, [equiposRaw]);
   const claseOptions = useMemo(() => {
     const set = new Set<string>();
-    equiposRaw.forEach((e) => set.add(e.clase || "Sin clase"));
+    equiposRaw.forEach((e) => set.add(((e.clase || "").replace(/\s+/g, " ").trim()) || "Sin clase"));
     return Array.from(set).sort().map((v) => ({ value: v, label: v }));
   }, [equiposRaw]);
 
