@@ -450,10 +450,16 @@ export default function Recolecciones() {
             Las recolecciones se programan automáticamente cuando un contrato vence
           </p>
         </div>
-        <Button variant="outline" onClick={fetchData}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualizar
+          </Button>
+          <Button onClick={openCrearDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Programar Recolección
+          </Button>
+        </div>
       </div>
 
       {/* Info Card about automatic scheduling */}
