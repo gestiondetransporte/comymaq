@@ -747,6 +747,126 @@ export default function Recolecciones() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para Programar Recolección Manual */}
+      <Dialog open={crearDialogOpen} onOpenChange={setCrearDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Programar Recolección</DialogTitle>
+            <DialogDescription>
+              Selecciona un contrato activo y define los datos de la recolección.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitCrear} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Contrato *</Label>
+              <Popover open={contratoPickerOpen} onOpenChange={setContratoPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    className={cn("w-full justify-between", !crearFormData.contrato_id && "text-muted-foreground")}
+                  >
+                    {crearFormData.contrato_id
+                      ? (() => {
+                          const c = contratosDisponibles.find((x) => x.id === crearFormData.contrato_id);
+                          return c ? `${c.folio_contrato} — ${c.cliente}` : "Seleccionar contrato";
+                        })()
+                      : "Seleccionar contrato"}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar por folio, cliente o equipo..." />
+                    <CommandList>
+                      <CommandEmpty>No hay contratos disponibles.</CommandEmpty>
+                      <CommandGroup>
+                        {contratosDisponibles.map((c) => (
+                          <CommandItem
+                            key={c.id}
+                            value={`${c.folio_contrato} ${c.cliente} ${c.equipos?.numero_equipo || ""} ${c.equipos?.descripcion || ""}`}
+                            onSelect={() => {
+                              setCrearFormData({ ...crearFormData, contrato_id: c.id });
+                              setContratoPickerOpen(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{c.folio_contrato} — {c.cliente}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {c.equipos ? `${c.equipos.numero_equipo} - ${c.equipos.descripcion}` : "Sin equipo"}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {contratosDisponibles.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No hay contratos activos sin recolección pendiente.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_fecha">Fecha Programada *</Label>
+              <Input
+                id="crear_fecha"
+                type="date"
+                required
+                value={crearFormData.fecha_programada}
+                onChange={(e) => setCrearFormData({ ...crearFormData, fecha_programada: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_chofer">Chofer</Label>
+              <Input
+                id="crear_chofer"
+                value={crearFormData.chofer}
+                onChange={(e) => setCrearFormData({ ...crearFormData, chofer: e.target.value })}
+                placeholder="Nombre del chofer"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_transporte">Transporte</Label>
+              <Input
+                id="crear_transporte"
+                value={crearFormData.transporte}
+                onChange={(e) => setCrearFormData({ ...crearFormData, transporte: e.target.value })}
+                placeholder="Tipo de transporte o placas"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_comentarios">Comentarios</Label>
+              <Textarea
+                id="crear_comentarios"
+                value={crearFormData.comentarios}
+                onChange={(e) => setCrearFormData({ ...crearFormData, comentarios: e.target.value })}
+                rows={2}
+                placeholder="Notas adicionales..."
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCrearDialogOpen(false)} disabled={submitting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting || !crearFormData.contrato_id}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Programar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
