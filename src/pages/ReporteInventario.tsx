@@ -191,12 +191,12 @@ export default function ReporteInventario() {
   );
   const categoriaOptions = useMemo(() => {
     const set = new Set<string>();
-    equiposRaw.forEach((e) => set.add(e.categoria || "Sin categoría"));
+    equiposRaw.forEach((e) => set.add(((e.categoria || "").replace(/\s+/g, " ").trim()) || "Sin categoría"));
     return Array.from(set).sort().map((v) => ({ value: v, label: v }));
   }, [equiposRaw]);
   const claseOptions = useMemo(() => {
     const set = new Set<string>();
-    equiposRaw.forEach((e) => set.add(e.clase || "Sin clase"));
+    equiposRaw.forEach((e) => set.add(((e.clase || "").replace(/\s+/g, " ").trim()) || "Sin clase"));
     return Array.from(set).sort().map((v) => ({ value: v, label: v }));
   }, [equiposRaw]);
 
