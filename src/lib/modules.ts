@@ -10,7 +10,7 @@ export interface AppModule {
 export const APP_MODULES: AppModule[] = [
   { key: "/", label: "Buscador", category: "operaciones" },
   { key: "/inventario", label: "Inventario", category: "operaciones" },
-  { key: "/inventario-fisico", label: "Inventario Físico", category: "operaciones" },
+  
   { key: "/entradas-salidas", label: "Entradas/Salidas", category: "operaciones" },
   { key: "/inspeccion-taller", label: "Inspección Taller", category: "operaciones" },
   { key: "/mantenimiento", label: "Mantenimiento", category: "gestion" },
