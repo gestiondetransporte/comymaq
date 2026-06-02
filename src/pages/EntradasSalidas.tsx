@@ -68,7 +68,9 @@ interface ContratoInfo {
   municipio: string | null;
   estado_ubicacion: string | null;
   status: string | null;
+  comentarios: string | null;
 }
+
 
 interface EquipoInfo {
   id: string;
