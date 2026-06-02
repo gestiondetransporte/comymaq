@@ -98,7 +98,9 @@ interface RecoleccionInfo {
   transporte: string | null;
   cliente: string | null;
   direccion: string | null;
+  comentarios: string | null;
 }
+
 
 interface UltimoOdometro {
   odometro: number;
