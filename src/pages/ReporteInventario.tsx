@@ -99,10 +99,10 @@ export default function ReporteInventario() {
       list = list.filter((e) => e.almacen_id && almacenFilter.includes(e.almacen_id));
     }
     if (categoriaFilter.length > 0) {
-      list = list.filter((e) => categoriaFilter.includes(e.categoria || "Sin categoría"));
+      list = list.filter((e) => categoriaFilter.includes(((e.categoria || "").replace(/\s+/g, " ").trim()) || "Sin categoría"));
     }
     if (claseFilter.length > 0) {
-      list = list.filter((e) => claseFilter.includes(e.clase || "Sin clase"));
+      list = list.filter((e) => claseFilter.includes(((e.clase || "").replace(/\s+/g, " ").trim()) || "Sin clase"));
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
