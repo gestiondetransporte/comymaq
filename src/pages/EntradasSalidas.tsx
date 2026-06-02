@@ -685,6 +685,8 @@ export default function EntradasSalidas() {
       'salida_renta': { label: 'Salida a Renta', className: 'bg-orange-600 hover:bg-orange-700' },
       'salida_venta': { label: 'Salida Venta', className: 'bg-red-600 hover:bg-red-700' },
       'salida_taller_externo': { label: 'Taller Externo', className: 'bg-purple-600 hover:bg-purple-700' },
+      'regreso_proveedor': { label: 'Regreso a Proveedor', className: 'bg-rose-700 hover:bg-rose-800' },
+
       'salida': { label: 'Salida', className: '' },
       'traspaso': { label: 'Traspaso', className: 'bg-blue-600 hover:bg-blue-700' },
     };
