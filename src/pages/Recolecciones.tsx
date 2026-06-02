@@ -274,6 +274,76 @@ export default function Recolecciones() {
     }
   };
 
+  const openCrearDialog = async () => {
+    setCrearFormData({
+      contrato_id: "",
+      fecha_programada: addDays(new Date(), 1).toISOString().split("T")[0],
+      chofer: "",
+      transporte: "",
+      comentarios: "",
+    });
+    try {
+      const { data: contratos, error } = await supabase
+        .from("contratos")
+        .select("id, folio_contrato, cliente, direccion, municipio, estado_ubicacion, ubicacion_gps, equipo_id, equipos:equipo_id (numero_equipo, descripcion)")
+        .eq("status", "activo")
+        .not("equipo_id", "is", null)
+        .order("folio_contrato", { ascending: false });
+      if (error) throw error;
+
+      const recoleccionActivas = recolecciones
+        .filter((r) => r.status === "pendiente" || r.status === "en_proceso")
+        .map((r) => r.contrato_id);
+      const disponibles = (contratos || []).filter((c) => !recoleccionActivas.includes(c.id));
+      setContratosDisponibles(disponibles);
+    } catch (error) {
+      console.error("Error fetching contratos:", error);
+      setContratosDisponibles([]);
+    }
+    setCrearDialogOpen(true);
+  };
+
+  const handleSubmitCrear = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crearFormData.contrato_id) {
+      toast({ variant: "destructive", title: "Error", description: "Selecciona un contrato" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const contrato = contratosDisponibles.find((c) => c.id === crearFormData.contrato_id);
+      if (!contrato) throw new Error("Contrato no encontrado");
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("recolecciones").insert({
+        contrato_id: contrato.id,
+        equipo_id: contrato.equipo_id,
+        fecha_programada: crearFormData.fecha_programada,
+        cliente: contrato.cliente,
+        direccion: contrato.direccion,
+        municipio: contrato.municipio,
+        estado_ubicacion: contrato.estado_ubicacion,
+        ubicacion_gps: contrato.ubicacion_gps,
+        status: "pendiente",
+        chofer: crearFormData.chofer || null,
+        transporte: crearFormData.transporte || null,
+        comentarios: crearFormData.comentarios || "Recolección programada manualmente",
+        usuario_id: user?.id || null,
+        usuario_email: user?.email || null,
+      });
+      if (error) throw error;
+
+      toast({ title: "Éxito", description: "Recolección programada correctamente" });
+      setCrearDialogOpen(false);
+      fetchRecolecciones();
+    } catch (error: any) {
+      console.error("Error creating recoleccion:", error);
+      toast({ variant: "destructive", title: "Error", description: error.message || "No se pudo crear la recolección" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCompletarRecoleccion = (recoleccion: Recoleccion) => {
     setSelectedRecoleccion(recoleccion);
     setCompletarDialogOpen(true);
