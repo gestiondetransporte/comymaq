@@ -43,7 +43,7 @@ export default function Layout({ children }: LayoutProps) {
     operaciones: [
       { path: "/", label: "Buscador", icon: Search },
       { path: "/inventario", label: "Inventario", icon: List },
-      { path: "/inventario-fisico", label: "Inventario Físico", icon: Boxes },
+      
       { path: "/entradas-salidas", label: "Entradas/Salidas", icon: Truck },
       { path: "/inspeccion-taller", label: "Inspección Taller", icon: ClipboardCheck },
     ],

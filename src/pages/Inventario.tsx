@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, QrCode, Plus, Upload, FileDown, Loader2, SlidersHorizontal, X, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Search, Eye, QrCode, Plus, Upload, FileDown, Loader2, SlidersHorizontal, X, ArrowUp, ArrowDown, ArrowUpDown, Package, Wrench, AlertCircle } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -580,6 +580,54 @@ export default function Inventario() {
           </Button>
         </div>
       </div>
+
+      {/* Summary indicators */}
+      {(() => {
+        const activos = equipos.filter((e) => (e.estado || "").toLowerCase() !== "baja");
+        const enTaller = activos.filter((e) => {
+          const es = (e.estado || "").toLowerCase();
+          return e.enMantenimiento || es.includes("taller") || es.includes("mantenimiento");
+        });
+        const enTallerIds = new Set(enTaller.map((e) => e.id));
+        const comprometidos = activos.filter((e) => !enTallerIds.has(e.id) && !!e.contrato_activo);
+        const comprometidosIds = new Set(comprometidos.map((e) => e.id));
+        const disponibles = activos.filter((e) => !enTallerIds.has(e.id) && !comprometidosIds.has(e.id));
+        return (
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
+                <Package className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{disponibles.length}</div>
+                <p className="text-xs text-muted-foreground">Equipos listos para renta</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">En Taller</CardTitle>
+                <Wrench className="h-4 w-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">{enTaller.length}</div>
+                <p className="text-xs text-muted-foreground">En mantenimiento</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Comprometidos</CardTitle>
+                <AlertCircle className="h-4 w-4 text-accent-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{comprometidos.length}</div>
+                <p className="text-xs text-muted-foreground">En contrato activo</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
+
 
       <Tabs defaultValue="activos" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
