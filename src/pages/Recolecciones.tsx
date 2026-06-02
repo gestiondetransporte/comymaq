@@ -47,7 +47,18 @@ import {
   Search,
   Loader2,
   Edit,
+  Plus,
 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Recoleccion {
   id: string;
@@ -82,6 +93,16 @@ export default function Recolecciones() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [completarDialogOpen, setCompletarDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [crearDialogOpen, setCrearDialogOpen] = useState(false);
+  const [contratosDisponibles, setContratosDisponibles] = useState<any[]>([]);
+  const [contratoPickerOpen, setContratoPickerOpen] = useState(false);
+  const [crearFormData, setCrearFormData] = useState({
+    contrato_id: "",
+    fecha_programada: "",
+    chofer: "",
+    transporte: "",
+    comentarios: "",
+  });
   const [selectedRecoleccion, setSelectedRecoleccion] = useState<Recoleccion | null>(null);
   const [editFormData, setEditFormData] = useState({
     fecha_programada: "",
@@ -253,6 +274,76 @@ export default function Recolecciones() {
     }
   };
 
+  const openCrearDialog = async () => {
+    setCrearFormData({
+      contrato_id: "",
+      fecha_programada: addDays(new Date(), 1).toISOString().split("T")[0],
+      chofer: "",
+      transporte: "",
+      comentarios: "",
+    });
+    try {
+      const { data: contratos, error } = await supabase
+        .from("contratos")
+        .select("id, folio_contrato, cliente, direccion, municipio, estado_ubicacion, ubicacion_gps, equipo_id, equipos:equipo_id (numero_equipo, descripcion)")
+        .eq("status", "activo")
+        .not("equipo_id", "is", null)
+        .order("folio_contrato", { ascending: false });
+      if (error) throw error;
+
+      const recoleccionActivas = recolecciones
+        .filter((r) => r.status === "pendiente" || r.status === "en_proceso")
+        .map((r) => r.contrato_id);
+      const disponibles = (contratos || []).filter((c) => !recoleccionActivas.includes(c.id));
+      setContratosDisponibles(disponibles);
+    } catch (error) {
+      console.error("Error fetching contratos:", error);
+      setContratosDisponibles([]);
+    }
+    setCrearDialogOpen(true);
+  };
+
+  const handleSubmitCrear = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!crearFormData.contrato_id) {
+      toast({ variant: "destructive", title: "Error", description: "Selecciona un contrato" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const contrato = contratosDisponibles.find((c) => c.id === crearFormData.contrato_id);
+      if (!contrato) throw new Error("Contrato no encontrado");
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("recolecciones").insert({
+        contrato_id: contrato.id,
+        equipo_id: contrato.equipo_id,
+        fecha_programada: crearFormData.fecha_programada,
+        cliente: contrato.cliente,
+        direccion: contrato.direccion,
+        municipio: contrato.municipio,
+        estado_ubicacion: contrato.estado_ubicacion,
+        ubicacion_gps: contrato.ubicacion_gps,
+        status: "pendiente",
+        chofer: crearFormData.chofer || null,
+        transporte: crearFormData.transporte || null,
+        comentarios: crearFormData.comentarios || "Recolección programada manualmente",
+        usuario_id: user?.id || null,
+        usuario_email: user?.email || null,
+      });
+      if (error) throw error;
+
+      toast({ title: "Éxito", description: "Recolección programada correctamente" });
+      setCrearDialogOpen(false);
+      fetchRecolecciones();
+    } catch (error: any) {
+      console.error("Error creating recoleccion:", error);
+      toast({ variant: "destructive", title: "Error", description: error.message || "No se pudo crear la recolección" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCompletarRecoleccion = (recoleccion: Recoleccion) => {
     setSelectedRecoleccion(recoleccion);
     setCompletarDialogOpen(true);
@@ -359,10 +450,16 @@ export default function Recolecciones() {
             Las recolecciones se programan automáticamente cuando un contrato vence
           </p>
         </div>
-        <Button variant="outline" onClick={fetchData}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualizar
+          </Button>
+          <Button onClick={openCrearDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Programar Recolección
+          </Button>
+        </div>
       </div>
 
       {/* Info Card about automatic scheduling */}
@@ -648,6 +745,126 @@ export default function Recolecciones() {
               Confirmar Recolección
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Programar Recolección Manual */}
+      <Dialog open={crearDialogOpen} onOpenChange={setCrearDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Programar Recolección</DialogTitle>
+            <DialogDescription>
+              Selecciona un contrato activo y define los datos de la recolección.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitCrear} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Contrato *</Label>
+              <Popover open={contratoPickerOpen} onOpenChange={setContratoPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    className={cn("w-full justify-between", !crearFormData.contrato_id && "text-muted-foreground")}
+                  >
+                    {crearFormData.contrato_id
+                      ? (() => {
+                          const c = contratosDisponibles.find((x) => x.id === crearFormData.contrato_id);
+                          return c ? `${c.folio_contrato} — ${c.cliente}` : "Seleccionar contrato";
+                        })()
+                      : "Seleccionar contrato"}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar por folio, cliente o equipo..." />
+                    <CommandList>
+                      <CommandEmpty>No hay contratos disponibles.</CommandEmpty>
+                      <CommandGroup>
+                        {contratosDisponibles.map((c) => (
+                          <CommandItem
+                            key={c.id}
+                            value={`${c.folio_contrato} ${c.cliente} ${c.equipos?.numero_equipo || ""} ${c.equipos?.descripcion || ""}`}
+                            onSelect={() => {
+                              setCrearFormData({ ...crearFormData, contrato_id: c.id });
+                              setContratoPickerOpen(false);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{c.folio_contrato} — {c.cliente}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {c.equipos ? `${c.equipos.numero_equipo} - ${c.equipos.descripcion}` : "Sin equipo"}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {contratosDisponibles.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No hay contratos activos sin recolección pendiente.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_fecha">Fecha Programada *</Label>
+              <Input
+                id="crear_fecha"
+                type="date"
+                required
+                value={crearFormData.fecha_programada}
+                onChange={(e) => setCrearFormData({ ...crearFormData, fecha_programada: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_chofer">Chofer</Label>
+              <Input
+                id="crear_chofer"
+                value={crearFormData.chofer}
+                onChange={(e) => setCrearFormData({ ...crearFormData, chofer: e.target.value })}
+                placeholder="Nombre del chofer"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_transporte">Transporte</Label>
+              <Input
+                id="crear_transporte"
+                value={crearFormData.transporte}
+                onChange={(e) => setCrearFormData({ ...crearFormData, transporte: e.target.value })}
+                placeholder="Tipo de transporte o placas"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="crear_comentarios">Comentarios</Label>
+              <Textarea
+                id="crear_comentarios"
+                value={crearFormData.comentarios}
+                onChange={(e) => setCrearFormData({ ...crearFormData, comentarios: e.target.value })}
+                rows={2}
+                placeholder="Notas adicionales..."
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCrearDialogOpen(false)} disabled={submitting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={submitting || !crearFormData.contrato_id}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Programar
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
