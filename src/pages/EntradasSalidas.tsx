@@ -12,10 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon, Trash2 } from "lucide-react";
+import { Search, ArrowRightLeft, Trash2 } from "lucide-react";
 import { formatMty } from "@/lib/timezone";
 
-import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { EntradaSalidaDetailsDialog } from "@/components/EntradaSalidaDetailsDialog";
@@ -30,11 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface FileWithPreview {
-  file: File;
-  preview?: string;
-  type: 'imagen' | 'documento' | 'video';
-}
+
 
 interface EntradaSalida {
   id: string;
@@ -73,7 +68,9 @@ interface ContratoInfo {
   municipio: string | null;
   estado_ubicacion: string | null;
   status: string | null;
+  comentarios: string | null;
 }
+
 
 interface EquipoInfo {
   id: string;
@@ -101,7 +98,9 @@ interface RecoleccionInfo {
   transporte: string | null;
   cliente: string | null;
   direccion: string | null;
+  comentarios: string | null;
 }
+
 
 interface UltimoOdometro {
   odometro: number;
@@ -139,7 +138,7 @@ export default function EntradasSalidas() {
   const [clientes, setClientes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [almacenes, setAlmacenes] = useState<Array<{ id: string; nombre: string }>>([]);
   const [choferes, setChoferes] = useState<Array<{ id: string; nombre: string }>>([]);
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [bajaConfirmOpen, setBajaConfirmOpen] = useState(false);
   const [contratoInfo, setContratoInfo] = useState<ContratoInfo | null>(null);
   const [equipoInfo, setEquipoInfo] = useState<EquipoInfo | null>(null);
   const [ultimoMantenimiento, setUltimoMantenimiento] = useState<MantenimientoInfo | null>(null);
@@ -340,7 +339,7 @@ export default function EntradasSalidas() {
       const [contratoRes, mantRes, recolRes, odoRes, ultEsRes] = await Promise.all([
         supabase
           .from('contratos')
-          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
+          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status, comentarios')
           .eq('equipo_id', equipoData.id)
           .order('status', { ascending: true }) // 'activo' viene antes alfabéticamente que otros comunes
           .order('created_at', { ascending: false })
@@ -355,7 +354,7 @@ export default function EntradasSalidas() {
           .maybeSingle(),
         supabase
           .from('recolecciones')
-          .select('fecha_programada, status, chofer, transporte, cliente, direccion')
+          .select('fecha_programada, status, chofer, transporte, cliente, direccion, comentarios')
           .eq('equipo_id', equipoData.id)
           .in('status', ['pendiente', 'programada', 'en_proceso'])
           .order('fecha_programada', { ascending: true })
@@ -386,16 +385,8 @@ export default function EntradasSalidas() {
       setUltimoOdometro(odoRes.data ?? null);
       setUltimaEntradaSalida(ultEsRes.data ?? null);
 
-      // Auto-rellenar: prioridad recolección > última entrada/salida > contrato
-      const autoCliente = recolRes.data?.cliente || ultEsRes.data?.cliente || contratoData?.cliente || "";
-      const autoObra = ultEsRes.data?.obra || contratoData?.obra || "";
-      const autoChofer = recolRes.data?.chofer || ultEsRes.data?.chofer || "";
-      const autoTransporte = recolRes.data?.transporte || ultEsRes.data?.transporte || "";
+      // El auto-rellenado se hace en otro useEffect que reacciona al tipo seleccionado.
 
-      if (autoCliente) setCliente(autoCliente);
-      if (autoObra) setObra(autoObra);
-      if (autoChofer) setChofer(autoChofer);
-      if (autoTransporte) setTransporte(autoTransporte);
 
     } catch (error) {
       console.error('Error fetching equipo info:', error);
@@ -412,6 +403,38 @@ export default function EntradasSalidas() {
 
     return () => clearTimeout(timeoutId);
   }, [equipoId]);
+
+  // Clasificación del tipo de movimiento para auto-rellenar desde la fuente correcta
+  const isEntradaTipo = (t: string) =>
+    t === "entrada_equipo" || t === "regreso_renta";
+  const isSalidaTipo = (t: string) =>
+    t === "salida_renta" ||
+    t === "salida_venta" ||
+    t === "salida_taller_externo" ||
+    t === "regreso_proveedor";
+
+  // Auto-rellenar cliente/obra/chofer/transporte/observaciones según tipo:
+  // Entradas → desde la recolección programada
+  // Salidas → desde el contrato activo
+  useEffect(() => {
+    if (!equipoInfo) return;
+
+    if (isEntradaTipo(tipo) && recoleccionInfo) {
+      setCliente(recoleccionInfo.cliente || "");
+      setChofer(recoleccionInfo.chofer || "");
+      setTransporte(recoleccionInfo.transporte || "");
+      setObra(recoleccionInfo.direccion || "");
+      setObservaciones(recoleccionInfo.comentarios || "");
+    } else if (isSalidaTipo(tipo) && contratoInfo) {
+      setCliente(contratoInfo.cliente || "");
+      setObra(contratoInfo.obra || "");
+      setChofer("");
+      setTransporte("");
+      setObservaciones(contratoInfo.comentarios || "");
+    }
+  }, [tipo, equipoInfo, contratoInfo, recoleccionInfo]);
+
+
 
   const filterMovimientos = () => {
     let filtered = [...movimientos];
@@ -459,7 +482,7 @@ export default function EntradasSalidas() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!equipoId.trim()) {
       toast({
         variant: "destructive",
@@ -478,6 +501,15 @@ export default function EntradasSalidas() {
       return;
     }
 
+    if (tipo === "regreso_proveedor") {
+      setBajaConfirmOpen(true);
+      return;
+    }
+
+    await executeMovimiento();
+  };
+
+  const executeMovimiento = async () => {
     setLoading(true);
 
     try {
@@ -500,28 +532,6 @@ export default function EntradasSalidas() {
         return;
       }
 
-      // Subir imágenes generales si hay
-      const imageUrls: string[] = [];
-      if (files.length > 0 && isOnline) {
-        for (let i = 0; i < files.length; i++) {
-          const fileWithPreview = files[i];
-          const file = fileWithPreview.file;
-          const fileName = `${Date.now()}-${i}-${file.name}`;
-          const { error: uploadError, data } = await supabase.storage
-            .from('fotografias')
-            .upload(fileName, file);
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('fotografias')
-            .getPublicUrl(fileName);
-
-          imageUrls.push(publicUrl);
-        }
-      }
-
-      // Upload specific photos removed - no longer using specific photo fields
       // Mapear tipo del formulario al valor válido en la BD (CHECK constraint: entrada, salida, traspaso)
       const tipoDbMap: Record<string, string> = {
         'entrada_equipo': 'entrada',
@@ -529,6 +539,7 @@ export default function EntradasSalidas() {
         'salida_renta': 'salida',
         'salida_venta': 'salida',
         'salida_taller_externo': 'salida',
+        'regreso_proveedor': 'salida',
         'traspaso': 'traspaso',
       };
 
@@ -544,9 +555,9 @@ export default function EntradasSalidas() {
         serie: equipoData.serie,
         modelo: equipoData.modelo,
         comentarios: observaciones.trim() ? `[${tipo}] ${observaciones.trim()}` : `[${tipo}]`,
-        fotografia_url: imageUrls[0] || null,
-        fotografia_url_2: imageUrls[1] || null,
-        fotografia_url_3: imageUrls[2] || null,
+        fotografia_url: null,
+        fotografia_url_2: null,
+        fotografia_url_3: null,
         foto_odometro_url: null,
         foto_calca_url: null,
         foto_tablero_url: null,
@@ -562,7 +573,7 @@ export default function EntradasSalidas() {
 
       if (isOnline) {
         // Si hay conexión, guardar directamente
-        const { data: insertData, error } = await supabase
+        const { error } = await supabase
           .from('entradas_salidas')
           .insert(movimiento)
           .select()
@@ -577,6 +588,7 @@ export default function EntradasSalidas() {
           'salida_renta': { estado: 'dentro' },
           'salida_venta': { estado: 'baja' },
           'salida_taller_externo': { estado: 'taller_externo' },
+          'regreso_proveedor': { estado: 'baja', ubicacion: 'Regresado a Proveedor' },
         };
 
         const statusUpdate = statusMap[tipo];
@@ -603,28 +615,13 @@ export default function EntradasSalidas() {
           if (updateError) throw updateError;
         }
 
-        // Guardar archivos adicionales en la tabla de archivos
-        if (files.length > 0 && insertData) {
-          const archivos = files.map((fileWithPreview, index) => ({
-            entrada_salida_id: insertData.id,
-            archivo_url: imageUrls[index],
-            tipo_archivo: fileWithPreview.type,
-            nombre_archivo: fileWithPreview.file.name,
-          }));
-
-          const { error: archivosError } = await supabase
-            .from('entradas_salidas_archivos')
-            .insert(archivos);
-
-          if (archivosError) console.error('Error saving archivos:', archivosError);
-        }
-
         const tipoLabels: Record<string, string> = {
           'entrada_equipo': 'Entrada de Equipo',
           'regreso_renta': 'Regreso de Renta',
           'salida_renta': 'Salida a Renta',
           'salida_venta': 'Salida Venta',
           'salida_taller_externo': 'Salida a Taller Externo',
+          'regreso_proveedor': 'Regreso a Proveedor',
           'traspaso': 'Traspaso',
         };
 
@@ -632,7 +629,7 @@ export default function EntradasSalidas() {
           title: "Movimiento registrado",
           description: `${tipoLabels[tipo] || tipo} registrada exitosamente para equipo ${equipoId}`,
         });
-        
+
         fetchMovimientos();
       } else {
         // Si no hay conexión, guardar para sincronizar después
@@ -657,7 +654,6 @@ export default function EntradasSalidas() {
       setObservaciones("");
       setAlmacenOrigen("");
       setAlmacenDestino("");
-      setFiles([]);
       setLlevaExtintor(false);
       setOdometro("");
       setTieneDanos(false);
@@ -680,6 +676,7 @@ export default function EntradasSalidas() {
     }
   };
 
+
   const getTipoBadge = (tipo: string) => {
     const badges: Record<string, { label: string; className: string; variant?: string }> = {
       'entrada_equipo': { label: 'Entrada de Equipo', className: 'bg-green-600 hover:bg-green-700' },
@@ -688,6 +685,8 @@ export default function EntradasSalidas() {
       'salida_renta': { label: 'Salida a Renta', className: 'bg-orange-600 hover:bg-orange-700' },
       'salida_venta': { label: 'Salida Venta', className: 'bg-red-600 hover:bg-red-700' },
       'salida_taller_externo': { label: 'Taller Externo', className: 'bg-purple-600 hover:bg-purple-700' },
+      'regreso_proveedor': { label: 'Regreso a Proveedor', className: 'bg-rose-700 hover:bg-rose-800' },
+
       'salida': { label: 'Salida', className: '' },
       'traspaso': { label: 'Traspaso', className: 'bg-blue-600 hover:bg-blue-700' },
     };
@@ -904,6 +903,8 @@ export default function EntradasSalidas() {
                   <SelectItem value="salida_renta">Salida a Renta</SelectItem>
                   <SelectItem value="salida_venta">Salida Venta</SelectItem>
                   <SelectItem value="salida_taller_externo">Salida a Taller Externo</SelectItem>
+                  <SelectItem value="regreso_proveedor">Regreso a Proveedor</SelectItem>
+
                   <SelectItem value="traspaso">Traspaso entre Almacenes</SelectItem>
                 </SelectContent>
               </Select>
@@ -1070,14 +1071,8 @@ export default function EntradasSalidas() {
               </div>
             </div>
 
-            <MultipleFileUpload
-              files={files}
-              onFilesChange={setFiles}
-              maxFiles={10}
-              acceptImages={true}
-              acceptDocuments={true}
-              label="Archivos e Imágenes Adicionales (hasta 10)"
-            />
+
+
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? "Registrando..." : "Registrar Movimiento"}
@@ -1123,6 +1118,8 @@ export default function EntradasSalidas() {
                     <SelectItem value="salida_renta">Salida a Renta</SelectItem>
                     <SelectItem value="salida_venta">Salida Venta</SelectItem>
                     <SelectItem value="salida_taller_externo">Taller Externo</SelectItem>
+                    <SelectItem value="regreso_proveedor">Regreso a Proveedor</SelectItem>
+
                     <SelectItem value="salida">Salida (legacy)</SelectItem>
                     <SelectItem value="traspaso">Traspaso</SelectItem>
                   </SelectContent>
@@ -1208,8 +1205,8 @@ export default function EntradasSalidas() {
                     <TableHead>Ubicación</TableHead>
                     <TableHead>Chofer</TableHead>
                     <TableHead>Transporte</TableHead>
-                    <TableHead>Imágenes</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1227,29 +1224,8 @@ export default function EntradasSalidas() {
                       <TableCell>{movimiento.equipos?.ubicacion_actual || 'N/A'}</TableCell>
                       <TableCell>{movimiento.chofer || 'N/A'}</TableCell>
                       <TableCell>{movimiento.transporte || 'N/A'}</TableCell>
-                      <TableCell>
-                        {(movimiento.fotografia_url || movimiento.fotografia_url_2 || movimiento.fotografia_url_3) ? (
-                          <div className="flex gap-1">
-                            {movimiento.fotografia_url && (
-                              <a href={movimiento.fotografia_url} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                            {movimiento.fotografia_url_2 && (
-                              <a href={movimiento.fotografia_url_2} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                            {movimiento.fotografia_url_3 && (
-                              <a href={movimiento.fotografia_url_3} target="_blank" rel="noopener noreferrer">
-                                <ImageIcon className="h-4 w-4 text-primary hover:text-primary/80" />
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
+
+
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -1308,6 +1284,33 @@ export default function EntradasSalidas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Diálogo de confirmación: Regreso a Proveedor (baja de equipo) */}
+      <AlertDialog open={bajaConfirmOpen} onOpenChange={setBajaConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Dar de baja este equipo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás registrando un <strong>Regreso a Proveedor</strong> para el equipo{" "}
+              <strong>#{equipoId}</strong>. Al confirmar, el equipo se marcará como{" "}
+              <strong>BAJA</strong> y dejará de estar disponible en el inventario.
+              Esta acción puede revertirse manualmente por un administrador.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setBajaConfirmOpen(false);
+                await executeMovimiento();
+              }}
+            >
+              Confirmar y dar de baja
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
