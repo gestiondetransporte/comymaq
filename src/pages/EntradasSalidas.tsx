@@ -12,10 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft, Image as ImageIcon, FileIcon, Trash2 } from "lucide-react";
+import { Search, ArrowRightLeft, Trash2 } from "lucide-react";
 import { formatMty } from "@/lib/timezone";
 
-import { MultipleFileUpload } from "@/components/MultipleFileUpload";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { EntradaSalidaDetailsDialog } from "@/components/EntradaSalidaDetailsDialog";
@@ -30,11 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface FileWithPreview {
-  file: File;
-  preview?: string;
-  type: 'imagen' | 'documento' | 'video';
-}
+
 
 interface EntradaSalida {
   id: string;
