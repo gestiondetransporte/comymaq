@@ -339,7 +339,7 @@ export default function EntradasSalidas() {
       const [contratoRes, mantRes, recolRes, odoRes, ultEsRes] = await Promise.all([
         supabase
           .from('contratos')
-          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status')
+          .select('cliente, numero_contrato, folio_contrato, obra, vendedor, direccion, municipio, estado_ubicacion, status, comentarios')
           .eq('equipo_id', equipoData.id)
           .order('status', { ascending: true }) // 'activo' viene antes alfabéticamente que otros comunes
           .order('created_at', { ascending: false })
@@ -354,7 +354,7 @@ export default function EntradasSalidas() {
           .maybeSingle(),
         supabase
           .from('recolecciones')
-          .select('fecha_programada, status, chofer, transporte, cliente, direccion')
+          .select('fecha_programada, status, chofer, transporte, cliente, direccion, comentarios')
           .eq('equipo_id', equipoData.id)
           .in('status', ['pendiente', 'programada', 'en_proceso'])
           .order('fecha_programada', { ascending: true })
@@ -385,16 +385,8 @@ export default function EntradasSalidas() {
       setUltimoOdometro(odoRes.data ?? null);
       setUltimaEntradaSalida(ultEsRes.data ?? null);
 
-      // Auto-rellenar: prioridad recolección > última entrada/salida > contrato
-      const autoCliente = recolRes.data?.cliente || ultEsRes.data?.cliente || contratoData?.cliente || "";
-      const autoObra = ultEsRes.data?.obra || contratoData?.obra || "";
-      const autoChofer = recolRes.data?.chofer || ultEsRes.data?.chofer || "";
-      const autoTransporte = recolRes.data?.transporte || ultEsRes.data?.transporte || "";
+      // El auto-rellenado se hace en otro useEffect que reacciona al tipo seleccionado.
 
-      if (autoCliente) setCliente(autoCliente);
-      if (autoObra) setObra(autoObra);
-      if (autoChofer) setChofer(autoChofer);
-      if (autoTransporte) setTransporte(autoTransporte);
 
     } catch (error) {
       console.error('Error fetching equipo info:', error);
