@@ -693,7 +693,7 @@ export default function InspeccionTaller() {
               />
             </div>
 
-            <div className="border rounded-lg max-h-96 overflow-y-auto">
+            <div className="border rounded-lg max-h-96 overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
