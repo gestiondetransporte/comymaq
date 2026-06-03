@@ -674,7 +674,7 @@ export default function InspeccionTaller() {
 
       {/* Dialog de Selección de Equipo para Inspección Manual */}
       <Dialog open={showManualInspeccionDialog} onOpenChange={setShowManualInspeccionDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Seleccionar Equipo para Inspección Manual</DialogTitle>
             <DialogDescription>
@@ -693,7 +693,7 @@ export default function InspeccionTaller() {
               />
             </div>
 
-            <div className="border rounded-lg max-h-96 overflow-y-auto">
+            <div className="border rounded-lg max-h-96 overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
