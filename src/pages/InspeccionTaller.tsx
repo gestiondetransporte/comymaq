@@ -498,7 +498,7 @@ export default function InspeccionTaller() {
 
       {/* Dialog de Inspección */}
       <Dialog open={showInspeccionDialog} onOpenChange={setShowInspeccionDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Inspección de Equipo</DialogTitle>
             <DialogDescription>
