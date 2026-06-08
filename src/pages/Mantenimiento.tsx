@@ -1211,6 +1211,130 @@ export default function Mantenimiento() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para ver historial de mantenimientos */}
+      <Dialog open={showHistorialDialog} onOpenChange={setShowHistorialDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-blue-600" />
+              Historial de Mantenimientos
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEquipoHistorial ? (
+                <>
+                  Equipo #{selectedEquipoHistorial.numero_equipo} - {selectedEquipoHistorial.descripcion}
+                </>
+              ) : 'Información del equipo'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-2">
+            {loadingHistorial ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : historialMantenimientos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No hay mantenimientos registrados para este equipo
+              </div>
+            ) : (
+              historialMantenimientos.map((mant) => (
+                <div key={mant.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Fecha</p>
+                      <p className="text-sm font-medium">{formatDate(mant.fecha)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tipo de Servicio</p>
+                      <p className="text-sm font-medium capitalize">{mant.tipo_servicio}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Técnico</p>
+                      <p className="text-sm font-medium">{mant.tecnico || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Orden de Servicio</p>
+                      <p className="text-sm font-medium">{mant.orden_servicio || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Próximo Servicio</p>
+                      <p className="text-sm font-medium">{formatHoras(mant.proximo_servicio_horas)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">ID Interno</p>
+                      <p className="text-sm font-medium font-mono">{mant.id_interno || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Descripción</p>
+                    <p className="text-sm font-medium">{mant.descripcion}</p>
+                  </div>
+
+                  {mant.archivos && mant.archivos.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Evidencias</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {mant.archivos.map((arch: any, idx: number) => (
+                          <div key={idx} className="rounded-md border overflow-hidden">
+                            {isImageFile(arch.archivo_url) ? (
+                              <a href={arch.archivo_url} target="_blank" rel="noopener noreferrer" className="block">
+                                <img
+                                  src={arch.archivo_url}
+                                  alt={arch.nombre_archivo || 'Evidencia'}
+                                  className="w-full h-24 object-cover"
+                                />
+                              </a>
+                            ) : isVideoFile(arch.archivo_url) ? (
+                              <a
+                                href={arch.archivo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center justify-center h-24 bg-muted gap-1"
+                              >
+                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground text-center px-1 line-clamp-2">
+                                  {arch.nombre_archivo || 'Video'}
+                                </span>
+                              </a>
+                            ) : (
+                              <a
+                                href={arch.archivo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center justify-center h-24 bg-muted gap-1"
+                              >
+                                <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground text-center px-1 line-clamp-2">
+                                  {arch.nombre_archivo || 'Archivo'}
+                                </span>
+                              </a>
+                            )}
+                            <div className="p-1.5 flex justify-end">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                                <a href={arch.archivo_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistorialDialog(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
