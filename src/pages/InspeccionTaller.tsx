@@ -831,6 +831,103 @@ export default function InspeccionTaller() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Historial de Inspecciones */}
+      <Dialog open={showHistorialDialog} onOpenChange={setShowHistorialDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historial de Inspecciones</DialogTitle>
+            <DialogDescription>
+              {selectedEquipo && `Equipo #${selectedEquipo.numero_equipo} - ${selectedEquipo.descripcion}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingHistorial ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Cargando historial...
+            </div>
+          ) : historialInspecciones.length === 0 ? (
+            <div className="py-8 text-center">
+              <ClipboardCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                No hay inspecciones registradas para este equipo
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {historialInspecciones.map((inspeccion) => (
+                <Card key={inspeccion.id}>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Fecha:</span>
+                        <span className="ml-2 font-medium">{formatDate(inspeccion.created_at)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Técnico:</span>
+                        <span className="ml-2 font-medium">{inspeccion.tecnico || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Descripción:</span>
+                      <p className="mt-1 whitespace-pre-wrap">{inspeccion.descripcion}</p>
+                    </div>
+                    {inspeccion.archivos.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Evidencias:</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {inspeccion.archivos.map((archivo: any) => (
+                            <div key={archivo.id} className="relative group">
+                              {archivo.tipo_archivo === 'imagen' ? (
+                                <img
+                                  src={archivo.archivo_url}
+                                  alt={archivo.nombre_archivo || 'Evidencia'}
+                                  className="w-full h-24 object-cover rounded-md border"
+                                />
+                              ) : archivo.tipo_archivo === 'video' ? (
+                                <video
+                                  src={archivo.archivo_url}
+                                  className="w-full h-24 object-cover rounded-md border"
+                                  controls
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-24 bg-muted rounded-md border">
+                                  <FileIcon className="h-8 w-8 text-muted-foreground mb-1" />
+                                  <p className="text-xs text-center truncate w-full px-2">
+                                    {archivo.nombre_archivo || 'Archivo'}
+                                  </p>
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => window.open(archivo.archivo_url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowHistorialDialog(false)}
+            >
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
