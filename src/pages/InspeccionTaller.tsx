@@ -66,7 +66,12 @@ export default function InspeccionTaller() {
   const [searchManualEquipo, setSearchManualEquipo] = useState("");
   const [filteredManualEquipos, setFilteredManualEquipos] = useState<EquipoEnTaller[]>([]);
   const [cambiarEstado, setCambiarEstado] = useState(false);
-  
+
+  // Historial states
+  const [showHistorialDialog, setShowHistorialDialog] = useState(false);
+  const [historialInspecciones, setHistorialInspecciones] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+
   const { toast } = useToast();
   const { user } = useAuth();
 
