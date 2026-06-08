@@ -1043,20 +1043,31 @@ export default function Mantenimiento() {
                       <TableCell className="max-w-xs truncate">{mantenimiento.descripcion}</TableCell>
                       <TableCell>{formatHoras(mantenimiento.proximo_servicio_horas)}</TableCell>
                       <TableCell>
-                        {mantenimiento.isProgramado && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedProgramado(mantenimiento);
-                              setProximoServicioManual((mantenimiento.horas_contrato || 0) + 300);
-                              setShowProgramadoDialog(true);
-                            }}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Realizado
-                          </Button>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          {!mantenimiento.isProgramado && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVerHistorial(mantenimiento)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {mantenimiento.isProgramado && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProgramado(mantenimiento);
+                                setProximoServicioManual((mantenimiento.horas_contrato || 0) + 300);
+                                setShowProgramadoDialog(true);
+                              }}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Realizado
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
