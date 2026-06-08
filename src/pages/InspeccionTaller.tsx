@@ -540,13 +540,23 @@ export default function InspeccionTaller() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleIniciarInspeccion(equipo)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Inspeccionar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerHistorial(equipo)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleIniciarInspeccion(equipo)}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Inspeccionar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
