@@ -547,6 +547,76 @@ export default function Mantenimiento() {
     }
   };
 
+  const fetchHistorialMantenimientos = async (equipoId: string) => {
+    setLoadingHistorial(true);
+    try {
+      const { data: mantenimientosData, error: mantError } = await supabase
+        .from('mantenimientos')
+        .select('*')
+        .eq('equipo_id', equipoId)
+        .order('fecha', { ascending: false });
+
+      if (mantError) throw mantError;
+
+      const mantenimientosList = mantenimientosData || [];
+
+      if (mantenimientosList.length === 0) {
+        setHistorialMantenimientos([]);
+        setLoadingHistorial(false);
+        return;
+      }
+
+      const mantIds = mantenimientosList.map(m => m.id);
+
+      const { data: archivosData, error: archError } = await supabase
+        .from('mantenimientos_archivos')
+        .select('*')
+        .in('mantenimiento_id', mantIds);
+
+      if (archError) throw archError;
+
+      const archivosByMantenimiento: Record<string, any[]> = {};
+      (archivosData || []).forEach((arch: any) => {
+        if (!archivosByMantenimiento[arch.mantenimiento_id]) {
+          archivosByMantenimiento[arch.mantenimiento_id] = [];
+        }
+        archivosByMantenimiento[arch.mantenimiento_id].push(arch);
+      });
+
+      const historial = mantenimientosList.map((m: any) => ({
+        ...m,
+        archivos: archivosByMantenimiento[m.id] || [],
+      }));
+
+      setHistorialMantenimientos(historial);
+    } catch (error) {
+      console.error('Error fetching historial:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cargar el historial de mantenimientos",
+      });
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const handleVerHistorial = (mantenimiento: Mantenimiento) => {
+    setSelectedEquipoHistorial(mantenimiento.equipos || mantenimiento.snapshot_equipo);
+    setShowHistorialDialog(true);
+    if (mantenimiento.equipo_id) {
+      fetchHistorialMantenimientos(mantenimiento.equipo_id);
+    }
+  };
+
+  const isImageFile = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url);
+  };
+
+  const isVideoFile = (url: string) => {
+    return /\.(mp4|mov|avi|wmv|mkv|webm)$/i.test(url);
+  };
+
   return (
     <div className="space-y-6">
       <div>
