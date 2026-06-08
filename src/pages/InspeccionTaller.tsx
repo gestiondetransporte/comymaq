@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus, Camera } from "lucide-react";
+import { Search, ClipboardCheck, CheckCircle2, AlertTriangle, Package, Plus, Camera, Eye, FileIcon, ImageIcon, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,7 +66,12 @@ export default function InspeccionTaller() {
   const [searchManualEquipo, setSearchManualEquipo] = useState("");
   const [filteredManualEquipos, setFilteredManualEquipos] = useState<EquipoEnTaller[]>([]);
   const [cambiarEstado, setCambiarEstado] = useState(false);
-  
+
+  // Historial states
+  const [showHistorialDialog, setShowHistorialDialog] = useState(false);
+  const [historialInspecciones, setHistorialInspecciones] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -151,6 +156,62 @@ export default function InspeccionTaller() {
     } catch (error) {
       console.error('Error fetching todos los equipos:', error);
     }
+  };
+
+  const fetchHistorialInspecciones = async (equipoId: string) => {
+    setLoadingHistorial(true);
+    try {
+      const { data: mantenimientosData, error: mantenimientosError } = await supabase
+        .from('mantenimientos')
+        .select('id, fecha, descripcion, tecnico, created_at')
+        .eq('equipo_id', equipoId)
+        .eq('tipo_servicio', 'revision')
+        .order('created_at', { ascending: false });
+
+      if (mantenimientosError) throw mantenimientosError;
+
+      const mantenimientos = mantenimientosData || [];
+      const mantenimientoIds = mantenimientos.map(m => m.id);
+
+      let archivosMap: Record<string, any[]> = {};
+      if (mantenimientoIds.length > 0) {
+        const { data: archivosData, error: archivosError } = await supabase
+          .from('mantenimientos_archivos')
+          .select('*')
+          .in('mantenimiento_id', mantenimientoIds);
+
+        if (!archivosError && archivosData) {
+          archivosMap = archivosData.reduce((acc: Record<string, any[]>, archivo) => {
+            if (!acc[archivo.mantenimiento_id]) acc[archivo.mantenimiento_id] = [];
+            acc[archivo.mantenimiento_id].push(archivo);
+            return acc;
+          }, {});
+        }
+      }
+
+      const historial = mantenimientos.map(m => ({
+        ...m,
+        archivos: archivosMap[m.id] || [],
+      }));
+
+      setHistorialInspecciones(historial);
+    } catch (error) {
+      console.error('Error fetching historial inspecciones:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cargar el historial de inspecciones",
+      });
+      setHistorialInspecciones([]);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const handleVerHistorial = (equipo: EquipoEnTaller) => {
+    setSelectedEquipo(equipo);
+    setShowHistorialDialog(true);
+    fetchHistorialInspecciones(equipo.id);
   };
 
   const filterEquipos = () => {
@@ -479,13 +540,23 @@ export default function InspeccionTaller() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleIniciarInspeccion(equipo)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Inspeccionar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerHistorial(equipo)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleIniciarInspeccion(equipo)}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Inspeccionar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -756,6 +827,103 @@ export default function InspeccionTaller() {
               onClick={() => setShowManualInspeccionDialog(false)}
             >
               Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Historial de Inspecciones */}
+      <Dialog open={showHistorialDialog} onOpenChange={setShowHistorialDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historial de Inspecciones</DialogTitle>
+            <DialogDescription>
+              {selectedEquipo && `Equipo #${selectedEquipo.numero_equipo} - ${selectedEquipo.descripcion}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingHistorial ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Cargando historial...
+            </div>
+          ) : historialInspecciones.length === 0 ? (
+            <div className="py-8 text-center">
+              <ClipboardCheck className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                No hay inspecciones registradas para este equipo
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {historialInspecciones.map((inspeccion) => (
+                <Card key={inspeccion.id}>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Fecha:</span>
+                        <span className="ml-2 font-medium">{formatDate(inspeccion.created_at)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Técnico:</span>
+                        <span className="ml-2 font-medium">{inspeccion.tecnico || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Descripción:</span>
+                      <p className="mt-1 whitespace-pre-wrap">{inspeccion.descripcion}</p>
+                    </div>
+                    {inspeccion.archivos.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Evidencias:</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {inspeccion.archivos.map((archivo: any) => (
+                            <div key={archivo.id} className="relative group">
+                              {archivo.tipo_archivo === 'imagen' ? (
+                                <img
+                                  src={archivo.archivo_url}
+                                  alt={archivo.nombre_archivo || 'Evidencia'}
+                                  className="w-full h-24 object-cover rounded-md border"
+                                />
+                              ) : archivo.tipo_archivo === 'video' ? (
+                                <video
+                                  src={archivo.archivo_url}
+                                  className="w-full h-24 object-cover rounded-md border"
+                                  controls
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-24 bg-muted rounded-md border">
+                                  <FileIcon className="h-8 w-8 text-muted-foreground mb-1" />
+                                  <p className="text-xs text-center truncate w-full px-2">
+                                    {archivo.nombre_archivo || 'Archivo'}
+                                  </p>
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => window.open(archivo.archivo_url, '_blank')}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowHistorialDialog(false)}
+            >
+              Cerrar
             </Button>
           </DialogFooter>
         </DialogContent>
