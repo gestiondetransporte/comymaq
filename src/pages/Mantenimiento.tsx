@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Wrench, Loader2, CheckCircle2, MapPin, Bell } from "lucide-react";
+import { Search, Wrench, Loader2, CheckCircle2, MapPin, Bell, Eye, FileIcon, ImageIcon, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,6 +92,12 @@ export default function Mantenimiento() {
   const [equiposProximosServicio, setEquiposProximosServicio] = useState<any[]>([]);
   const [showAlertasServicio, setShowAlertasServicio] = useState(false);
   
+  // Historial dialog states
+  const [showHistorialDialog, setShowHistorialDialog] = useState(false);
+  const [historialMantenimientos, setHistorialMantenimientos] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [selectedEquipoHistorial, setSelectedEquipoHistorial] = useState<any>(null);
+   
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -541,6 +547,76 @@ export default function Mantenimiento() {
     }
   };
 
+  const fetchHistorialMantenimientos = async (equipoId: string) => {
+    setLoadingHistorial(true);
+    try {
+      const { data: mantenimientosData, error: mantError } = await supabase
+        .from('mantenimientos')
+        .select('*')
+        .eq('equipo_id', equipoId)
+        .order('fecha', { ascending: false });
+
+      if (mantError) throw mantError;
+
+      const mantenimientosList = mantenimientosData || [];
+
+      if (mantenimientosList.length === 0) {
+        setHistorialMantenimientos([]);
+        setLoadingHistorial(false);
+        return;
+      }
+
+      const mantIds = mantenimientosList.map(m => m.id);
+
+      const { data: archivosData, error: archError } = await supabase
+        .from('mantenimientos_archivos')
+        .select('*')
+        .in('mantenimiento_id', mantIds);
+
+      if (archError) throw archError;
+
+      const archivosByMantenimiento: Record<string, any[]> = {};
+      (archivosData || []).forEach((arch: any) => {
+        if (!archivosByMantenimiento[arch.mantenimiento_id]) {
+          archivosByMantenimiento[arch.mantenimiento_id] = [];
+        }
+        archivosByMantenimiento[arch.mantenimiento_id].push(arch);
+      });
+
+      const historial = mantenimientosList.map((m: any) => ({
+        ...m,
+        archivos: archivosByMantenimiento[m.id] || [],
+      }));
+
+      setHistorialMantenimientos(historial);
+    } catch (error) {
+      console.error('Error fetching historial:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cargar el historial de mantenimientos",
+      });
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const handleVerHistorial = (mantenimiento: Mantenimiento) => {
+    setSelectedEquipoHistorial(mantenimiento.equipos || mantenimiento.snapshot_equipo);
+    setShowHistorialDialog(true);
+    if (mantenimiento.equipo_id) {
+      fetchHistorialMantenimientos(mantenimiento.equipo_id);
+    }
+  };
+
+  const isImageFile = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url);
+  };
+
+  const isVideoFile = (url: string) => {
+    return /\.(mp4|mov|avi|wmv|mkv|webm)$/i.test(url);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -967,20 +1043,31 @@ export default function Mantenimiento() {
                       <TableCell className="max-w-xs truncate">{mantenimiento.descripcion}</TableCell>
                       <TableCell>{formatHoras(mantenimiento.proximo_servicio_horas)}</TableCell>
                       <TableCell>
-                        {mantenimiento.isProgramado && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedProgramado(mantenimiento);
-                              setProximoServicioManual((mantenimiento.horas_contrato || 0) + 300);
-                              setShowProgramadoDialog(true);
-                            }}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Realizado
-                          </Button>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          {!mantenimiento.isProgramado && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVerHistorial(mantenimiento)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {mantenimiento.isProgramado && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProgramado(mantenimiento);
+                                setProximoServicioManual((mantenimiento.horas_contrato || 0) + 300);
+                                setShowProgramadoDialog(true);
+                              }}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Realizado
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1119,6 +1206,130 @@ export default function Mantenimiento() {
           
           <DialogFooter>
             <Button onClick={() => setShowUbicacionDialog(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para ver historial de mantenimientos */}
+      <Dialog open={showHistorialDialog} onOpenChange={setShowHistorialDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-blue-600" />
+              Historial de Mantenimientos
+            </DialogTitle>
+            <DialogDescription>
+              {selectedEquipoHistorial ? (
+                <>
+                  Equipo #{selectedEquipoHistorial.numero_equipo} - {selectedEquipoHistorial.descripcion}
+                </>
+              ) : 'Información del equipo'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-2">
+            {loadingHistorial ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : historialMantenimientos.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No hay mantenimientos registrados para este equipo
+              </div>
+            ) : (
+              historialMantenimientos.map((mant) => (
+                <div key={mant.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Fecha</p>
+                      <p className="text-sm font-medium">{formatDate(mant.fecha)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tipo de Servicio</p>
+                      <p className="text-sm font-medium capitalize">{mant.tipo_servicio}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Técnico</p>
+                      <p className="text-sm font-medium">{mant.tecnico || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Orden de Servicio</p>
+                      <p className="text-sm font-medium">{mant.orden_servicio || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Próximo Servicio</p>
+                      <p className="text-sm font-medium">{formatHoras(mant.proximo_servicio_horas)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">ID Interno</p>
+                      <p className="text-sm font-medium font-mono">{mant.id_interno || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Descripción</p>
+                    <p className="text-sm font-medium">{mant.descripcion}</p>
+                  </div>
+
+                  {mant.archivos && mant.archivos.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Evidencias</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {mant.archivos.map((arch: any, idx: number) => (
+                          <div key={idx} className="rounded-md border overflow-hidden">
+                            {isImageFile(arch.archivo_url) ? (
+                              <a href={arch.archivo_url} target="_blank" rel="noopener noreferrer" className="block">
+                                <img
+                                  src={arch.archivo_url}
+                                  alt={arch.nombre_archivo || 'Evidencia'}
+                                  className="w-full h-24 object-cover"
+                                />
+                              </a>
+                            ) : isVideoFile(arch.archivo_url) ? (
+                              <a
+                                href={arch.archivo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center justify-center h-24 bg-muted gap-1"
+                              >
+                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground text-center px-1 line-clamp-2">
+                                  {arch.nombre_archivo || 'Video'}
+                                </span>
+                              </a>
+                            ) : (
+                              <a
+                                href={arch.archivo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center justify-center h-24 bg-muted gap-1"
+                              >
+                                <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground text-center px-1 line-clamp-2">
+                                  {arch.nombre_archivo || 'Archivo'}
+                                </span>
+                              </a>
+                            )}
+                            <div className="p-1.5 flex justify-end">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                                <a href={arch.archivo_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistorialDialog(false)}>
               Cerrar
             </Button>
           </DialogFooter>
