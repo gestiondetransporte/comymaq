@@ -158,6 +158,62 @@ export default function InspeccionTaller() {
     }
   };
 
+  const fetchHistorialInspecciones = async (equipoId: string) => {
+    setLoadingHistorial(true);
+    try {
+      const { data: mantenimientosData, error: mantenimientosError } = await supabase
+        .from('mantenimientos')
+        .select('id, fecha, descripcion, tecnico, created_at')
+        .eq('equipo_id', equipoId)
+        .eq('tipo_servicio', 'revision')
+        .order('created_at', { ascending: false });
+
+      if (mantenimientosError) throw mantenimientosError;
+
+      const mantenimientos = mantenimientosData || [];
+      const mantenimientoIds = mantenimientos.map(m => m.id);
+
+      let archivosMap: Record<string, any[]> = {};
+      if (mantenimientoIds.length > 0) {
+        const { data: archivosData, error: archivosError } = await supabase
+          .from('mantenimientos_archivos')
+          .select('*')
+          .in('mantenimiento_id', mantenimientoIds);
+
+        if (!archivosError && archivosData) {
+          archivosMap = archivosData.reduce((acc: Record<string, any[]>, archivo) => {
+            if (!acc[archivo.mantenimiento_id]) acc[archivo.mantenimiento_id] = [];
+            acc[archivo.mantenimiento_id].push(archivo);
+            return acc;
+          }, {});
+        }
+      }
+
+      const historial = mantenimientos.map(m => ({
+        ...m,
+        archivos: archivosMap[m.id] || [],
+      }));
+
+      setHistorialInspecciones(historial);
+    } catch (error) {
+      console.error('Error fetching historial inspecciones:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cargar el historial de inspecciones",
+      });
+      setHistorialInspecciones([]);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  const handleVerHistorial = (equipo: EquipoEnTaller) => {
+    setSelectedEquipo(equipo);
+    setShowHistorialDialog(true);
+    fetchHistorialInspecciones(equipo.id);
+  };
+
   const filterEquipos = () => {
     let filtered = [...equiposEnTaller];
 
