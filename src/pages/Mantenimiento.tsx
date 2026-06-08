@@ -92,6 +92,12 @@ export default function Mantenimiento() {
   const [equiposProximosServicio, setEquiposProximosServicio] = useState<any[]>([]);
   const [showAlertasServicio, setShowAlertasServicio] = useState(false);
   
+  // Historial dialog states
+  const [showHistorialDialog, setShowHistorialDialog] = useState(false);
+  const [historialMantenimientos, setHistorialMantenimientos] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [selectedEquipoHistorial, setSelectedEquipoHistorial] = useState<any>(null);
+   
   const { toast } = useToast();
   const { user } = useAuth();
 
