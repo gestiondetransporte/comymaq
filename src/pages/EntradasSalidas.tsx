@@ -301,15 +301,17 @@ export default function EntradasSalidas() {
 
     setLoadingInfo(true);
     try {
-      // 1. Equipo + almacén
-      const { data: equipoData } = await supabase
+      // 1. Equipo + almacén (excluir bajas; si hay duplicados toma el activo)
+      const { data: equiposMatch } = await supabase
         .from('equipos')
         .select(`
           id, numero_equipo, descripcion, marca, modelo, serie, estado, ubicacion_actual,
           almacenes ( nombre )
         `)
         .eq('numero_equipo', numeroEquipo.trim())
-        .maybeSingle();
+        .not('estado', 'in', '("BAJA","baja")')
+        .limit(1);
+      const equipoData = equiposMatch && equiposMatch.length > 0 ? equiposMatch[0] : null;
 
       if (!equipoData) {
         setEquipoInfo(null);
