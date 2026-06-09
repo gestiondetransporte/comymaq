@@ -515,12 +515,14 @@ export default function EntradasSalidas() {
     setLoading(true);
 
     try {
-      // Primero buscar el equipo por número para obtener su UUID
-      const { data: equipoData, error: equipoError } = await supabase
+      // Primero buscar el equipo por número para obtener su UUID (excluir bajas)
+      const { data: equiposBuscar, error: equipoError } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, serie, modelo, almacen_id')
+        .select('id, numero_equipo, serie, modelo, almacen_id, estado')
         .eq('numero_equipo', equipoId.trim())
-        .maybeSingle();
+        .not('estado', 'in', '("BAJA","baja")')
+        .limit(1);
+      const equipoData = equiposBuscar && equiposBuscar.length > 0 ? equiposBuscar[0] : null;
 
       if (equipoError) throw equipoError;
 
