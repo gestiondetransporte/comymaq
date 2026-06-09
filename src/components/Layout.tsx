@@ -174,8 +174,8 @@ export default function Layout({ children }: LayoutProps) {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <div className="flex flex-col gap-4 mt-8">
+              <SheetContent side="left" className="w-72 max-w-[85vw] p-0 flex flex-col bg-background">
+                <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-4 mt-8">
                   <NavLinks />
                 </div>
               </SheetContent>
