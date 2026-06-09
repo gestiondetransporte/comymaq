@@ -301,15 +301,17 @@ export default function EntradasSalidas() {
 
     setLoadingInfo(true);
     try {
-      // 1. Equipo + almacén
-      const { data: equipoData } = await supabase
+      // 1. Equipo + almacén (excluir bajas; si hay duplicados toma el activo)
+      const { data: equiposMatch } = await supabase
         .from('equipos')
         .select(`
           id, numero_equipo, descripcion, marca, modelo, serie, estado, ubicacion_actual,
           almacenes ( nombre )
         `)
         .eq('numero_equipo', numeroEquipo.trim())
-        .maybeSingle();
+        .not('estado', 'in', '("BAJA","baja")')
+        .limit(1);
+      const equipoData = equiposMatch && equiposMatch.length > 0 ? equiposMatch[0] : null;
 
       if (!equipoData) {
         setEquipoInfo(null);
@@ -513,12 +515,14 @@ export default function EntradasSalidas() {
     setLoading(true);
 
     try {
-      // Primero buscar el equipo por número para obtener su UUID
-      const { data: equipoData, error: equipoError } = await supabase
+      // Primero buscar el equipo por número para obtener su UUID (excluir bajas)
+      const { data: equiposBuscar, error: equipoError } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, serie, modelo, almacen_id')
+        .select('id, numero_equipo, serie, modelo, almacen_id, estado')
         .eq('numero_equipo', equipoId.trim())
-        .maybeSingle();
+        .not('estado', 'in', '("BAJA","baja")')
+        .limit(1);
+      const equipoData = equiposBuscar && equiposBuscar.length > 0 ? equiposBuscar[0] : null;
 
       if (equipoError) throw equipoError;
 
