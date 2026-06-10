@@ -381,10 +381,10 @@ export default function InspeccionTaller() {
 
       // 2. Update equipment based on check list result
       if (resultadoCheckList === "ok") {
-        // CHECK LIST OK → estado CHECKLIST OK (listo para volver a DISPONIBLE)
+        // CHECK LIST OK → estado DISPONIBLE (equipo listo para rentar)
         const almacenSeleccionado = almacenes.find(a => a.id === almacenDestino);
         const updateData: Record<string, string | null> = {
-          estado: 'checklist_ok',
+          estado: 'disponible',
         };
         if (almacenDestino) {
           updateData.ubicacion_actual = `Almacén - ${almacenSeleccionado?.nombre || 'Sin especificar'}`;
