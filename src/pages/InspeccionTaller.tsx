@@ -255,7 +255,7 @@ export default function InspeccionTaller() {
     setObservacionesInspeccion("");
     setTieneDanos(false);
     setDescripcionDanos("");
-    setAlmacenDestino("");
+    setAlmacenDestino(equipo.almacen_id || "");
     setTecnico("");
     setCambiarEstado(esManual);
     setArchivos([]);
