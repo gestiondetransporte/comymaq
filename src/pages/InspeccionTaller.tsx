@@ -109,7 +109,7 @@ export default function InspeccionTaller() {
       // Obtener equipos que están en taller o en inspección
       const { data: equiposData, error: equiposError } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado, almacen_id')
         .in('estado', ['taller', 'checklist_no_ok', 'checklist_ok'])
         .order('numero_equipo', { ascending: true });
 
