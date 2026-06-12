@@ -53,6 +53,7 @@ const TIPOS_MOVIMIENTO = [
   { value: 'taller', label: 'Taller', icon: Wrench, color: 'bg-red-500' },
   { value: 'mantenimiento', label: 'Mantenimiento', icon: Wrench, color: 'bg-amber-500' },
   { value: 'cambio_estado', label: 'Cambio Estado', icon: ArrowRightLeft, color: 'bg-slate-500' },
+  { value: 'cambio_almacen', label: 'Cambio Almacén', icon: ArrowRightLeft, color: 'bg-fuchsia-500' },
   { value: 'cotizacion', label: 'Cotización', icon: FileText, color: 'bg-cyan-500' },
   { value: 'contrato', label: 'Contrato', icon: FileText, color: 'bg-teal-500' },
 ];
