@@ -34,6 +34,7 @@ interface EquipoEnTaller {
   tipo: string | null;
   ubicacion_actual: string | null;
   estado: string | null;
+  almacen_id: string | null;
   fecha_entrada: string | null;
 }
 
@@ -108,7 +109,7 @@ export default function InspeccionTaller() {
       // Obtener equipos que están en taller o en inspección
       const { data: equiposData, error: equiposError } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado, almacen_id')
         .in('estado', ['taller', 'checklist_no_ok', 'checklist_ok'])
         .order('numero_equipo', { ascending: true });
 
@@ -148,7 +149,7 @@ export default function InspeccionTaller() {
     try {
       const { data, error } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado, almacen_id')
         .order('numero_equipo', { ascending: true });
 
       if (error) throw error;
@@ -254,7 +255,7 @@ export default function InspeccionTaller() {
     setObservacionesInspeccion("");
     setTieneDanos(false);
     setDescripcionDanos("");
-    setAlmacenDestino("");
+    setAlmacenDestino(equipo.almacen_id || "");
     setTecnico("");
     setCambiarEstado(esManual);
     setArchivos([]);
