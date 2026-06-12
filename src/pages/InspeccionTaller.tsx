@@ -34,6 +34,7 @@ interface EquipoEnTaller {
   tipo: string | null;
   ubicacion_actual: string | null;
   estado: string | null;
+  almacen_id: string | null;
   fecha_entrada: string | null;
 }
 
