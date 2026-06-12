@@ -893,15 +893,18 @@ export default function Inventario() {
                       <TableCell className="font-mono text-sm">{equipo.serie || "N/A"}</TableCell>
                       <TableCell>{getTipoBadge(equipo.tipo)}</TableCell>
                       <TableCell>
-                        {equipo.enMantenimiento ? (
-                          <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                            Taller
-                          </Badge>
-                        ) : equipo.almacenes ? (
-                          <Badge variant="outline">{equipo.almacenes.nombre}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">Sin asignar</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {equipo.almacenes ? (
+                            <Badge variant="outline">{equipo.almacenes.nombre}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Sin asignar</span>
+                          )}
+                          {equipo.enMantenimiento && (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 w-fit">
+                              En taller
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{getDisponibilidadBadge(equipo)}</TableCell>
                       <TableCell className="text-right">
