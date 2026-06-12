@@ -149,7 +149,7 @@ export default function InspeccionTaller() {
     try {
       const { data, error } = await supabase
         .from('equipos')
-        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado')
+        .select('id, numero_equipo, descripcion, marca, modelo, serie, tipo, ubicacion_actual, estado, almacen_id')
         .order('numero_equipo', { ascending: true });
 
       if (error) throw error;
