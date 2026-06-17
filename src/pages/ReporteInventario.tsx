@@ -492,10 +492,12 @@ export default function ReporteInventario() {
                   <TableHead className="text-right">Dentro</TableHead>
                   <TableHead className="text-right">Disponible</TableHead>
                   <TableHead className="text-right">Taller</TableHead>
+                  <TableHead className="text-right">Inactivo</TableHead>
                   <TableHead className="w-[12%]">General</TableHead>
                   <TableHead className="text-right">Seg. Renta</TableHead>
                   <TableHead className="text-right">Seg. Disponible</TableHead>
                   <TableHead className="text-right">Seg. Taller</TableHead>
+                  <TableHead className="text-right">Seg. Inactivo</TableHead>
                   <TableHead className="text-right">Seg. Clase</TableHead>
                 </TableRow>
               </TableHeader>
