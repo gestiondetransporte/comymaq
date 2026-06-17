@@ -592,7 +592,10 @@ export default function Inventario() {
 
       {/* Summary indicators */}
       {(() => {
-        const activos = equipos.filter((e) => (e.estado || "").toLowerCase() !== "baja");
+        const activos = equipos.filter((e) => {
+          const est = (e.estado || "").toUpperCase();
+          return est !== "BAJA" && est !== "INACTIVO";
+        });
         const enTaller = activos.filter((e) => {
           const es = (e.estado || "").toLowerCase();
           return e.enMantenimiento || es.includes("taller") || es.includes("mantenimiento");
