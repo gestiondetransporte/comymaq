@@ -643,8 +643,8 @@ export default function Inventario() {
 
       <Tabs defaultValue="activos" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="activos">Activos ({equipos.length - equiposBaja.length})</TabsTrigger>
-          <TabsTrigger value="baja">Fuera de Servicio ({equiposBaja.length})</TabsTrigger>
+          <TabsTrigger value="activos">Activos ({equipos.length - equiposFueraServicio.length})</TabsTrigger>
+          <TabsTrigger value="baja">Fuera de Servicio ({equiposFueraServicio.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="activos" className="space-y-6 mt-4">
