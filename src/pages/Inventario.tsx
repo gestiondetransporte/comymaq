@@ -284,8 +284,11 @@ export default function Inventario() {
   };
 
   const filterEquipos = () => {
-    // Excluir equipos dados de baja del inventario principal
-    let filtered = equipos.filter(e => (e.estado || '').toUpperCase() !== 'BAJA');
+    // Excluir equipos dados de baja o inactivos del inventario principal
+    let filtered = equipos.filter(e => {
+      const est = (e.estado || '').toUpperCase();
+      return est !== 'BAJA' && est !== 'INACTIVO';
+    });
 
     // Filter by type
     if (typeFilter.length > 0) {
