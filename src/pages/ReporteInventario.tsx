@@ -137,19 +137,24 @@ export default function ReporteInventario() {
           dentro: 0,
           disponible: 0,
           taller: 0,
+          inactivo: 0,
           general: 0,
           segmento_renta: 0,
           segmento_disponible: 0,
           segmento_taller: 0,
+          segmento_inactivo: 0,
           segmento_clase: 0,
         };
       }
       grouped[key].cantidad++;
+      const estUp = (equipo.estado || "").toUpperCase();
       const enContrato = equiposEnContrato.has(equipo.id);
       const enTaller =
         equipo.estado?.toLowerCase().includes("taller") ||
         equipo.estado?.toLowerCase().includes("mantenimiento");
-      if (enContrato) grouped[key].dentro++;
+      const isInactivo = estUp === "INACTIVO";
+      if (isInactivo) grouped[key].inactivo++;
+      else if (enContrato) grouped[key].dentro++;
       else if (enTaller) grouped[key].taller++;
       else grouped[key].disponible++;
     });
