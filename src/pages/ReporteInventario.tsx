@@ -288,9 +288,10 @@ export default function ReporteInventario() {
     // Resumen
     doc.setFontSize(10);
     doc.text(`Total: ${totalCantidad}`, 14, 37);
-    doc.text(`Taller: ${totalTaller}`, 70, 37);
-    doc.text(`Disponibles: ${totalDisponible}`, 120, 37);
-    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 180, 37);
+    doc.text(`Taller: ${totalTaller}`, 60, 37);
+    doc.text(`Disponibles: ${totalDisponible}`, 100, 37);
+    doc.text(`Inactivos: ${totalInactivo}`, 150, 37);
+    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 200, 37);
 
     const tableData = reportData.map((row) => [
       row.categoria,
@@ -300,32 +301,36 @@ export default function ReporteInventario() {
       row.dentro.toString(),
       row.disponible.toString(),
       row.taller.toString(),
+      row.inactivo.toString(),
       `${row.general}%`,
       `${row.segmento_renta}%`,
       `${row.segmento_disponible}%`,
       `${row.segmento_taller}%`,
+      `${row.segmento_inactivo}%`,
       `${row.segmento_clase}%`,
     ]);
 
     autoTable(doc, {
-      head: [["Cat", "Clase", "Descripción", "Cant", "Dentro", "Disp", "Taller", "General", "S.Renta", "S.Disp", "S.Taller", "S.Clase"]],
+      head: [["Cat", "Clase", "Descripción", "Cant", "Dentro", "Disp", "Taller", "Inact", "General", "S.Renta", "S.Disp", "S.Taller", "S.Inact", "S.Clase"]],
       body: tableData,
       startY: 42,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [59, 130, 246], fontStyle: "bold" },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 15 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 15, halign: "right" },
-        4: { cellWidth: 15, halign: "right" },
-        5: { cellWidth: 15, halign: "right", textColor: [22, 163, 74] },
-        6: { cellWidth: 15, halign: "right", textColor: [220, 38, 38] },
-        7: { cellWidth: 20, halign: "right" },
-        8: { cellWidth: 20, halign: "right" },
-        9: { cellWidth: 20, halign: "right" },
-        10: { cellWidth: 20, halign: "right" },
-        11: { cellWidth: 20, halign: "right" },
+        0: { cellWidth: 14 },
+        1: { cellWidth: 14 },
+        2: { cellWidth: 42 },
+        3: { cellWidth: 12, halign: "right" },
+        4: { cellWidth: 14, halign: "right" },
+        5: { cellWidth: 14, halign: "right", textColor: [22, 163, 74] },
+        6: { cellWidth: 14, halign: "right", textColor: [220, 38, 38] },
+        7: { cellWidth: 14, halign: "right", textColor: [100, 116, 139] },
+        8: { cellWidth: 16, halign: "right" },
+        9: { cellWidth: 16, halign: "right" },
+        10: { cellWidth: 16, halign: "right" },
+        11: { cellWidth: 16, halign: "right" },
+        12: { cellWidth: 16, halign: "right" },
+        13: { cellWidth: 16, halign: "right" },
       },
       didParseCell: (data: any) => {
         const rowIndex = data.row.index;
