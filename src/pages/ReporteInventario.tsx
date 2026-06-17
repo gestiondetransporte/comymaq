@@ -521,6 +521,7 @@ export default function ReporteInventario() {
                       <TableCell className="text-right">{row.dentro}</TableCell>
                       <TableCell className="text-right text-green-600 font-semibold">{row.disponible}</TableCell>
                       <TableCell className="text-right text-destructive font-semibold">{row.taller}</TableCell>
+                      <TableCell className="text-right text-slate-500 font-semibold">{row.inactivo}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
@@ -532,6 +533,7 @@ export default function ReporteInventario() {
                       <TableCell className="text-right text-xs">{row.segmento_renta}%</TableCell>
                       <TableCell className="text-right text-xs text-green-600 font-medium">{row.segmento_disponible}%</TableCell>
                       <TableCell className="text-right text-xs text-destructive font-medium">{row.segmento_taller}%</TableCell>
+                      <TableCell className="text-right text-xs text-slate-500 font-medium">{row.segmento_inactivo}%</TableCell>
                       <TableCell className="text-right text-xs">{row.segmento_clase}%</TableCell>
                     </TableRow>
                   ))
