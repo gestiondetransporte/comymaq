@@ -504,7 +504,7 @@ export default function ReporteInventario() {
               <TableBody>
                 {reportData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center text-muted-foreground">
                       No hay datos disponibles
                     </TableCell>
                   </TableRow>
