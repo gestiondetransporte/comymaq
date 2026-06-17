@@ -213,6 +213,7 @@ export default function ReporteInventario() {
   const totalCantidad = reportData.reduce((sum, item) => sum + item.cantidad, 0);
   const totalTaller = reportData.reduce((sum, item) => sum + item.taller, 0);
   const totalDisponible = reportData.reduce((sum, item) => sum + item.disponible, 0);
+  const totalInactivo = reportData.reduce((sum, item) => sum + item.inactivo, 0);
   const porcentajeDisponibilidad = totalCantidad > 0 ? (totalDisponible / totalCantidad) * 100 : 0;
 
   const isNewCategory = (index: number): boolean => {
