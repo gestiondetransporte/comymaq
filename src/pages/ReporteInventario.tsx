@@ -20,10 +20,12 @@ interface InventoryReport {
   dentro: number;
   disponible: number;
   taller: number;
+  inactivo: number;
   general: number;
   segmento_renta: number;
   segmento_disponible: number;
   segmento_taller: number;
+  segmento_inactivo: number;
   segmento_clase: number;
 }
 
@@ -135,19 +137,24 @@ export default function ReporteInventario() {
           dentro: 0,
           disponible: 0,
           taller: 0,
+          inactivo: 0,
           general: 0,
           segmento_renta: 0,
           segmento_disponible: 0,
           segmento_taller: 0,
+          segmento_inactivo: 0,
           segmento_clase: 0,
         };
       }
       grouped[key].cantidad++;
+      const estUp = (equipo.estado || "").toUpperCase();
       const enContrato = equiposEnContrato.has(equipo.id);
       const enTaller =
         equipo.estado?.toLowerCase().includes("taller") ||
         equipo.estado?.toLowerCase().includes("mantenimiento");
-      if (enContrato) grouped[key].dentro++;
+      const isInactivo = estUp === "INACTIVO";
+      if (isInactivo) grouped[key].inactivo++;
+      else if (enContrato) grouped[key].dentro++;
       else if (enTaller) grouped[key].taller++;
       else grouped[key].disponible++;
     });
@@ -164,6 +171,7 @@ export default function ReporteInventario() {
       const segmento_renta = item.cantidad > 0 ? (item.dentro / item.cantidad) * 100 : 0;
       const segmento_disponible = item.cantidad > 0 ? (item.disponible / item.cantidad) * 100 : 0;
       const segmento_taller = item.cantidad > 0 ? (item.taller / item.cantidad) * 100 : 0;
+      const segmento_inactivo = item.cantidad > 0 ? (item.inactivo / item.cantidad) * 100 : 0;
       const segmento_clase =
         totalPorClase[item.clase] > 0 ? (item.cantidad / totalPorClase[item.clase]) * 100 : 0;
       return {
@@ -172,6 +180,7 @@ export default function ReporteInventario() {
         segmento_renta: Math.round(segmento_renta * 10) / 10,
         segmento_disponible: Math.round(segmento_disponible * 10) / 10,
         segmento_taller: Math.round(segmento_taller * 10) / 10,
+        segmento_inactivo: Math.round(segmento_inactivo * 10) / 10,
         segmento_clase: Math.round(segmento_clase * 10) / 10,
       };
     });
@@ -204,6 +213,7 @@ export default function ReporteInventario() {
   const totalCantidad = reportData.reduce((sum, item) => sum + item.cantidad, 0);
   const totalTaller = reportData.reduce((sum, item) => sum + item.taller, 0);
   const totalDisponible = reportData.reduce((sum, item) => sum + item.disponible, 0);
+  const totalInactivo = reportData.reduce((sum, item) => sum + item.inactivo, 0);
   const porcentajeDisponibilidad = totalCantidad > 0 ? (totalDisponible / totalCantidad) * 100 : 0;
 
   const isNewCategory = (index: number): boolean => {
@@ -278,9 +288,10 @@ export default function ReporteInventario() {
     // Resumen
     doc.setFontSize(10);
     doc.text(`Total: ${totalCantidad}`, 14, 37);
-    doc.text(`Taller: ${totalTaller}`, 70, 37);
-    doc.text(`Disponibles: ${totalDisponible}`, 120, 37);
-    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 180, 37);
+    doc.text(`Taller: ${totalTaller}`, 60, 37);
+    doc.text(`Disponibles: ${totalDisponible}`, 100, 37);
+    doc.text(`Inactivos: ${totalInactivo}`, 150, 37);
+    doc.text(`Disponibilidad General: ${porcentajeDisponibilidad.toFixed(1)}%`, 200, 37);
 
     const tableData = reportData.map((row) => [
       row.categoria,
@@ -290,32 +301,36 @@ export default function ReporteInventario() {
       row.dentro.toString(),
       row.disponible.toString(),
       row.taller.toString(),
+      row.inactivo.toString(),
       `${row.general}%`,
       `${row.segmento_renta}%`,
       `${row.segmento_disponible}%`,
       `${row.segmento_taller}%`,
+      `${row.segmento_inactivo}%`,
       `${row.segmento_clase}%`,
     ]);
 
     autoTable(doc, {
-      head: [["Cat", "Clase", "Descripción", "Cant", "Dentro", "Disp", "Taller", "General", "S.Renta", "S.Disp", "S.Taller", "S.Clase"]],
+      head: [["Cat", "Clase", "Descripción", "Cant", "Dentro", "Disp", "Taller", "Inact", "General", "S.Renta", "S.Disp", "S.Taller", "S.Inact", "S.Clase"]],
       body: tableData,
       startY: 42,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [59, 130, 246], fontStyle: "bold" },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 15 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 15, halign: "right" },
-        4: { cellWidth: 15, halign: "right" },
-        5: { cellWidth: 15, halign: "right", textColor: [22, 163, 74] },
-        6: { cellWidth: 15, halign: "right", textColor: [220, 38, 38] },
-        7: { cellWidth: 20, halign: "right" },
-        8: { cellWidth: 20, halign: "right" },
-        9: { cellWidth: 20, halign: "right" },
-        10: { cellWidth: 20, halign: "right" },
-        11: { cellWidth: 20, halign: "right" },
+        0: { cellWidth: 14 },
+        1: { cellWidth: 14 },
+        2: { cellWidth: 42 },
+        3: { cellWidth: 12, halign: "right" },
+        4: { cellWidth: 14, halign: "right" },
+        5: { cellWidth: 14, halign: "right", textColor: [22, 163, 74] },
+        6: { cellWidth: 14, halign: "right", textColor: [220, 38, 38] },
+        7: { cellWidth: 14, halign: "right", textColor: [100, 116, 139] },
+        8: { cellWidth: 16, halign: "right" },
+        9: { cellWidth: 16, halign: "right" },
+        10: { cellWidth: 16, halign: "right" },
+        11: { cellWidth: 16, halign: "right" },
+        12: { cellWidth: 16, halign: "right" },
+        13: { cellWidth: 16, halign: "right" },
       },
       didParseCell: (data: any) => {
         const rowIndex = data.row.index;
@@ -477,17 +492,19 @@ export default function ReporteInventario() {
                   <TableHead className="text-right">Dentro</TableHead>
                   <TableHead className="text-right">Disponible</TableHead>
                   <TableHead className="text-right">Taller</TableHead>
+                  <TableHead className="text-right">Inactivo</TableHead>
                   <TableHead className="w-[12%]">General</TableHead>
                   <TableHead className="text-right">Seg. Renta</TableHead>
                   <TableHead className="text-right">Seg. Disponible</TableHead>
                   <TableHead className="text-right">Seg. Taller</TableHead>
+                  <TableHead className="text-right">Seg. Inactivo</TableHead>
                   <TableHead className="text-right">Seg. Clase</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {reportData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground">
+                    <TableCell colSpan={14} className="text-center text-muted-foreground">
                       No hay datos disponibles
                     </TableCell>
                   </TableRow>
@@ -504,6 +521,7 @@ export default function ReporteInventario() {
                       <TableCell className="text-right">{row.dentro}</TableCell>
                       <TableCell className="text-right text-green-600 font-semibold">{row.disponible}</TableCell>
                       <TableCell className="text-right text-destructive font-semibold">{row.taller}</TableCell>
+                      <TableCell className="text-right text-slate-500 font-semibold">{row.inactivo}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
@@ -515,6 +533,7 @@ export default function ReporteInventario() {
                       <TableCell className="text-right text-xs">{row.segmento_renta}%</TableCell>
                       <TableCell className="text-right text-xs text-green-600 font-medium">{row.segmento_disponible}%</TableCell>
                       <TableCell className="text-right text-xs text-destructive font-medium">{row.segmento_taller}%</TableCell>
+                      <TableCell className="text-right text-xs text-slate-500 font-medium">{row.segmento_inactivo}%</TableCell>
                       <TableCell className="text-right text-xs">{row.segmento_clase}%</TableCell>
                     </TableRow>
                   ))

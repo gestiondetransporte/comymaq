@@ -804,6 +804,7 @@ export function EquipoDetailsDialog({
                           <SelectItem value="CHECKLIST OK">CHECKLIST OK</SelectItem>
                           <SelectItem value="CHECKLIST NO OK">CHECKLIST NO OK</SelectItem>
                           <SelectItem value="TALLER EXTERNO">TALLER EXTERNO</SelectItem>
+                          <SelectItem value="INACTIVO">INACTIVO</SelectItem>
                           <SelectItem value="BAJA">BAJA</SelectItem>
                         </SelectContent>
                       </Select>

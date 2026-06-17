@@ -284,8 +284,11 @@ export default function Inventario() {
   };
 
   const filterEquipos = () => {
-    // Excluir equipos dados de baja del inventario principal
-    let filtered = equipos.filter(e => (e.estado || '').toUpperCase() !== 'BAJA');
+    // Excluir equipos dados de baja o inactivos del inventario principal
+    let filtered = equipos.filter(e => {
+      const est = (e.estado || '').toUpperCase();
+      return est !== 'BAJA' && est !== 'INACTIVO';
+    });
 
     // Filter by type
     if (typeFilter.length > 0) {
@@ -395,6 +398,8 @@ export default function Inventario() {
           return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
         case 'BAJA':
           return <Badge variant="destructive">BAJA</Badge>;
+        case 'INACTIVO':
+          return <Badge variant="secondary" className="bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">INACTIVO</Badge>;
         default:
           return <Badge variant="outline">{equipo.estado?.toUpperCase()}</Badge>;
       }
@@ -548,7 +553,11 @@ export default function Inventario() {
     );
   }
 
-  const equiposBaja = equipos.filter(e => (e.estado || '').toUpperCase() === 'BAJA');
+  const equiposFueraServicio = equipos.filter(e => {
+    const est = (e.estado || '').toUpperCase();
+    return est === 'BAJA' || est === 'INACTIVO';
+  });
+  const equiposBaja = equiposFueraServicio;
 
   return (
     <div className="space-y-6">
@@ -583,7 +592,10 @@ export default function Inventario() {
 
       {/* Summary indicators */}
       {(() => {
-        const activos = equipos.filter((e) => (e.estado || "").toLowerCase() !== "baja");
+        const activos = equipos.filter((e) => {
+          const est = (e.estado || "").toUpperCase();
+          return est !== "BAJA" && est !== "INACTIVO";
+        });
         const enTaller = activos.filter((e) => {
           const es = (e.estado || "").toLowerCase();
           return e.enMantenimiento || es.includes("taller") || es.includes("mantenimiento");
@@ -631,8 +643,8 @@ export default function Inventario() {
 
       <Tabs defaultValue="activos" className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="activos">Activos ({equipos.length - equiposBaja.length})</TabsTrigger>
-          <TabsTrigger value="baja">Fuera de Servicio ({equiposBaja.length})</TabsTrigger>
+          <TabsTrigger value="activos">Activos ({equipos.length - equiposFueraServicio.length})</TabsTrigger>
+          <TabsTrigger value="baja">Fuera de Servicio ({equiposFueraServicio.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="activos" className="space-y-6 mt-4">
@@ -736,6 +748,7 @@ export default function Inventario() {
                           "CHECKLIST OK",
                           "CHECKLIST NO OK",
                           "TALLER EXTERNO",
+                          "INACTIVO",
                         ].map(v => ({ value: v, label: v }))}
                         selected={estadoFilter}
                         onChange={setEstadoFilter}
@@ -955,7 +968,7 @@ export default function Inventario() {
             <CardHeader>
               <CardTitle>Equipos Fuera de Servicio</CardTitle>
               <CardDescription>
-                Equipos dados de baja. Total: {equiposBaja.length}
+                Equipos dados de baja o inactivos. Total: {equiposFueraServicio.length}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -994,7 +1007,11 @@ export default function Inventario() {
                             {equipo.ubicacion_actual || "—"}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="destructive">BAJA</Badge>
+                            {(equipo.estado || '').toUpperCase() === 'INACTIVO' ? (
+                              <Badge variant="secondary" className="bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">INACTIVO</Badge>
+                            ) : (
+                              <Badge variant="destructive">BAJA</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
