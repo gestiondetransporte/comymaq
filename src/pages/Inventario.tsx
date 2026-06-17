@@ -1007,7 +1007,11 @@ export default function Inventario() {
                             {equipo.ubicacion_actual || "—"}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="destructive">BAJA</Badge>
+                            {(equipo.estado || '').toUpperCase() === 'INACTIVO' ? (
+                              <Badge variant="secondary" className="bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">INACTIVO</Badge>
+                            ) : (
+                              <Badge variant="destructive">BAJA</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
