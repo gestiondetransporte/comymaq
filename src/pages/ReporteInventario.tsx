@@ -171,6 +171,7 @@ export default function ReporteInventario() {
       const segmento_renta = item.cantidad > 0 ? (item.dentro / item.cantidad) * 100 : 0;
       const segmento_disponible = item.cantidad > 0 ? (item.disponible / item.cantidad) * 100 : 0;
       const segmento_taller = item.cantidad > 0 ? (item.taller / item.cantidad) * 100 : 0;
+      const segmento_inactivo = item.cantidad > 0 ? (item.inactivo / item.cantidad) * 100 : 0;
       const segmento_clase =
         totalPorClase[item.clase] > 0 ? (item.cantidad / totalPorClase[item.clase]) * 100 : 0;
       return {
@@ -179,6 +180,7 @@ export default function ReporteInventario() {
         segmento_renta: Math.round(segmento_renta * 10) / 10,
         segmento_disponible: Math.round(segmento_disponible * 10) / 10,
         segmento_taller: Math.round(segmento_taller * 10) / 10,
+        segmento_inactivo: Math.round(segmento_inactivo * 10) / 10,
         segmento_clase: Math.round(segmento_clase * 10) / 10,
       };
     });
