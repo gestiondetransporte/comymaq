@@ -395,6 +395,8 @@ export default function Inventario() {
           return <Badge variant="default" className="bg-green-600 hover:bg-green-700">DISPONIBLE</Badge>;
         case 'BAJA':
           return <Badge variant="destructive">BAJA</Badge>;
+        case 'INACTIVO':
+          return <Badge variant="secondary" className="bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100">INACTIVO</Badge>;
         default:
           return <Badge variant="outline">{equipo.estado?.toUpperCase()}</Badge>;
       }
