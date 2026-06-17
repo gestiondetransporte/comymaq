@@ -968,7 +968,7 @@ export default function Inventario() {
             <CardHeader>
               <CardTitle>Equipos Fuera de Servicio</CardTitle>
               <CardDescription>
-                Equipos dados de baja. Total: {equiposBaja.length}
+                Equipos dados de baja o inactivos. Total: {equiposFueraServicio.length}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
