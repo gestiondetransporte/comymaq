@@ -738,6 +738,7 @@ export default function Inventario() {
                           "CHECKLIST OK",
                           "CHECKLIST NO OK",
                           "TALLER EXTERNO",
+                          "INACTIVO",
                         ].map(v => ({ value: v, label: v }))}
                         selected={estadoFilter}
                         onChange={setEstadoFilter}
