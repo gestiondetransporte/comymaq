@@ -20,10 +20,12 @@ interface InventoryReport {
   dentro: number;
   disponible: number;
   taller: number;
+  inactivo: number;
   general: number;
   segmento_renta: number;
   segmento_disponible: number;
   segmento_taller: number;
+  segmento_inactivo: number;
   segmento_clase: number;
 }
 
