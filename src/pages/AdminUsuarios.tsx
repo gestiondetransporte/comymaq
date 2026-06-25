@@ -137,16 +137,18 @@ export default function AdminUsuarios() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    const { error: roleError } = await supabase.from('user_roles').delete().eq('user_id', userId);
-    if (roleError) {
-      toast({ variant: "destructive", title: "Error al eliminar usuario", description: roleError.message });
+    const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+      body: { user_id: userId },
+    });
+    if (error || (data as any)?.error) {
+      toast({ variant: "destructive", title: "Error al eliminar usuario", description: (data as any)?.error || error?.message });
       return;
     }
-    await supabase.from('user_module_access').delete().eq('user_id', userId);
     toast({ title: "Usuario eliminado", description: "El usuario ha sido eliminado del sistema" });
     fetchUsers();
     setDeleteUserId(null);
   };
+
 
   const openEdit = async (user: UserWithRole) => {
     setEditingUser(user);
