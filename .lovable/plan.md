@@ -1,69 +1,56 @@
+# Propuesta COMYMAQ — Sistema de Gestión de Rentas
 
-## Objetivo
+## Entregable
+Dos archivos en `/mnt/documents/`:
+- `Propuesta_COMYMAQ_Rentas.docx` (editable)
+- `Propuesta_COMYMAQ_Rentas.pdf` (versión final para compartir)
 
-El campo **Estado** del equipo debe cambiarse únicamente:
-1. **Automáticamente** por eventos del flujo de trabajo (contratos, entradas/salidas, recolecciones, inspecciones).
-2. **Manualmente solo por un administrador** desde la ficha del equipo.
+Ambos con la identidad visual de COMYMAQ (paleta corporativa, logo, tipografía sans consistente con el sistema actual) y aproximadamente 18–22 páginas.
 
-Unificar el catálogo de estados, agregar **CONTRATADO** y los dos estados de checklist (**CHECKLIST OK** / **CHECKLIST NO OK**).
+## Estructura del documento
 
----
+1. **Portada** — logo COMYMAQ, título, fecha (15/07/2026), versión.
+2. **Resumen ejecutivo** — objetivo, alcance, filosofía "El sistema dirige, logística controla, ventas apoya, gerencia supervisa".
+3. **Mapa de módulos y roles** — diagrama de arquitectura + tabla de permisos (Administradora / Vendedor / Gerencia).
+4. **Módulos principales** (una sección por módulo, cada una con: objetivo, historias de usuario, campos/candados, mockup UI a página completa, notas técnicas):
+   - 4.1 Cotizaciones (motivos aceptación/rechazo, último acercamiento)
+   - 4.2 Histórico Universal de Contratos (activos, inactivos, baja, no firmados)
+   - 4.3 Control de Contratos Activos (colores, días de vencimiento, botones contacto)
+   - 4.4 CRM de Seguimiento (alertas por fechas)
+   - 4.5 Panel de Supervisión Gerencial (casos vencidos / sin seguimiento)
+5. **Submódulos y flujos** (mockup dedicado por cada uno):
+   - 5.1 Botones de contacto (WhatsApp / Correo / CMS) + reenvío de contrato
+   - 5.2 Ciclo CRM día 10 → -7 → -5 (timeline visual)
+   - 5.3 Candados y validaciones progresivas (contrato firmado, O/C, respuesta cliente)
+   - 5.4 Vista Vendedor vs. Vista Administradora (comparativo lado a lado)
+   - 5.5 Bitácora de actividades e indicadores KPI (tasa conversión, efectividad renovaciones)
+   - 5.6 Exportación a Excel del control completo
+6. **Roadmap de implementación** — fases por prioridad (Crítica → Alta → Media) con estimación relativa.
+7. **Próximos pasos y firma de aprobación**.
 
-## Catálogo único de estados (final)
+## Generación de mockups
 
-| Estado | Cuándo se asigna (automático) |
-|---|---|
-| `DISPONIBLE` | Equipo nuevo en bodega listo para rentar |
-| `CONTRATADO` | **NUEVO** — Se crea un contrato (desde Contratos o al convertir una Cotización), pero el equipo aún no sale de bodega |
-| `DENTRO` | Se registra la **Salida a Renta** en Entradas/Salidas |
-| `TALLER` | Entrada de equipo o Regreso de Renta (recolección completada) — esperando revisión |
-| `CHECKLIST OK` | **NUEVO** — Taller revisó el equipo y está en buenas condiciones (listo para volver a DISPONIBLE) |
-| `CHECKLIST NO OK` | **NUEVO** — Taller revisó y encontró fallas; requiere reparación |
-| `TALLER EXTERNO` | Se registra Salida a Taller Externo |
-| `BAJA` | Salida Venta o baja manual de admin |
+Cada mockup es una imagen PNG de alta fidelidad (1600×1000) creada con `imagegen` en calidad `premium` (para que la tipografía y las tablas sean legibles). Prompts describen:
+- Paleta COMYMAQ (azul corporativo + acentos), logo en header, sidebar oscuro tipo dashboard.
+- Componentes reales: tablas con badges de estado (Activo, Vencido, Baja), botones WhatsApp/Correo verdes/azules, columna "Días para vencer" con colores semáforo, diálogos modales, timelines CRM.
+- Datos ficticios realistas (folios COT-2026-XXXX, clientes ejemplo, equipos Bobcat/JCB).
 
-Se eliminan los valores sueltos `LIBRE` y `en_inspeccion` que aparecen hoy en la UI. Todo se mostrará en mayúsculas y el código normalizará a minúsculas con guión bajo para guardar (`checklist_ok`, `checklist_no_ok`, `taller_externo`, etc.).
+Aproximadamente 14 mockups (5 principales + 6 submódulos + 3 auxiliares como portada/diagrama).
 
-Flujo natural del estado en taller:
-`TALLER` (pendiente de inspección) → al completar inspección → `CHECKLIST OK` o `CHECKLIST NO OK` → cuando se repara/aprueba → `DISPONIBLE` (admin o automático tras reparación).
+## Detalles técnicos de generación
 
----
+1. Extraer paleta y logo del proyecto (leer `src/index.css` para tokens, buscar logo en `src/assets/` o `/mnt/documents/`).
+2. Generar los 14 mockups en paralelo con `imagegen--generate_image` (premium) → `/tmp/mockups/*.png`.
+3. Construir el DOCX con `docx-js` siguiendo el skill DOCX:
+   - US Letter, márgenes 1", Arial, estilos Heading1/2 con azul COMYMAQ.
+   - Tablas con `WidthType.DXA`, `ShadingType.CLEAR`, dual widths.
+   - Imágenes embebidas con `ImageRun` (type: "png", altText completo).
+   - TOC automático usando HeadingLevel.
+4. Validar el DOCX con `validate_document.py`.
+5. Convertir a PDF con `run_libreoffice.py --headless --convert-to pdf`.
+6. QA obligatorio: `pdftoppm -jpeg -r 120 propuesta.pdf qa` → revisar cada página con `code--view`, corregir overflows/imágenes cortadas, regenerar hasta pase limpio.
+7. Copiar ambos archivos a `/mnt/documents/` y emitir dos `<presentation-artifact>` para descarga.
 
-## Cambios en el flujo automático
-
-1. **Contratos** y **Cotizaciones (conversión a contrato)**: al crear contrato → `equipos.estado = 'contratado'` (hoy Cotizaciones pone `'dentro'`; se quita).
-2. **Entradas/Salidas** (se conserva el mapeo actual):
-   - `salida_renta` → `dentro`
-   - `salida_venta` → `baja`
-   - `salida_taller_externo` → `taller_externo`
-   - `entrada_equipo` / `regreso_renta` → `taller`
-3. **Recolecciones**: recolección completada → `taller` (ya lo hace).
-4. **Inspección Taller** (`src/pages/InspeccionTaller.tsx`):
-   - Resultado **OK** → `checklist_ok` (antes ponía `disponible` directo).
-   - Resultado **NO OK** → `checklist_no_ok` (antes ponía `taller`).
-   - El listado de equipos a inspeccionar incluirá `taller`, `checklist_no_ok` y `checklist_ok` (por si requiere re-inspección).
-5. **Baja desde ficha de equipo**: solo admin (ya está).
-
----
-
-## Cambios para bloquear edición manual
-
-- **`src/components/EquipoDetailsDialog.tsx`**: el selector de Estado se renderiza:
-  - **Admin**: `<Select>` editable con las 8 opciones del catálogo unificado.
-  - **No admin**: solo lectura (Badge), con leyenda "Solo administradores pueden cambiar el estado manualmente".
-- **`src/components/AgregarEquipoDialog.tsx`**: al crear un equipo nuevo, el estado se fija en `disponible` y se oculta el selector para usuarios no admin (admin puede elegir).
-- En filtros existentes (Inventario, Inspección Taller, Cotizaciones para equipo "disponible") se reemplaza cualquier referencia a `'en_inspeccion'` por el nuevo catálogo y se considera `checklist_ok` como equivalente operativo a "listo para volver a disponible".
-
----
-
-## Resumen de archivos a tocar
-
-- `src/components/EquipoDetailsDialog.tsx` — selector condicional por rol + nuevas opciones (CONTRATADO, CHECKLIST OK, CHECKLIST NO OK).
-- `src/components/AgregarEquipoDialog.tsx` — estado por defecto `disponible`, selector solo para admin.
-- `src/pages/Contratos.tsx` — actualizar equipo a `contratado` al crear contrato.
-- `src/pages/Cotizaciones.tsx` — al convertir cotización en contrato, poner `contratado` en vez de `dentro`.
-- `src/pages/InspeccionTaller.tsx` — guardar `checklist_ok` / `checklist_no_ok`; ampliar filtro de equipos a inspeccionar.
-- `src/components/ui` / lugares con badge de estado — agregar colores para los nuevos estados (CONTRATADO en azul, CHECKLIST OK en verde, CHECKLIST NO OK en rojo/ámbar).
-- Memoria del proyecto: actualizar la regla central de transiciones para incluir los 3 nuevos estados.
-
-No se requieren migraciones de base de datos (el campo `estado` es texto libre).
+## Fuera de alcance
+- No se modifica código de la aplicación COMYMAQ. Este entregable es únicamente el documento de propuesta.
+- Los mockups son ilustrativos; la implementación real vendrá en fases posteriores según el roadmap incluido.
