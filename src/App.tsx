@@ -24,6 +24,7 @@ import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
 
 import Personal from "./pages/Personal";
+import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
 import Layout from "@/components/Layout";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -50,6 +51,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
       <Route
         path="/"
         element={
