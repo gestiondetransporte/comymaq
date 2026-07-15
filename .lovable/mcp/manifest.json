@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xgahgclqmkfazkrowwwt.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "comymaq-mcp",
+      "version": "0.1.0",
+      "title": "COMYMAQ MCP"
+    },
+    "tools": [
+      {
+        "name": "list_equipos",
+        "title": "Listar equipos",
+        "description": "Lista equipos del inventario. Filtros opcionales por estado (disponible, contratado, taller, inactivo, baja, etc.), modelo o marca. Devuelve como máximo 50 resultados.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "estado": {
+              "type": "string",
+              "description": "Estado del equipo, ej. 'disponible'"
+            },
+            "modelo": {
+              "type": "string",
+              "description": "Filtro por modelo (búsqueda parcial)"
+            },
+            "marca": {
+              "type": "string",
+              "description": "Filtro por marca (búsqueda parcial)"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Límite de resultados (default 20)"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_equipo",
+        "title": "Obtener equipo por folio",
+        "description": "Obtiene el detalle completo de un equipo específico por su folio.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "folio": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Folio del equipo (ej. 'EQ-0001')"
+            }
+          },
+          "required": [
+            "folio"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_contratos",
+        "title": "Listar contratos",
+        "description": "Lista contratos de renta. Permite filtrar por estatus y cliente.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "estatus": {
+              "type": "string",
+              "description": "Estatus del contrato, ej. 'activo', 'finalizado'"
+            },
+            "cliente": {
+              "type": "string",
+              "description": "Filtro por nombre de cliente (parcial)"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_clientes",
+        "title": "Listar clientes",
+        "description": "Lista clientes registrados. Busca por nombre parcial si se provee.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Búsqueda parcial por nombre"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "inventario_resumen",
+        "title": "Resumen de inventario",
+        "description": "Devuelve el conteo de equipos agrupado por estado.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
