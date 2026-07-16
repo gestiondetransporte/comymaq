@@ -1890,7 +1890,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                                   size="sm"
                                   variant="ghost"
                                   className="text-red-600 hover:text-red-700"
-                                  onClick={() => handleRejectCotizacion(cot)}
+                                  onClick={() => { setRejectingCotizacion(cot); setMotivoRechazo(''); setRejectDialogOpen(true); }}
                                   title="Rechazar"
                                 >
                                   <XCircle className="h-4 w-4" />
