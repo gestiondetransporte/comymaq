@@ -151,6 +151,13 @@ export default function Cotizaciones() {
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
   const [selectedCotizacion, setSelectedCotizacion] = useState<CotizacionHistorial | null>(null);
   const [acceptLoading, setAcceptLoading] = useState(false);
+  const [motivoAceptacion, setMotivoAceptacion] = useState('');
+
+  // Reject dialog
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectingCotizacion, setRejectingCotizacion] = useState<CotizacionHistorial | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [rejectLoading, setRejectLoading] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
