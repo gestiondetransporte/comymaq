@@ -1950,6 +1950,16 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   Horas de trabajo: <strong>{selectedCotizacion.dias_renta * 8} horas</strong>
                 </li>
               </ul>
+
+              <div className="space-y-2">
+                <Label>Motivo de aceptación (opcional)</Label>
+                <Textarea
+                  placeholder="Ej: mejor precio, disponibilidad inmediata, referido..."
+                  value={motivoAceptacion}
+                  onChange={(e) => setMotivoAceptacion(e.target.value)}
+                  rows={2}
+                />
+              </div>
             </div>
           )}
 
@@ -1959,6 +1969,47 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
             </Button>
             <Button onClick={handleAcceptCotizacion} disabled={acceptLoading} className="bg-green-600 hover:bg-green-700">
               {acceptLoading ? 'Procesando...' : 'Confirmar y Crear Contrato'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Cotización Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechazar Cotización</DialogTitle>
+            <DialogDescription>
+              Registra el motivo del rechazo para nutrir el análisis comercial.
+            </DialogDescription>
+          </DialogHeader>
+          {rejectingCotizacion && (
+            <div className="space-y-3 py-2">
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-medium">{rejectingCotizacion.cliente_nombre}</p>
+                <p>{rejectingCotizacion.equipo_descripcion}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Motivo del rechazo *</Label>
+                <Textarea
+                  placeholder="Ej: precio alto, eligió a la competencia, proyecto pospuesto..."
+                  value={motivoRechazo}
+                  onChange={(e) => setMotivoRechazo(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={rejectLoading}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRejectCotizacion}
+              disabled={rejectLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {rejectLoading ? 'Guardando...' : 'Confirmar Rechazo'}
             </Button>
           </DialogFooter>
         </DialogContent>
