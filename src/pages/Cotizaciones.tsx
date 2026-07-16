@@ -1827,6 +1827,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                       <TableHead className="text-center">Días</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Último acercamiento</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
