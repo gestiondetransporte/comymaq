@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -436,7 +437,8 @@ export default function Cotizaciones() {
         .from('cotizaciones')
         .update({ 
           status: 'aceptada',
-          contrato_id: contratoData.id 
+          contrato_id: contratoData.id,
+          motivo_aceptacion: motivoAceptacion || null,
         })
         .eq('id', selectedCotizacion.id);
 
@@ -450,6 +452,7 @@ export default function Cotizaciones() {
       fetchClientes();
       setAcceptDialogOpen(false);
       setSelectedCotizacion(null);
+      setMotivoAceptacion('');
     } catch (error) {
       console.error('Error accepting cotizacion:', error);
       toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la cotización" });
@@ -458,18 +461,29 @@ export default function Cotizaciones() {
     }
   };
 
-  const handleRejectCotizacion = async (cotizacion: CotizacionHistorial) => {
+  const handleRejectCotizacion = async () => {
+    if (!rejectingCotizacion) return;
+    if (!motivoRechazo.trim()) {
+      toast({ variant: "destructive", title: "Motivo requerido", description: "Indica por qué se rechaza la cotización" });
+      return;
+    }
+    setRejectLoading(true);
     try {
       await supabase
         .from('cotizaciones')
-        .update({ status: 'rechazada' })
-        .eq('id', cotizacion.id);
+        .update({ status: 'rechazada', motivo_rechazo: motivoRechazo.trim() })
+        .eq('id', rejectingCotizacion.id);
 
       toast({ title: "Cotización rechazada" });
+      setRejectDialogOpen(false);
+      setRejectingCotizacion(null);
+      setMotivoRechazo('');
       fetchHistorial();
     } catch (error) {
       console.error('Error rejecting cotizacion:', error);
       toast({ variant: "destructive", title: "Error", description: "No se pudo rechazar la cotización" });
+    } finally {
+      setRejectLoading(false);
     }
   };
 
