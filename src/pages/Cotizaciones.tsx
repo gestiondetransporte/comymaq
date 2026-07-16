@@ -212,7 +212,7 @@ export default function Cotizaciones() {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .select('id, folio_cotizacion, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto')
+        .select('id, folio_cotizacion, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto, motivo_aceptacion, motivo_rechazo, ultimo_acercamiento_fecha, ultimo_acercamiento_nota')
         .order('created_at', { ascending: false })
         .limit(50);
       
