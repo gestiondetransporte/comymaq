@@ -254,6 +254,8 @@ export type Database = {
           estado_ubicacion: string | null
           folio_cotizacion: string | null
           id: string
+          motivo_aceptacion: string | null
+          motivo_rechazo: string | null
           municipio: string | null
           otros_concepto: string | null
           otros_monto: number | null
@@ -262,11 +264,14 @@ export type Database = {
           seguro: number | null
           seguro_percent: number | null
           status: string | null
+          status_changed_at: string | null
           subtotal: number
           telefono: string | null
           tipo_renta: string | null
           total_con_iva: number
           ubicacion_gps: string | null
+          ultimo_acercamiento_fecha: string | null
+          ultimo_acercamiento_nota: string | null
           vendedor: string | null
           vendedor_correo: string | null
           vendedor_telefono: string | null
@@ -290,6 +295,8 @@ export type Database = {
           estado_ubicacion?: string | null
           folio_cotizacion?: string | null
           id?: string
+          motivo_aceptacion?: string | null
+          motivo_rechazo?: string | null
           municipio?: string | null
           otros_concepto?: string | null
           otros_monto?: number | null
@@ -298,11 +305,14 @@ export type Database = {
           seguro?: number | null
           seguro_percent?: number | null
           status?: string | null
+          status_changed_at?: string | null
           subtotal: number
           telefono?: string | null
           tipo_renta?: string | null
           total_con_iva: number
           ubicacion_gps?: string | null
+          ultimo_acercamiento_fecha?: string | null
+          ultimo_acercamiento_nota?: string | null
           vendedor?: string | null
           vendedor_correo?: string | null
           vendedor_telefono?: string | null
@@ -326,6 +336,8 @@ export type Database = {
           estado_ubicacion?: string | null
           folio_cotizacion?: string | null
           id?: string
+          motivo_aceptacion?: string | null
+          motivo_rechazo?: string | null
           municipio?: string | null
           otros_concepto?: string | null
           otros_monto?: number | null
@@ -334,11 +346,14 @@ export type Database = {
           seguro?: number | null
           seguro_percent?: number | null
           status?: string | null
+          status_changed_at?: string | null
           subtotal?: number
           telefono?: string | null
           tipo_renta?: string | null
           total_con_iva?: number
           ubicacion_gps?: string | null
+          ultimo_acercamiento_fecha?: string | null
+          ultimo_acercamiento_nota?: string | null
           vendedor?: string | null
           vendedor_correo?: string | null
           vendedor_telefono?: string | null
@@ -363,6 +378,56 @@ export type Database = {
             columns: ["equipo_id"]
             isOneToOne: false
             referencedRelation: "equipos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_seguimientos: {
+        Row: {
+          cotizacion_id: string
+          created_at: string
+          id: string
+          notas: string | null
+          proxima_accion: string | null
+          proxima_accion_fecha: string | null
+          resultado: string | null
+          tipo_contacto: string
+          updated_at: string
+          usuario_email: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          cotizacion_id: string
+          created_at?: string
+          id?: string
+          notas?: string | null
+          proxima_accion?: string | null
+          proxima_accion_fecha?: string | null
+          resultado?: string | null
+          tipo_contacto: string
+          updated_at?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          cotizacion_id?: string
+          created_at?: string
+          id?: string
+          notas?: string | null
+          proxima_accion?: string | null
+          proxima_accion_fecha?: string | null
+          resultado?: string | null
+          tipo_contacto?: string
+          updated_at?: string
+          usuario_email?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_seguimientos_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            isOneToOne: false
+            referencedRelation: "cotizaciones"
             referencedColumns: ["id"]
           },
         ]
