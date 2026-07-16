@@ -22,6 +22,7 @@ import ReporteInventario from "./pages/ReporteInventario";
 import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
+import CRM from "./pages/CRM";
 
 import Personal from "./pages/Personal";
 import OAuthConsent from "./pages/OAuthConsent";
@@ -161,6 +162,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Cotizaciones />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/crm"
+        element={
+          <ProtectedRoute>
+            <CRM />
           </ProtectedRoute>
         }
       />

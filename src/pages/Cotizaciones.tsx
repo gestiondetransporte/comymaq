@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -82,6 +83,10 @@ interface CotizacionHistorial {
   tipo_renta: string | null;
   otros_concepto: string | null;
   otros_monto: number | null;
+  motivo_aceptacion?: string | null;
+  motivo_rechazo?: string | null;
+  ultimo_acercamiento_fecha?: string | null;
+  ultimo_acercamiento_nota?: string | null;
 }
 
 interface VendedorOption {
@@ -147,6 +152,13 @@ export default function Cotizaciones() {
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
   const [selectedCotizacion, setSelectedCotizacion] = useState<CotizacionHistorial | null>(null);
   const [acceptLoading, setAcceptLoading] = useState(false);
+  const [motivoAceptacion, setMotivoAceptacion] = useState('');
+
+  // Reject dialog
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectingCotizacion, setRejectingCotizacion] = useState<CotizacionHistorial | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [rejectLoading, setRejectLoading] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -208,7 +220,7 @@ export default function Cotizaciones() {
     try {
       const { data, error } = await supabase
         .from('cotizaciones')
-        .select('id, folio_cotizacion, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto')
+        .select('id, folio_cotizacion, cliente_id, cliente_nombre, equipo_id, equipo_descripcion, equipo_modelo, equipo_marca, dias_renta, precio_base, entrega_recoleccion, seguro_percent, subtotal, total_con_iva, vendedor, vendedor_correo, vendedor_telefono, created_at, status, es_prospecto, contrato_id, atencion, telefono, correo, direccion, municipio, estado_ubicacion, ubicacion_gps, tipo_renta, otros_concepto, otros_monto, motivo_aceptacion, motivo_rechazo, ultimo_acercamiento_fecha, ultimo_acercamiento_nota')
         .order('created_at', { ascending: false })
         .limit(50);
       
@@ -425,7 +437,8 @@ export default function Cotizaciones() {
         .from('cotizaciones')
         .update({ 
           status: 'aceptada',
-          contrato_id: contratoData.id 
+          contrato_id: contratoData.id,
+          motivo_aceptacion: motivoAceptacion || null,
         })
         .eq('id', selectedCotizacion.id);
 
@@ -439,6 +452,7 @@ export default function Cotizaciones() {
       fetchClientes();
       setAcceptDialogOpen(false);
       setSelectedCotizacion(null);
+      setMotivoAceptacion('');
     } catch (error) {
       console.error('Error accepting cotizacion:', error);
       toast({ variant: "destructive", title: "Error", description: "No se pudo procesar la cotización" });
@@ -447,18 +461,29 @@ export default function Cotizaciones() {
     }
   };
 
-  const handleRejectCotizacion = async (cotizacion: CotizacionHistorial) => {
+  const handleRejectCotizacion = async () => {
+    if (!rejectingCotizacion) return;
+    if (!motivoRechazo.trim()) {
+      toast({ variant: "destructive", title: "Motivo requerido", description: "Indica por qué se rechaza la cotización" });
+      return;
+    }
+    setRejectLoading(true);
     try {
       await supabase
         .from('cotizaciones')
-        .update({ status: 'rechazada' })
-        .eq('id', cotizacion.id);
+        .update({ status: 'rechazada', motivo_rechazo: motivoRechazo.trim() })
+        .eq('id', rejectingCotizacion.id);
 
       toast({ title: "Cotización rechazada" });
+      setRejectDialogOpen(false);
+      setRejectingCotizacion(null);
+      setMotivoRechazo('');
       fetchHistorial();
     } catch (error) {
       console.error('Error rejecting cotizacion:', error);
       toast({ variant: "destructive", title: "Error", description: "No se pudo rechazar la cotización" });
+    } finally {
+      setRejectLoading(false);
     }
   };
 
@@ -1802,6 +1827,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                       <TableHead className="text-center">Días</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Último acercamiento</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1829,6 +1855,20 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                           {formatCurrency(cot.total_con_iva)}
                         </TableCell>
                         <TableCell>{getStatusBadge(cot.status)}</TableCell>
+                        <TableCell className="text-xs">
+                          {cot.ultimo_acercamiento_fecha ? (
+                            <div>
+                              <div>{formatDateShort(cot.ultimo_acercamiento_fecha)}</div>
+                              {cot.ultimo_acercamiento_nota && (
+                                <div className="text-muted-foreground truncate max-w-[160px]" title={cot.ultimo_acercamiento_nota}>
+                                  {cot.ultimo_acercamiento_nota}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Sin contacto</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button
@@ -1865,7 +1905,7 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                                   size="sm"
                                   variant="ghost"
                                   className="text-red-600 hover:text-red-700"
-                                  onClick={() => handleRejectCotizacion(cot)}
+                                  onClick={() => { setRejectingCotizacion(cot); setMotivoRechazo(''); setRejectDialogOpen(true); }}
                                   title="Rechazar"
                                 >
                                   <XCircle className="h-4 w-4" />
@@ -1925,6 +1965,16 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                   Horas de trabajo: <strong>{selectedCotizacion.dias_renta * 8} horas</strong>
                 </li>
               </ul>
+
+              <div className="space-y-2">
+                <Label>Motivo de aceptación (opcional)</Label>
+                <Textarea
+                  placeholder="Ej: mejor precio, disponibilidad inmediata, referido..."
+                  value={motivoAceptacion}
+                  onChange={(e) => setMotivoAceptacion(e.target.value)}
+                  rows={2}
+                />
+              </div>
             </div>
           )}
 
@@ -1934,6 +1984,47 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
             </Button>
             <Button onClick={handleAcceptCotizacion} disabled={acceptLoading} className="bg-green-600 hover:bg-green-700">
               {acceptLoading ? 'Procesando...' : 'Confirmar y Crear Contrato'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Cotización Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechazar Cotización</DialogTitle>
+            <DialogDescription>
+              Registra el motivo del rechazo para nutrir el análisis comercial.
+            </DialogDescription>
+          </DialogHeader>
+          {rejectingCotizacion && (
+            <div className="space-y-3 py-2">
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-medium">{rejectingCotizacion.cliente_nombre}</p>
+                <p>{rejectingCotizacion.equipo_descripcion}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Motivo del rechazo *</Label>
+                <Textarea
+                  placeholder="Ej: precio alto, eligió a la competencia, proyecto pospuesto..."
+                  value={motivoRechazo}
+                  onChange={(e) => setMotivoRechazo(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={rejectLoading}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleRejectCotizacion}
+              disabled={rejectLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {rejectLoading ? 'Guardando...' : 'Confirmar Rechazo'}
             </Button>
           </DialogFooter>
         </DialogContent>
