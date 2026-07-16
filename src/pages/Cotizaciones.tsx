@@ -82,6 +82,10 @@ interface CotizacionHistorial {
   tipo_renta: string | null;
   otros_concepto: string | null;
   otros_monto: number | null;
+  motivo_aceptacion?: string | null;
+  motivo_rechazo?: string | null;
+  ultimo_acercamiento_fecha?: string | null;
+  ultimo_acercamiento_nota?: string | null;
 }
 
 interface VendedorOption {
