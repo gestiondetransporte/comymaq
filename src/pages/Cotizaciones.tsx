@@ -1855,6 +1855,20 @@ Quedo a sus órdenes para cualquier aclaración o información adicional que req
                           {formatCurrency(cot.total_con_iva)}
                         </TableCell>
                         <TableCell>{getStatusBadge(cot.status)}</TableCell>
+                        <TableCell className="text-xs">
+                          {cot.ultimo_acercamiento_fecha ? (
+                            <div>
+                              <div>{formatDateShort(cot.ultimo_acercamiento_fecha)}</div>
+                              {cot.ultimo_acercamiento_nota && (
+                                <div className="text-muted-foreground truncate max-w-[160px]" title={cot.ultimo_acercamiento_nota}>
+                                  {cot.ultimo_acercamiento_nota}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Sin contacto</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button
