@@ -15,6 +15,7 @@ export const APP_MODULES: AppModule[] = [
   { key: "/inspeccion-taller", label: "Inspección Taller", category: "operaciones" },
   { key: "/mantenimiento", label: "Mantenimiento", category: "gestion" },
   { key: "/cotizaciones", label: "Cotizaciones", category: "gestion" },
+  { key: "/crm", label: "CRM Seguimiento", category: "gestion" },
   { key: "/configuracion", label: "Configuración", category: "gestion" },
   { key: "/contratos", label: "Control", category: "administracion" },
   { key: "/recolecciones", label: "Recolecciones", category: "administracion" },
