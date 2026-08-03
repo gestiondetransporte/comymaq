@@ -88,6 +88,8 @@ export type Database = {
           cliente: string
           comentarios: string | null
           comprador: string | null
+          contrato_firmado: boolean
+          contrato_firmado_url: string | null
           created_at: string
           dentro_fuera: string | null
           dias_contratado: number | null
@@ -95,6 +97,7 @@ export type Database = {
           equipo_id: string | null
           estado_ubicacion: string | null
           fecha_baja: string | null
+          fecha_firma: string | null
           fecha_inicio: string | null
           fecha_vencimiento: string | null
           folio_contrato: string
@@ -103,8 +106,12 @@ export type Database = {
           id: string
           motivo_baja: string | null
           municipio: string | null
+          notas_validacion: string | null
           numero_contrato: string | null
           obra: string | null
+          orden_compra: boolean
+          orden_compra_numero: string | null
+          orden_compra_url: string | null
           status: string | null
           suma: number | null
           ubicacion_gps: string | null
@@ -115,6 +122,8 @@ export type Database = {
           cliente: string
           comentarios?: string | null
           comprador?: string | null
+          contrato_firmado?: boolean
+          contrato_firmado_url?: string | null
           created_at?: string
           dentro_fuera?: string | null
           dias_contratado?: number | null
@@ -122,6 +131,7 @@ export type Database = {
           equipo_id?: string | null
           estado_ubicacion?: string | null
           fecha_baja?: string | null
+          fecha_firma?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato: string
@@ -130,8 +140,12 @@ export type Database = {
           id?: string
           motivo_baja?: string | null
           municipio?: string | null
+          notas_validacion?: string | null
           numero_contrato?: string | null
           obra?: string | null
+          orden_compra?: boolean
+          orden_compra_numero?: string | null
+          orden_compra_url?: string | null
           status?: string | null
           suma?: number | null
           ubicacion_gps?: string | null
@@ -142,6 +156,8 @@ export type Database = {
           cliente?: string
           comentarios?: string | null
           comprador?: string | null
+          contrato_firmado?: boolean
+          contrato_firmado_url?: string | null
           created_at?: string
           dentro_fuera?: string | null
           dias_contratado?: number | null
@@ -149,6 +165,7 @@ export type Database = {
           equipo_id?: string | null
           estado_ubicacion?: string | null
           fecha_baja?: string | null
+          fecha_firma?: string | null
           fecha_inicio?: string | null
           fecha_vencimiento?: string | null
           folio_contrato?: string
@@ -157,8 +174,12 @@ export type Database = {
           id?: string
           motivo_baja?: string | null
           municipio?: string | null
+          notas_validacion?: string | null
           numero_contrato?: string | null
           obra?: string | null
+          orden_compra?: boolean
+          orden_compra_numero?: string | null
+          orden_compra_url?: string | null
           status?: string | null
           suma?: number | null
           ubicacion_gps?: string | null
