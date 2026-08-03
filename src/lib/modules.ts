@@ -23,6 +23,7 @@ export const APP_MODULES: AppModule[] = [
   { key: "/almacenes", label: "Almacenes", category: "administracion" },
   { key: "/personal", label: "Personal", category: "administracion" },
   { key: "/equipos-log", label: "Historial Equipos", category: "administracion" },
+  { key: "/supervision", label: "Panel de Supervisión", category: "administracion" },
   { key: "/dashboard", label: "Dashboard", category: "administracion" },
   { key: "/reporte-inventario", label: "Reporte Inventario", category: "administracion" },
   { key: "/admin/usuarios", label: "Usuarios", category: "administracion" },
