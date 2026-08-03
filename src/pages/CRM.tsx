@@ -45,6 +45,43 @@ type Seguimiento = {
   created_at: string;
 };
 
+type Recordatorio = {
+  id: string;
+  cotizacion_id: string;
+  motivo: string;
+  destinatario_tipo: string;
+  destinatario_nombre: string | null;
+  destinatario_email: string | null;
+  destinatario_telefono: string | null;
+  canal: string;
+  asunto: string | null;
+  mensaje: string | null;
+  estado: string;
+  enviado_at: string | null;
+  created_at: string;
+};
+
+type RecordatoriosConfig = {
+  id: string;
+  activo: boolean;
+  dias_sin_contacto: number;
+  dias_anticipacion_accion: number;
+  notificar_vendedor: boolean;
+  notificar_cliente: boolean;
+};
+
+const soloDigitos = (t: string | null) => (t || '').replace(/\D/g, '');
+
+const waLink = (tel: string | null, msg: string | null) => {
+  const d = soloDigitos(tel);
+  const num = d.length === 10 ? `52${d}` : d;
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg || '')}`;
+};
+
+const motivoLabel = (m: string) =>
+  m === 'sin_contacto' ? 'Sin contacto' : m === 'proxima_accion' ? 'Próxima acción' : m;
+
+
 const TIPOS = ['llamada', 'whatsapp', 'correo', 'visita', 'otro'] as const;
 
 const iconoTipo = (t: string) => {
