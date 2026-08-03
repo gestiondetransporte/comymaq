@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, MessageSquare, Mail, MapPin, Clock, AlertTriangle, Plus, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Phone, MessageSquare, Mail, MapPin, Clock, AlertTriangle, Plus, RefreshCw, Bell, Send, Check } from 'lucide-react';
 
 type Cot = {
   id: string;
