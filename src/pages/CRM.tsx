@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, MessageSquare, Mail, MapPin, Clock, AlertTriangle, Plus, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Phone, MessageSquare, Mail, MapPin, Clock, AlertTriangle, Plus, RefreshCw, Bell, Send, Check } from 'lucide-react';
 
 type Cot = {
   id: string;
@@ -44,6 +45,43 @@ type Seguimiento = {
   created_at: string;
 };
 
+type Recordatorio = {
+  id: string;
+  cotizacion_id: string;
+  motivo: string;
+  destinatario_tipo: string;
+  destinatario_nombre: string | null;
+  destinatario_email: string | null;
+  destinatario_telefono: string | null;
+  canal: string;
+  asunto: string | null;
+  mensaje: string | null;
+  estado: string;
+  enviado_at: string | null;
+  created_at: string;
+};
+
+type RecordatoriosConfig = {
+  id: string;
+  activo: boolean;
+  dias_sin_contacto: number;
+  dias_anticipacion_accion: number;
+  notificar_vendedor: boolean;
+  notificar_cliente: boolean;
+};
+
+const soloDigitos = (t: string | null) => (t || '').replace(/\D/g, '');
+
+const waLink = (tel: string | null, msg: string | null) => {
+  const d = soloDigitos(tel);
+  const num = d.length === 10 ? `52${d}` : d;
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg || '')}`;
+};
+
+const motivoLabel = (m: string) =>
+  m === 'sin_contacto' ? 'Sin contacto' : m === 'proxima_accion' ? 'Próxima acción' : m;
+
+
 const TIPOS = ['llamada', 'whatsapp', 'correo', 'visita', 'otro'] as const;
 
 const iconoTipo = (t: string) => {
@@ -63,7 +101,7 @@ const diasDesde = (iso: string | null) => {
 };
 
 export default function CRM() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [cotizaciones, setCotizaciones] = useState<Cot[]>([]);
@@ -76,6 +114,9 @@ export default function CRM() {
   const [proxAccion, setProxAccion] = useState('');
   const [proxFecha, setProxFecha] = useState('');
   const [saving, setSaving] = useState(false);
+  const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
+  const [config, setConfig] = useState<RecordatoriosConfig | null>(null);
+  const [generando, setGenerando] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -90,6 +131,16 @@ export default function CRM() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
+    const { data: recs } = await supabase
+      .from('crm_recordatorios')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    const { data: cfg } = await supabase
+      .from('crm_recordatorios_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
     const grouped: Record<string, Seguimiento[]> = {};
     (segs || []).forEach((s: any) => {
       grouped[s.cotizacion_id] = grouped[s.cotizacion_id] || [];
@@ -97,10 +148,46 @@ export default function CRM() {
     });
     setCotizaciones((cots || []) as Cot[]);
     setSeguimientos(grouped);
+    setRecordatorios((recs || []) as Recordatorio[]);
+    setConfig((cfg || null) as RecordatoriosConfig | null);
     setLoading(false);
   };
 
+  const generarRecordatorios = async () => {
+    setGenerando(true);
+    const { data, error } = await supabase.functions.invoke('crm-recordatorios', { body: {} });
+    setGenerando(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      return;
+    }
+    toast({ title: 'Recordatorios actualizados', description: `${(data as any)?.creados ?? 0} nuevos recordatorios.` });
+    fetchAll();
+  };
+
+  const marcarEnviado = async (r: Recordatorio) => {
+    const { error } = await supabase
+      .from('crm_recordatorios')
+      .update({ estado: 'enviado', enviado_at: new Date().toISOString() })
+      .eq('id', r.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      return;
+    }
+    setRecordatorios(prev => prev.map(x => (x.id === r.id ? { ...x, estado: 'enviado', enviado_at: new Date().toISOString() } : x)));
+  };
+
+  const updateConfig = async (patch: Partial<RecordatoriosConfig>) => {
+    if (!config) return;
+    const next = { ...config, ...patch };
+    setConfig(next);
+    const { error } = await supabase.from('crm_recordatorios_config').update(patch).eq('id', config.id);
+    if (error) toast({ variant: 'destructive', title: 'Error', description: error.message });
+  };
+
   useEffect(() => { fetchAll(); }, []);
+
+
 
   const openDialog = (c: Cot) => {
     setSelected(c);
@@ -154,6 +241,9 @@ export default function CRM() {
   const vencidas = cotizaciones.filter(c => clasificar(c) === 'vencida');
   const nuevas = cotizaciones.filter(c => clasificar(c) === 'nueva');
   const enSeguimiento = cotizaciones.filter(c => clasificar(c) === 'seguimiento');
+  const recordatoriosPendientes = recordatorios.filter(r => r.estado === 'pendiente');
+
+
 
   const renderCotList = (list: Cot[]) => (
     <Table>
@@ -276,16 +366,156 @@ export default function CRM() {
       </div>
 
       <Tabs defaultValue="vencidas">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="vencidas">Vencidas ({vencidas.length})</TabsTrigger>
           <TabsTrigger value="nuevas">Nuevas ({nuevas.length})</TabsTrigger>
           <TabsTrigger value="seguimiento">En seguimiento ({enSeguimiento.length})</TabsTrigger>
           <TabsTrigger value="todas">Todas ({cotizaciones.length})</TabsTrigger>
+          <TabsTrigger value="recordatorios">
+            <Bell className="h-3.5 w-3.5 mr-1" /> Recordatorios ({recordatoriosPendientes.length})
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="vencidas"><Card><CardContent className="pt-4">{renderCotList(vencidas)}</CardContent></Card></TabsContent>
         <TabsContent value="nuevas"><Card><CardContent className="pt-4">{renderCotList(nuevas)}</CardContent></Card></TabsContent>
         <TabsContent value="seguimiento"><Card><CardContent className="pt-4">{renderCotList(enSeguimiento)}</CardContent></Card></TabsContent>
         <TabsContent value="todas"><Card><CardContent className="pt-4">{renderCotList(cotizaciones)}</CardContent></Card></TabsContent>
+        <TabsContent value="recordatorios" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Bell className="h-4 w-4" /> Configuración de recordatorios</CardTitle>
+              <CardDescription>
+                Se revisan automáticamente cada día a las 9:00 (hora de Monterrey) las cotizaciones pendientes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center justify-between gap-2 rounded-md border p-3">
+                <Label className="text-sm">Recordatorios activos</Label>
+                <Switch
+                  checked={!!config?.activo}
+                  disabled={!isAdmin || !config}
+                  onCheckedChange={(v) => updateConfig({ activo: v })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Días sin contacto</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  disabled={!isAdmin || !config}
+                  value={config?.dias_sin_contacto ?? 5}
+                  onChange={(e) => updateConfig({ dias_sin_contacto: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Días de anticipación (próxima acción)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  disabled={!isAdmin || !config}
+                  value={config?.dias_anticipacion_accion ?? 5}
+                  onChange={(e) => updateConfig({ dias_anticipacion_accion: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">Avisar al vendedor</Label>
+                  <Switch
+                    checked={!!config?.notificar_vendedor}
+                    disabled={!isAdmin || !config}
+                    onCheckedChange={(v) => updateConfig({ notificar_vendedor: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs">Avisar al cliente</Label>
+                  <Switch
+                    checked={!!config?.notificar_cliente}
+                    disabled={!isAdmin || !config}
+                    onCheckedChange={(v) => updateConfig({ notificar_cliente: v })}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between gap-3 flex-wrap">
+              <div>
+                <CardTitle className="text-base">Recordatorios pendientes</CardTitle>
+                <CardDescription>Envía el mensaje por WhatsApp o correo y márcalo como enviado.</CardDescription>
+              </div>
+              <Button size="sm" variant="outline" onClick={generarRecordatorios} disabled={generando}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${generando ? 'animate-spin' : ''}`} /> Revisar ahora
+              </Button>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cotización</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead>Destinatario</TableHead>
+                    <TableHead>Canal</TableHead>
+                    <TableHead className="max-w-[280px]">Mensaje</TableHead>
+                    <TableHead className="text-right">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recordatoriosPendientes.map(r => {
+                    const c = cotizaciones.find(x => x.id === r.cotizacion_id);
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-mono text-xs">
+                          {c?.folio_cotizacion || '—'}
+                          <div className="text-muted-foreground">{c?.cliente_nombre}</div>
+                        </TableCell>
+                        <TableCell><Badge variant="outline">{motivoLabel(r.motivo)}</Badge></TableCell>
+                        <TableCell>
+                          <div className="text-sm">{r.destinatario_nombre || '—'}</div>
+                          <div className="text-xs text-muted-foreground capitalize">{r.destinatario_tipo}</div>
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          <span className="inline-flex items-center gap-1 text-xs">
+                            {r.canal === 'whatsapp' ? <MessageSquare className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
+                            {r.canal}
+                          </span>
+                        </TableCell>
+                        <TableCell className="max-w-[280px] text-xs text-muted-foreground truncate" title={r.mensaje || ''}>
+                          {r.mensaje}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {r.canal === 'whatsapp' ? (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={waLink(r.destinatario_telefono, r.mensaje)} target="_blank" rel="noreferrer">
+                                <Send className="h-4 w-4 mr-1" /> WhatsApp
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={`mailto:${r.destinatario_email}?subject=${encodeURIComponent(r.asunto || '')}&body=${encodeURIComponent(r.mensaje || '')}`}>
+                                <Send className="h-4 w-4 mr-1" /> Correo
+                              </a>
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => marcarEnviado(r)}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {recordatoriosPendientes.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No hay recordatorios pendientes
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

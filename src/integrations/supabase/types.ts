@@ -382,6 +382,104 @@ export type Database = {
           },
         ]
       }
+      crm_recordatorios: {
+        Row: {
+          asunto: string | null
+          canal: string
+          cotizacion_id: string
+          created_at: string
+          destinatario_email: string | null
+          destinatario_nombre: string | null
+          destinatario_telefono: string | null
+          destinatario_tipo: string
+          dia: string
+          enviado_at: string | null
+          error: string | null
+          estado: string
+          id: string
+          mensaje: string | null
+          motivo: string
+          updated_at: string
+        }
+        Insert: {
+          asunto?: string | null
+          canal: string
+          cotizacion_id: string
+          created_at?: string
+          destinatario_email?: string | null
+          destinatario_nombre?: string | null
+          destinatario_telefono?: string | null
+          destinatario_tipo: string
+          dia?: string
+          enviado_at?: string | null
+          error?: string | null
+          estado?: string
+          id?: string
+          mensaje?: string | null
+          motivo: string
+          updated_at?: string
+        }
+        Update: {
+          asunto?: string | null
+          canal?: string
+          cotizacion_id?: string
+          created_at?: string
+          destinatario_email?: string | null
+          destinatario_nombre?: string | null
+          destinatario_telefono?: string | null
+          destinatario_tipo?: string
+          dia?: string
+          enviado_at?: string | null
+          error?: string | null
+          estado?: string
+          id?: string
+          mensaje?: string | null
+          motivo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_recordatorios_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            isOneToOne: false
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_recordatorios_config: {
+        Row: {
+          activo: boolean
+          created_at: string
+          dias_anticipacion_accion: number
+          dias_sin_contacto: number
+          id: string
+          notificar_cliente: boolean
+          notificar_vendedor: boolean
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          dias_anticipacion_accion?: number
+          dias_sin_contacto?: number
+          id?: string
+          notificar_cliente?: boolean
+          notificar_vendedor?: boolean
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          dias_anticipacion_accion?: number
+          dias_sin_contacto?: number
+          id?: string
+          notificar_cliente?: boolean
+          notificar_vendedor?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_seguimientos: {
         Row: {
           cotizacion_id: string
