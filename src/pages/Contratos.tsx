@@ -505,6 +505,16 @@ export default function Contratos() {
                             >
                               <Mail className="h-4 w-4 text-primary" />
                             </Button>
+                            {contrato.contrato_firmado_url && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Reenviar contrato firmado por WhatsApp"
+                                onClick={() => reenviarContrato(contrato)}
+                              >
+                                <Send className="h-4 w-4 text-primary" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
