@@ -23,6 +23,7 @@ import Cotizaciones from "./pages/Cotizaciones";
 import EquiposLog from "./pages/EquiposLog";
 import Recolecciones from "./pages/Recolecciones";
 import CRM from "./pages/CRM";
+import Supervision from "./pages/Supervision";
 
 import Personal from "./pages/Personal";
 import OAuthConsent from "./pages/OAuthConsent";
