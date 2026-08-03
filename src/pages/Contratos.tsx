@@ -431,6 +431,7 @@ export default function Contratos() {
                     <TableHead>Días Transcurridos</TableHead>
                     <TableHead>Días Restantes</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead>Documentación</TableHead>
                     <TableHead>Vendedor</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
