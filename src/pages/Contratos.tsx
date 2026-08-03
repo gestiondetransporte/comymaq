@@ -398,6 +398,7 @@ export default function Contratos() {
               <TabsTrigger value="activos">Activos ({conteos.activos})</TabsTrigger>
               <TabsTrigger value="vencidos">Vencidos ({conteos.vencidos})</TabsTrigger>
               <TabsTrigger value="inactivos">Inactivos ({conteos.inactivos})</TabsTrigger>
+              <TabsTrigger value="nofirmados">No firmados ({conteos.nofirmados})</TabsTrigger>
               <TabsTrigger value="baja">Baja ({conteos.baja})</TabsTrigger>
               <TabsTrigger value="todos">Histórico ({conteos.todos})</TabsTrigger>
             </TabsList>
