@@ -244,7 +244,14 @@ export default function Supervision() {
             <p className="text-2xl font-bold">{money(contratosKpis.monto)}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Sin documentación (firma / O.C.)</p>
+            <p className="text-2xl font-bold text-destructive">{contratosKpis.sinDocs}</p>
+          </CardContent>
+        </Card>
       </div>
+
 
       <Card>
         <CardHeader>
