@@ -218,13 +218,14 @@ export default function Contratos() {
   }, [contratos, searchQuery, statusFilter, tab]);
 
   const conteos = useMemo(() => {
-    const acc = { activos: 0, vencidos: 0, inactivos: 0, baja: 0, todos: contratos.length };
+    const acc = { activos: 0, vencidos: 0, inactivos: 0, baja: 0, nofirmados: 0, todos: contratos.length };
     contratos.forEach((c) => {
       const st = calculateContratoStatus(c);
       if (st === 'activo' || st === 'por vencer') acc.activos++;
       else if (st === 'vencido') acc.vencidos++;
       else if (st === 'cancelado') acc.inactivos++;
       else if (st === 'baja') acc.baja++;
+      if (docPendiente(c)) acc.nofirmados++;
     });
     return acc;
   }, [contratos]);
