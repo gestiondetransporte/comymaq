@@ -301,6 +301,19 @@ export default function Contratos() {
     window.location.href = `mailto:${c.correo_electronico}?subject=${asunto}&body=${cuerpo}`;
   };
 
+  const reenviarContrato = (contrato: Contrato) => {
+    const contacto = getContacto(contrato.cliente);
+    const tel = normalizarTelefono(contacto?.celular || contacto?.telefono);
+    const texto =
+      `Hola ${contacto?.persona_contacto || contrato.comprador || contrato.cliente}, le compartimos nuevamente el contrato ` +
+      `${contrato.numero_contrato || contrato.folio_contrato} de COMYMAQ: ${contrato.contrato_firmado_url}`;
+    if (!tel) {
+      toast({ variant: "destructive", title: "Sin teléfono", description: "El cliente no tiene teléfono registrado." });
+      return;
+    }
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
   const exportarExcel = () => {
     const rows = filteredContratos.map((c) => ({
       "Número Contrato": c.numero_contrato || c.folio_contrato,
