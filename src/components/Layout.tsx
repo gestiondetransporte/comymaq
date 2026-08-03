@@ -50,6 +50,7 @@ export default function Layout({ children }: LayoutProps) {
     gestion: [
       { path: "/mantenimiento", label: "Mantenimiento", icon: Wrench },
       { path: "/cotizaciones", label: "Cotizaciones", icon: Calculator },
+      { path: "/crm", label: "CRM Seguimiento", icon: Users },
       { path: "/configuracion", label: "Configuración", icon: Settings },
     ],
     administracion: [
@@ -59,6 +60,7 @@ export default function Layout({ children }: LayoutProps) {
       { path: "/almacenes", label: "Almacenes", icon: Building2 },
       { path: "/personal", label: "Personal", icon: Users },
       { path: "/equipos-log", label: "Historial Equipos", icon: History },
+      { path: "/supervision", label: "Panel de Supervisión", icon: FileBarChart },
       { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { path: "/reporte-inventario", label: "Reporte Inventario", icon: FileBarChart },
       { path: "/admin/usuarios", label: "Usuarios", icon: Shield },
