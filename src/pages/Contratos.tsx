@@ -465,6 +465,22 @@ export default function Contratos() {
                         </TableCell>
                         <TableCell>{diasBadge(diasRestantes, contrato)}</TableCell>
                         <TableCell>{getStatusBadge(contrato)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant="outline"
+                              className={contrato.contrato_firmado ? "border-emerald-600 text-emerald-700" : "border-destructive text-destructive"}
+                            >
+                              {contrato.contrato_firmado ? "Firmado" : "Sin firma"}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={contrato.orden_compra ? "border-emerald-600 text-emerald-700" : "border-amber-500 text-amber-600"}
+                            >
+                              {contrato.orden_compra ? `O/C ${contrato.orden_compra_numero || "OK"}` : "Sin O/C"}
+                            </Badge>
+                          </div>
+                        </TableCell>
                         <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
