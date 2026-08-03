@@ -410,6 +410,13 @@ export function ContratoDetailsDialog({
             direccion: formData.direccion || null,
             municipio: formData.municipio || null,
             estado_ubicacion: formData.estado_ubicacion || null,
+            contrato_firmado: !!formData.contrato_firmado,
+            fecha_firma: formData.fecha_firma || null,
+            contrato_firmado_url: formData.contrato_firmado_url || null,
+            orden_compra: !!formData.orden_compra,
+            orden_compra_numero: formData.orden_compra_numero || null,
+            orden_compra_url: formData.orden_compra_url || null,
+            notas_validacion: formData.notas_validacion || null,
           })
           .eq("id", contrato.id);
 
