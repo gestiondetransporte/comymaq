@@ -128,9 +128,10 @@ export default function Supervision() {
   }, [cotsPeriodo]);
 
   const contratosKpis = useMemo(() => {
-    let activos = 0, porVencer = 0, vencidos = 0, monto = 0;
+    let activos = 0, porVencer = 0, vencidos = 0, monto = 0, sinDocs = 0;
     contratos.forEach((c) => {
       if (c.motivo_baja || c.status === "cancelado") return;
+      if (!c.contrato_firmado || !c.orden_compra) sinDocs++;
       const d = c.fecha_vencimiento ? diffDaysMty(c.fecha_vencimiento, nowMty()) : null;
       if (d === null) { activos++; monto += c.suma || 0; return; }
       if (d < 0) vencidos++;
@@ -140,7 +141,7 @@ export default function Supervision() {
         if (d <= 7) porVencer++;
       }
     });
-    return { activos, porVencer, vencidos, monto };
+    return { activos, porVencer, vencidos, monto, sinDocs };
   }, [contratos]);
 
   const exportar = () => {
