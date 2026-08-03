@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -73,6 +74,13 @@ interface Contrato {
   estado_ubicacion: string | null;
   folio_factura: string | null;
   motivo_baja: string | null;
+  contrato_firmado?: boolean | null;
+  fecha_firma?: string | null;
+  contrato_firmado_url?: string | null;
+  orden_compra?: boolean | null;
+  orden_compra_numero?: string | null;
+  orden_compra_url?: string | null;
+  notas_validacion?: string | null;
 }
 
 interface ContratoDetailsDialogProps {
@@ -349,6 +357,13 @@ export function ContratoDetailsDialog({
             direccion: formData.direccion || null,
             municipio: formData.municipio || null,
             estado_ubicacion: formData.estado_ubicacion || null,
+            contrato_firmado: !!formData.contrato_firmado,
+            fecha_firma: formData.fecha_firma || null,
+            contrato_firmado_url: formData.contrato_firmado_url || null,
+            orden_compra: !!formData.orden_compra,
+            orden_compra_numero: formData.orden_compra_numero || null,
+            orden_compra_url: formData.orden_compra_url || null,
+            notas_validacion: formData.notas_validacion || null,
           });
 
         if (error) throw error;
@@ -395,6 +410,13 @@ export function ContratoDetailsDialog({
             direccion: formData.direccion || null,
             municipio: formData.municipio || null,
             estado_ubicacion: formData.estado_ubicacion || null,
+            contrato_firmado: !!formData.contrato_firmado,
+            fecha_firma: formData.fecha_firma || null,
+            contrato_firmado_url: formData.contrato_firmado_url || null,
+            orden_compra: !!formData.orden_compra,
+            orden_compra_numero: formData.orden_compra_numero || null,
+            orden_compra_url: formData.orden_compra_url || null,
+            notas_validacion: formData.notas_validacion || null,
           })
           .eq("id", contrato.id);
 
@@ -928,6 +950,81 @@ export function ContratoDetailsDialog({
               }
               placeholder="Ej: FAC-2026-001"
             />
+          </div>
+
+          <div className="rounded-md border p-4 space-y-4">
+            <p className="text-sm font-semibold">Validación documental</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="contrato_firmado"
+                  checked={!!formData.contrato_firmado}
+                  onCheckedChange={(v) =>
+                    setFormData({ ...formData, contrato_firmado: !!v })
+                  }
+                />
+                <Label htmlFor="contrato_firmado">Contrato firmado por el cliente</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fecha_firma">Fecha de firma</Label>
+                <Input
+                  id="fecha_firma"
+                  type="date"
+                  value={formData.fecha_firma || ""}
+                  onChange={(e) => setFormData({ ...formData, fecha_firma: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="contrato_firmado_url">Liga del contrato firmado (PDF)</Label>
+                <Input
+                  id="contrato_firmado_url"
+                  value={formData.contrato_firmado_url || ""}
+                  onChange={(e) => setFormData({ ...formData, contrato_firmado_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="orden_compra"
+                  checked={!!formData.orden_compra}
+                  onCheckedChange={(v) => setFormData({ ...formData, orden_compra: !!v })}
+                />
+                <Label htmlFor="orden_compra">Orden de compra recibida</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="orden_compra_numero">Número de O/C</Label>
+                <Input
+                  id="orden_compra_numero"
+                  value={formData.orden_compra_numero || ""}
+                  onChange={(e) => setFormData({ ...formData, orden_compra_numero: e.target.value })}
+                  placeholder="Ej: OC-8842"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="orden_compra_url">Liga de la orden de compra</Label>
+                <Input
+                  id="orden_compra_url"
+                  value={formData.orden_compra_url || ""}
+                  onChange={(e) => setFormData({ ...formData, orden_compra_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="notas_validacion">Notas de validación</Label>
+                <Textarea
+                  id="notas_validacion"
+                  rows={2}
+                  value={formData.notas_validacion || ""}
+                  onChange={(e) => setFormData({ ...formData, notas_validacion: e.target.value })}
+                  placeholder="Respuesta del cliente, pendientes, etc."
+                />
+              </div>
+            </div>
+            {formData.status === "activo" && (!formData.contrato_firmado || !formData.orden_compra) && (
+              <p className="text-sm text-destructive">
+                Contrato activo sin documentación completa: aparecerá en la pestaña "No firmados".
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

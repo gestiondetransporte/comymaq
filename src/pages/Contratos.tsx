@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, FileText, Eye, Plus, Trash2, MessageSquare, Mail, Download } from "lucide-react";
+import { Search, FileText, Eye, Plus, Trash2, MessageSquare, Mail, Download, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +50,13 @@ interface Contrato {
   folio_factura: string | null;
   motivo_baja: string | null;
   fecha_baja?: string | null;
+  contrato_firmado?: boolean | null;
+  fecha_firma?: string | null;
+  contrato_firmado_url?: string | null;
+  orden_compra?: boolean | null;
+  orden_compra_numero?: string | null;
+  orden_compra_url?: string | null;
+  notas_validacion?: string | null;
   equipos?: {
     numero_equipo: string;
     descripcion: string;
@@ -165,6 +172,12 @@ export default function Contratos() {
 
   const getContacto = (cliente: string) => contactos[(cliente || "").trim().toLowerCase()];
 
+  const docPendiente = (c: Contrato) => {
+    const st = calculateContratoStatus(c);
+    if (st === 'baja' || st === 'cancelado') return false;
+    return !c.contrato_firmado || !c.orden_compra;
+  };
+
   const enTab = (contrato: Contrato) => {
     const st = calculateContratoStatus(contrato);
     switch (tab) {
@@ -172,6 +185,8 @@ export default function Contratos() {
         return st === 'activo' || st === 'por vencer';
       case "vencidos":
         return st === 'vencido';
+      case "nofirmados":
+        return docPendiente(contrato);
       case "inactivos":
         return st === 'cancelado';
       case "baja":
@@ -203,13 +218,14 @@ export default function Contratos() {
   }, [contratos, searchQuery, statusFilter, tab]);
 
   const conteos = useMemo(() => {
-    const acc = { activos: 0, vencidos: 0, inactivos: 0, baja: 0, todos: contratos.length };
+    const acc = { activos: 0, vencidos: 0, inactivos: 0, baja: 0, nofirmados: 0, todos: contratos.length };
     contratos.forEach((c) => {
       const st = calculateContratoStatus(c);
       if (st === 'activo' || st === 'por vencer') acc.activos++;
       else if (st === 'vencido') acc.vencidos++;
       else if (st === 'cancelado') acc.inactivos++;
       else if (st === 'baja') acc.baja++;
+      if (docPendiente(c)) acc.nofirmados++;
     });
     return acc;
   }, [contratos]);
@@ -285,6 +301,19 @@ export default function Contratos() {
     window.location.href = `mailto:${c.correo_electronico}?subject=${asunto}&body=${cuerpo}`;
   };
 
+  const reenviarContrato = (contrato: Contrato) => {
+    const contacto = getContacto(contrato.cliente);
+    const tel = normalizarTelefono(contacto?.celular || contacto?.telefono);
+    const texto =
+      `Hola ${contacto?.persona_contacto || contrato.comprador || contrato.cliente}, le compartimos nuevamente el contrato ` +
+      `${contrato.numero_contrato || contrato.folio_contrato} de COMYMAQ: ${contrato.contrato_firmado_url}`;
+    if (!tel) {
+      toast({ variant: "destructive", title: "Sin teléfono", description: "El cliente no tiene teléfono registrado." });
+      return;
+    }
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
   const exportarExcel = () => {
     const rows = filteredContratos.map((c) => ({
       "Número Contrato": c.numero_contrato || c.folio_contrato,
@@ -304,6 +333,11 @@ export default function Contratos() {
       "Estado": calculateContratoStatus(c),
       "Vendedor": c.vendedor || "",
       "Folio Factura": c.folio_factura || "",
+      "Contrato Firmado": c.contrato_firmado ? "Sí" : "No",
+      "Fecha Firma": formatDate(c.fecha_firma || null),
+      "Orden de Compra": c.orden_compra ? "Sí" : "No",
+      "Número O/C": c.orden_compra_numero || "",
+      "Notas Validación": c.notas_validacion || "",
       "Motivo Baja": c.motivo_baja || "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -382,6 +416,7 @@ export default function Contratos() {
               <TabsTrigger value="activos">Activos ({conteos.activos})</TabsTrigger>
               <TabsTrigger value="vencidos">Vencidos ({conteos.vencidos})</TabsTrigger>
               <TabsTrigger value="inactivos">Inactivos ({conteos.inactivos})</TabsTrigger>
+              <TabsTrigger value="nofirmados">No firmados ({conteos.nofirmados})</TabsTrigger>
               <TabsTrigger value="baja">Baja ({conteos.baja})</TabsTrigger>
               <TabsTrigger value="todos">Histórico ({conteos.todos})</TabsTrigger>
             </TabsList>
@@ -414,6 +449,7 @@ export default function Contratos() {
                     <TableHead>Días Transcurridos</TableHead>
                     <TableHead>Días Restantes</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead>Documentación</TableHead>
                     <TableHead>Vendedor</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
@@ -447,6 +483,22 @@ export default function Contratos() {
                         </TableCell>
                         <TableCell>{diasBadge(diasRestantes, contrato)}</TableCell>
                         <TableCell>{getStatusBadge(contrato)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant="outline"
+                              className={contrato.contrato_firmado ? "border-emerald-600 text-emerald-700" : "border-destructive text-destructive"}
+                            >
+                              {contrato.contrato_firmado ? "Firmado" : "Sin firma"}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={contrato.orden_compra ? "border-emerald-600 text-emerald-700" : "border-amber-500 text-amber-600"}
+                            >
+                              {contrato.orden_compra ? `O/C ${contrato.orden_compra_numero || "OK"}` : "Sin O/C"}
+                            </Badge>
+                          </div>
+                        </TableCell>
                         <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">
@@ -466,6 +518,16 @@ export default function Contratos() {
                             >
                               <Mail className="h-4 w-4 text-primary" />
                             </Button>
+                            {contrato.contrato_firmado_url && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Reenviar contrato firmado por WhatsApp"
+                                onClick={() => reenviarContrato(contrato)}
+                              >
+                                <Send className="h-4 w-4 text-primary" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">

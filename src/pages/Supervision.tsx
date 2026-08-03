@@ -33,6 +33,8 @@ type Contrato = {
   fecha_vencimiento: string | null;
   status: string | null;
   motivo_baja: string | null;
+  contrato_firmado?: boolean | null;
+  orden_compra?: boolean | null;
 };
 
 const money = (n: number) =>
@@ -59,7 +61,7 @@ export default function Supervision() {
           .order("created_at", { ascending: false }),
         supabase
           .from("contratos")
-          .select("id, numero_contrato, folio_contrato, cliente, vendedor, suma, fecha_vencimiento, status, motivo_baja"),
+          .select("id, numero_contrato, folio_contrato, cliente, vendedor, suma, fecha_vencimiento, status, motivo_baja, contrato_firmado, orden_compra"),
       ]);
       if (cots.error) throw cots.error;
       if (cons.error) throw cons.error;
@@ -126,9 +128,10 @@ export default function Supervision() {
   }, [cotsPeriodo]);
 
   const contratosKpis = useMemo(() => {
-    let activos = 0, porVencer = 0, vencidos = 0, monto = 0;
+    let activos = 0, porVencer = 0, vencidos = 0, monto = 0, sinDocs = 0;
     contratos.forEach((c) => {
       if (c.motivo_baja || c.status === "cancelado") return;
+      if (!c.contrato_firmado || !c.orden_compra) sinDocs++;
       const d = c.fecha_vencimiento ? diffDaysMty(c.fecha_vencimiento, nowMty()) : null;
       if (d === null) { activos++; monto += c.suma || 0; return; }
       if (d < 0) vencidos++;
@@ -138,7 +141,7 @@ export default function Supervision() {
         if (d <= 7) porVencer++;
       }
     });
-    return { activos, porVencer, vencidos, monto };
+    return { activos, porVencer, vencidos, monto, sinDocs };
   }, [contratos]);
 
   const exportar = () => {
@@ -241,7 +244,14 @@ export default function Supervision() {
             <p className="text-2xl font-bold">{money(contratosKpis.monto)}</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Sin documentación (firma / O.C.)</p>
+            <p className="text-2xl font-bold text-destructive">{contratosKpis.sinDocs}</p>
+          </CardContent>
+        </Card>
       </div>
+
 
       <Card>
         <CardHeader>
