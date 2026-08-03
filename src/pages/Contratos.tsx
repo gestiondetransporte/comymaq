@@ -172,6 +172,12 @@ export default function Contratos() {
 
   const getContacto = (cliente: string) => contactos[(cliente || "").trim().toLowerCase()];
 
+  const docPendiente = (c: Contrato) => {
+    const st = calculateContratoStatus(c);
+    if (st === 'baja' || st === 'cancelado') return false;
+    return !c.contrato_firmado || !c.orden_compra;
+  };
+
   const enTab = (contrato: Contrato) => {
     const st = calculateContratoStatus(contrato);
     switch (tab) {
@@ -179,6 +185,8 @@ export default function Contratos() {
         return st === 'activo' || st === 'por vencer';
       case "vencidos":
         return st === 'vencido';
+      case "nofirmados":
+        return docPendiente(contrato);
       case "inactivos":
         return st === 'cancelado';
       case "baja":
