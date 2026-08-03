@@ -241,6 +241,9 @@ export default function CRM() {
   const vencidas = cotizaciones.filter(c => clasificar(c) === 'vencida');
   const nuevas = cotizaciones.filter(c => clasificar(c) === 'nueva');
   const enSeguimiento = cotizaciones.filter(c => clasificar(c) === 'seguimiento');
+  const recordatoriosPendientes = recordatorios.filter(r => r.estado === 'pendiente');
+
+
 
   const renderCotList = (list: Cot[]) => (
     <Table>
