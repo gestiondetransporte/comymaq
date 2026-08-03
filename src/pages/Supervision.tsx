@@ -61,7 +61,7 @@ export default function Supervision() {
           .order("created_at", { ascending: false }),
         supabase
           .from("contratos")
-          .select("id, numero_contrato, folio_contrato, cliente, vendedor, suma, fecha_vencimiento, status, motivo_baja"),
+          .select("id, numero_contrato, folio_contrato, cliente, vendedor, suma, fecha_vencimiento, status, motivo_baja, contrato_firmado, orden_compra"),
       ]);
       if (cots.error) throw cots.error;
       if (cons.error) throw cons.error;
