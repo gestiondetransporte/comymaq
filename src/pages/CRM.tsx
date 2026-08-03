@@ -101,7 +101,7 @@ const diasDesde = (iso: string | null) => {
 };
 
 export default function CRM() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [cotizaciones, setCotizaciones] = useState<Cot[]>([]);
@@ -114,6 +114,9 @@ export default function CRM() {
   const [proxAccion, setProxAccion] = useState('');
   const [proxFecha, setProxFecha] = useState('');
   const [saving, setSaving] = useState(false);
+  const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
+  const [config, setConfig] = useState<RecordatoriosConfig | null>(null);
+  const [generando, setGenerando] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -128,6 +131,16 @@ export default function CRM() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
+    const { data: recs } = await supabase
+      .from('crm_recordatorios')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    const { data: cfg } = await supabase
+      .from('crm_recordatorios_config')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
     const grouped: Record<string, Seguimiento[]> = {};
     (segs || []).forEach((s: any) => {
       grouped[s.cotizacion_id] = grouped[s.cotizacion_id] || [];
@@ -135,10 +148,46 @@ export default function CRM() {
     });
     setCotizaciones((cots || []) as Cot[]);
     setSeguimientos(grouped);
+    setRecordatorios((recs || []) as Recordatorio[]);
+    setConfig((cfg || null) as RecordatoriosConfig | null);
     setLoading(false);
   };
 
+  const generarRecordatorios = async () => {
+    setGenerando(true);
+    const { data, error } = await supabase.functions.invoke('crm-recordatorios', { body: {} });
+    setGenerando(false);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      return;
+    }
+    toast({ title: 'Recordatorios actualizados', description: `${(data as any)?.creados ?? 0} nuevos recordatorios.` });
+    fetchAll();
+  };
+
+  const marcarEnviado = async (r: Recordatorio) => {
+    const { error } = await supabase
+      .from('crm_recordatorios')
+      .update({ estado: 'enviado', enviado_at: new Date().toISOString() })
+      .eq('id', r.id);
+    if (error) {
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
+      return;
+    }
+    setRecordatorios(prev => prev.map(x => (x.id === r.id ? { ...x, estado: 'enviado', enviado_at: new Date().toISOString() } : x)));
+  };
+
+  const updateConfig = async (patch: Partial<RecordatoriosConfig>) => {
+    if (!config) return;
+    const next = { ...config, ...patch };
+    setConfig(next);
+    const { error } = await supabase.from('crm_recordatorios_config').update(patch).eq('id', config.id);
+    if (error) toast({ variant: 'destructive', title: 'Error', description: error.message });
+  };
+
   useEffect(() => { fetchAll(); }, []);
+
+
 
   const openDialog = (c: Cot) => {
     setSelected(c);
