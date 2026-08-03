@@ -50,6 +50,13 @@ interface Contrato {
   folio_factura: string | null;
   motivo_baja: string | null;
   fecha_baja?: string | null;
+  contrato_firmado?: boolean | null;
+  fecha_firma?: string | null;
+  contrato_firmado_url?: string | null;
+  orden_compra?: boolean | null;
+  orden_compra_numero?: string | null;
+  orden_compra_url?: string | null;
+  notas_validacion?: string | null;
   equipos?: {
     numero_equipo: string;
     descripcion: string;
