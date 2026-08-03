@@ -320,6 +320,11 @@ export default function Contratos() {
       "Estado": calculateContratoStatus(c),
       "Vendedor": c.vendedor || "",
       "Folio Factura": c.folio_factura || "",
+      "Contrato Firmado": c.contrato_firmado ? "Sí" : "No",
+      "Fecha Firma": formatDate(c.fecha_firma || null),
+      "Orden de Compra": c.orden_compra ? "Sí" : "No",
+      "Número O/C": c.orden_compra_numero || "",
+      "Notas Validación": c.notas_validacion || "",
       "Motivo Baja": c.motivo_baja || "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
