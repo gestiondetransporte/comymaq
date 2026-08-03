@@ -175,6 +175,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/supervision"
+        element={
+          <AdminRoute>
+            <Supervision />
+          </AdminRoute>
+        }
+      />
+      <Route
         path="/equipos-log"
         element={
           <AdminRoute>
