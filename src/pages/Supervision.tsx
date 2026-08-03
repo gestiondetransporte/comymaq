@@ -33,6 +33,8 @@ type Contrato = {
   fecha_vencimiento: string | null;
   status: string | null;
   motivo_baja: string | null;
+  contrato_firmado?: boolean | null;
+  orden_compra?: boolean | null;
 };
 
 const money = (n: number) =>
