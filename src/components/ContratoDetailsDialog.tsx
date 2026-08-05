@@ -38,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ContratoRenovacionDialog } from "./ContratoRenovacionDialog";
+import { DocumentoUpload } from "./DocumentoUpload";
 import { ContratoBajaDialog } from "./ContratoBajaDialog";
 import { ContratoRenovacionesHistorial } from "./ContratoRenovacionesHistorial";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
