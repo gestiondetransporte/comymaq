@@ -38,6 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ContratoRenovacionDialog } from "./ContratoRenovacionDialog";
+import { DocumentoUpload } from "./DocumentoUpload";
 import { ContratoBajaDialog } from "./ContratoBajaDialog";
 import { ContratoRenovacionesHistorial } from "./ContratoRenovacionesHistorial";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -975,12 +976,12 @@ export function ContratoDetailsDialog({
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="contrato_firmado_url">Liga del contrato firmado (PDF)</Label>
-                <Input
-                  id="contrato_firmado_url"
+                <Label>Contrato firmado (PDF o imagen)</Label>
+                <DocumentoUpload
                   value={formData.contrato_firmado_url || ""}
-                  onChange={(e) => setFormData({ ...formData, contrato_firmado_url: e.target.value })}
-                  placeholder="https://..."
+                  onChange={(v) => setFormData({ ...formData, contrato_firmado_url: v })}
+                  folder="firmados"
+                  contratoFolio={formData.folio_contrato || contrato?.id || "contrato"}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -1001,14 +1002,15 @@ export function ContratoDetailsDialog({
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="orden_compra_url">Liga de la orden de compra</Label>
-                <Input
-                  id="orden_compra_url"
+                <Label>Orden de compra (PDF o imagen)</Label>
+                <DocumentoUpload
                   value={formData.orden_compra_url || ""}
-                  onChange={(e) => setFormData({ ...formData, orden_compra_url: e.target.value })}
-                  placeholder="https://..."
+                  onChange={(v) => setFormData({ ...formData, orden_compra_url: v })}
+                  folder="ordenes-compra"
+                  contratoFolio={formData.folio_contrato || contrato?.id || "contrato"}
                 />
               </div>
+
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="notas_validacion">Notas de validación</Label>
                 <Textarea
