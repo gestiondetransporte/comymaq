@@ -301,18 +301,30 @@ export default function Contratos() {
     window.location.href = `mailto:${c.correo_electronico}?subject=${asunto}&body=${cuerpo}`;
   };
 
-  const reenviarContrato = (contrato: Contrato) => {
+  const reenviarContrato = async (contrato: Contrato) => {
     const contacto = getContacto(contrato.cliente);
     const tel = normalizarTelefono(contacto?.celular || contacto?.telefono);
-    const texto =
-      `Hola ${contacto?.persona_contacto || contrato.comprador || contrato.cliente}, le compartimos nuevamente el contrato ` +
-      `${contrato.numero_contrato || contrato.folio_contrato} de COMYMAQ: ${contrato.contrato_firmado_url}`;
     if (!tel) {
       toast({ variant: "destructive", title: "Sin teléfono", description: "El cliente no tiene teléfono registrado." });
       return;
     }
+    let liga = contrato.contrato_firmado_url || "";
+    if (liga && !liga.startsWith("http")) {
+      const { data, error } = await supabase.storage
+        .from("contratos")
+        .createSignedUrl(liga, 60 * 60 * 24 * 7);
+      if (error || !data) {
+        toast({ variant: "destructive", title: "Error", description: "No se pudo generar la liga del contrato." });
+        return;
+      }
+      liga = data.signedUrl;
+    }
+    const texto =
+      `Hola ${contacto?.persona_contacto || contrato.comprador || contrato.cliente}, le compartimos nuevamente el contrato ` +
+      `${contrato.numero_contrato || contrato.folio_contrato} de COMYMAQ: ${liga}`;
     window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
   };
+
 
   const exportarExcel = () => {
     const rows = filteredContratos.map((c) => ({
