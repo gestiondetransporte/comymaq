@@ -891,6 +891,9 @@ export default function Cotizaciones() {
                 {/* Equipo - Buscador por modelo o descripción */}
                 <div className="space-y-3">
                   <Label>Buscar Equipo por Modelo o Descripción *</Label>
+                  <p className="text-xs text-muted-foreground">
+                    El equipo seleccionado es solo una referencia informativa de lo que se cotiza; no se aparta ni cambia su estatus.
+                  </p>
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
