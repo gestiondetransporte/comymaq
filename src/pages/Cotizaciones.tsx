@@ -560,261 +560,72 @@ export default function Cotizaciones() {
   const regeneratePDF = async (cot: CotizacionHistorial) => {
     setLoading(true);
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const marginBottom = 20;
-      
-      // Use stored cotizacion data
-      const tipoRentaLabel = cot.tipo_renta === 'diario' ? 'DIARIO' : cot.tipo_renta === 'semanal' ? 'SEMANAL' : 'MENSUAL';
-      const diasCot = cot.dias_renta;
       const precioBaseCot = cot.precio_base || 0;
+      const diasCot = cot.dias_renta;
       const entregaCot = cot.entrega_recoleccion || 4000;
       const seguroPercentCot = cot.seguro_percent || 4;
-      
-      // Calculate prices
+
       const precioMensualCot = precioBaseCot;
       const precioSemanalCot = precioMensualCot / 3;
       const precioDiarioCot = precioSemanalCot / 4;
-      
-      const getPrecioRentaCot = () => {
+
+      const precioTotalCot = (() => {
         switch (cot.tipo_renta) {
           case 'diario': return precioDiarioCot * diasCot;
           case 'semanal': return precioSemanalCot * Math.ceil(diasCot / 7);
           case 'mensual': return precioMensualCot * Math.ceil(diasCot / 30);
           default: return precioBaseCot * diasCot;
         }
-      };
-      
-      const precioTotalCot = getPrecioRentaCot();
+      })();
+
       const seguroCot = (precioTotalCot * seguroPercentCot) / 100;
       const otrosM = cot.otros_monto || 0;
       const subtotalCot = precioTotalCot + entregaCot + seguroCot + otrosM;
-      
-      // Load logo
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve) => {
-        logoImg.onload = () => resolve();
-        logoImg.onerror = () => resolve();
-        logoImg.src = '/comymaq-cotizacion-logo.png';
+
+      const fotoUrl = cot.equipo_modelo
+        ? modelosConfig.find(m => m.modelo.toUpperCase() === cot.equipo_modelo?.toUpperCase())?.foto_url || null
+        : null;
+
+      const doc = await buildCotizacionPdf({
+        folio: cot.folio_cotizacion,
+        fecha: new Date(cot.created_at),
+        clienteNombre: cot.cliente_nombre,
+        atencion: cot.atencion,
+        telefono: cot.telefono,
+        correo: cot.correo,
+        equipoDescripcion: cot.equipo_descripcion,
+        equipoMarca: cot.equipo_marca,
+        equipoModelo: cot.equipo_modelo,
+        equipoFotoUrl: fotoUrl,
+        tipoRenta: cot.tipo_renta,
+        dias: diasCot,
+        precioMensual: precioMensualCot,
+        precioSemanal: precioSemanalCot,
+        precioDiario: precioDiarioCot,
+        precioTotal: precioTotalCot,
+        entregaRecoleccion: entregaCot,
+        seguroPercent: seguroPercentCot,
+        seguro: seguroCot,
+        otrosConcepto: cot.otros_concepto,
+        otrosMonto: otrosM,
+        subtotal: subtotalCot,
+        vendedor: cot.vendedor,
+        vendedorCorreo: cot.vendedor_correo,
+        vendedorTelefono: cot.vendedor_telefono,
       });
-
-      if (logoImg.complete && logoImg.naturalWidth > 0) {
-        const logoMaxWidth = 70;
-        const logoMaxHeight = 25;
-        const aspectRatio = logoImg.naturalWidth / logoImg.naturalHeight;
-        let logoWidth = logoMaxWidth;
-        let logoHeight = logoWidth / aspectRatio;
-        if (logoHeight > logoMaxHeight) {
-          logoHeight = logoMaxHeight;
-          logoWidth = logoHeight * aspectRatio;
-        }
-        doc.addImage(logoImg, 'PNG', 14, 8, logoWidth, logoHeight);
-      }
-
-      // Date
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(80, 80, 80);
-      const cotDate = new Date(cot.created_at).toLocaleDateString('es-MX', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-      });
-      const ubicacionText = 'Escobedo Nuevo León, ' + cotDate;
-      doc.text(ubicacionText, pageWidth - 14 - doc.getTextWidth(ubicacionText), 38);
-
-      // Folio
-      if (cot.folio_cotizacion) {
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
-        const folioText = `Folio: ${cot.folio_cotizacion}`;
-        doc.text(folioText, pageWidth - 14 - doc.getTextWidth(folioText), 44);
-      }
-
-      // Client data
-      const clientDataStartY = 48;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`EMPRESA: ${cot.cliente_nombre.toUpperCase()}`, 14, clientDataStartY);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`ATENCIÓN: ${(cot.atencion || '').toUpperCase()}`, 14, clientDataStartY + 8);
-      doc.text(`TELÉFONO: ${cot.telefono || ''}`, 14, clientDataStartY + 16);
-      doc.text(`correo: ${cot.correo || ''}`, 14, clientDataStartY + 24);
-
-      // Intro text
-      doc.setFontSize(10);
-      const introTextWidth = pageWidth - 28;
-      const introText = `Buen día:\n\nEspero que se encuentre bien. Por medio de la presente, me permito presentar la cotización formal correspondiente a la renta del equipo en cuestión.\n\nCabe señalar que los precios considerados en esta propuesta están calculados con base en una jornada de trabajo de 8 horas diarias, 50 horas semanales y un total de 200 horas mensuales.\n\nAsimismo, reiteramos nuestro compromiso de brindar a su personal una capacitación formal y completa sobre el uso y operación del equipo cotizado. De igual manera, garantizamos que el proceso de entrega y capacitación no se dará por concluido hasta que su personal se encuentre plenamente satisfecho y capacitado respecto al equipo.\n\nQuedo a sus órdenes para cualquier aclaración o información adicional que requiera.`;
-      const splitIntro = doc.splitTextToSize(introText, introTextWidth);
-      const introStartY = 95;
-      doc.text(splitIntro, 14, introStartY);
-      const introLineHeight = 5;
-      const introEndY = introStartY + (splitIntro.length * introLineHeight);
-      let yPos = introEndY + 10;
-
-      // Equipment section
-      doc.setFillColor(0, 100, 150);
-      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('EQUIPO COTIZADO EN ESTA OPORTUNIDAD', 16, yPos + 6);
-      yPos += 15;
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      doc.text(cot.equipo_descripcion.toUpperCase(), 14, yPos);
-      yPos += 8;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      if (cot.equipo_marca) {
-        doc.text(`MARCA: ${cot.equipo_marca.toUpperCase()}`, 14, yPos);
-        yPos += 6;
-      }
-      if (cot.equipo_modelo) {
-        doc.text(`MODELO: ${cot.equipo_modelo.toUpperCase()}`, 14, yPos);
-        yPos += 6;
-      }
-      yPos += 10;
-
-      // Reference prices table
-      doc.setFillColor(0, 100, 150);
-      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PRECIOS DE RENTA DE REFERENCIA', 16, yPos + 6);
-      yPos += 12;
-      autoTable(doc, {
-        startY: yPos,
-        head: [['PERIODO', 'PRECIO']],
-        body: [
-          ['MENSUAL (200 hrs)', formatCurrency(precioMensualCot)],
-          ['SEMANAL (50 hrs)', formatCurrency(precioSemanalCot)],
-          ['DIARIO (8 hrs)', formatCurrency(precioDiarioCot)],
-        ],
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [0, 100, 150] },
-        columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 50, halign: 'right' } },
-        margin: { left: 14 },
-      });
-      yPos = (doc as any).lastAutoTable.finalY + 10;
-
-      // Cost table
-      const costTableEstimatedHeight = 80;
-      if (yPos + costTableEstimatedHeight > pageHeight - marginBottom) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.setFillColor(0, 100, 150);
-      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`COTIZACIÓN - RENTA ${tipoRentaLabel} (${diasCot} días)`, 16, yPos + 6);
-      yPos += 12;
-      
-      const pdfBody: string[][] = [
-        [`RENTA ${tipoRentaLabel} (${diasCot} días)`, formatCurrency(precioTotalCot)],
-        ['ENTREGA Y RECOLECCIÓN', formatCurrency(entregaCot)],
-        [`SEGURO DEL EQUIPO (${seguroPercentCot}% DEL COSTO DE LA RENTA)`, formatCurrency(seguroCot)],
-      ];
-      if (otrosM > 0 && cot.otros_concepto) {
-        pdfBody.push([cot.otros_concepto.toUpperCase(), formatCurrency(otrosM)]);
-      } else if (otrosM > 0) {
-        pdfBody.push(['OTROS SERVICIOS', formatCurrency(otrosM)]);
-      }
-      pdfBody.push(['SUBTOTAL (SIN IVA)', formatCurrency(subtotalCot)]);
-      pdfBody.push(['TOTAL (CON IVA 16%)', formatCurrency(subtotalCot * 1.16)]);
-
-      autoTable(doc, {
-        startY: yPos,
-        head: [],
-        body: pdfBody,
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 3 },
-        columnStyles: { 0: { cellWidth: 110 }, 1: { cellWidth: 50, halign: 'right' } },
-        margin: { left: 14 },
-        tableWidth: 160,
-      });
-      yPos = (doc as any).lastAutoTable.finalY + 10;
-
-      // Remaining sections
-      const remainingContentHeight = 85;
-      if (yPos + remainingContentHeight > pageHeight - marginBottom) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.setFillColor(0, 100, 150);
-      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('EN EL PRECIO INCLUYE', 16, yPos + 6);
-      yPos += 12;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.text('• ATENCIÓN A FALLAS EN GENERAL', 14, yPos);
-      yPos += 6;
-      doc.text('• ATENCIÓN ESPECIAL A DESHORAS', 14, yPos);
-      yPos += 12;
-
-      if (yPos + 50 > pageHeight - marginBottom) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.setFillColor(0, 100, 150);
-      doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.text('CONDICIONES DE PAGO', 16, yPos + 6);
-      yPos += 12;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      doc.text('CONTADO', 14, yPos);
-      yPos += 6;
-      doc.text('VIGENCIA DE LA COTIZACIÓN: 15 DÍAS', 14, yPos);
-      yPos += 6;
-      doc.setFont('helvetica', 'bold');
-      doc.text('LOS PRECIOS NO INCLUYEN I.V.A.', 14, yPos);
-      yPos += 6;
-      doc.setFont('helvetica', 'normal');
-      const tiempoEntrega = 'TIEMPO DE ENTREGA: 24 HORAS DESPUÉS DE RECIBIR SU ORDEN DE COMPRA.';
-      const splitTiempo = doc.splitTextToSize(tiempoEntrega, pageWidth - 28);
-      doc.text(splitTiempo, 14, yPos);
-      yPos += splitTiempo.length * 5 + 8;
-
-      if (yPos + 35 > pageHeight - marginBottom) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.text('Sin más por el momento, esperando vernos favorecidos por su pedido.', 14, yPos);
-      yPos += 10;
-      doc.setFont('helvetica', 'bold');
-      doc.text((cot.vendedor || '').toUpperCase(), 14, yPos);
-      yPos += 5;
-      doc.setFont('helvetica', 'normal');
-      doc.text(`correo: ${cot.vendedor_correo || ''}`, 14, yPos);
-      yPos += 5;
-      doc.text(`Oficina: 01 81 89 01 07 12`, 14, yPos);
-      yPos += 5;
-      doc.text(`Cel.: ${cot.vendedor_telefono || ''}`, 14, yPos);
 
       const fileName = `Cotizacion_${cot.cliente_nombre.replace(/\s+/g, '_')}_${new Date(cot.created_at).toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
       toast({ title: "PDF regenerado", description: `Cotización descargada como ${fileName}` });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error regenerating PDF:', error);
       toast({ title: "Error", description: "No se pudo regenerar el PDF", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleClienteChange = (clienteId: string) => {
     setSelectedClienteId(clienteId);
