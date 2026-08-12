@@ -924,10 +924,7 @@ export default function Cotizaciones() {
                             .map((equipo) => {
                               const isDisponible = equipo.estado === 'disponible';
                               return (
-                                <TableRow 
-                                  key={equipo.id}
-                                  className={!isDisponible ? 'opacity-60' : ''}
-                                >
+                                <TableRow key={equipo.id}>
                                   <TableCell className="font-mono text-sm">{equipo.numero_equipo}</TableCell>
                                   <TableCell className="font-medium">{equipo.modelo || 'N/A'}</TableCell>
                                   <TableCell className="text-sm">{equipo.descripcion.substring(0, 35)}...</TableCell>
@@ -937,21 +934,18 @@ export default function Cotizaciones() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    {isDisponible ? (
-                                      <Button 
-                                        size="sm" 
-                                        variant={selectedEquipoId === equipo.id ? "default" : "outline"}
-                                        onClick={() => handleEquipoChange(equipo.id)}
-                                      >
-                                        {selectedEquipoId === equipo.id ? 'Seleccionado' : 'Seleccionar'}
-                                      </Button>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">No disponible</span>
-                                    )}
+                                    <Button 
+                                      size="sm" 
+                                      variant={selectedEquipoId === equipo.id ? "default" : "outline"}
+                                      onClick={() => handleEquipoChange(equipo.id)}
+                                    >
+                                      {selectedEquipoId === equipo.id ? 'Seleccionado' : 'Seleccionar'}
+                                    </Button>
                                   </TableCell>
                                 </TableRow>
                               );
                             })}
+
                           {todosEquipos.filter(e => 
                             e.modelo?.toUpperCase().includes(modeloSearch) ||
                             e.descripcion?.toUpperCase().includes(modeloSearch) ||
