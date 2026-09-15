@@ -11,6 +11,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMty } from "@/lib/timezone";
+import { Button } from "@/components/ui/button";
+import { generarMovimientoPdf } from "@/lib/movimientoPdf";
+import { FileDown } from "lucide-react";
 
 import { 
   Calendar, 
@@ -202,6 +205,18 @@ export function EntradaSalidaDetailsDialog({
           <DialogDescription>
             {movimiento && `Registrado el ${formatDate(movimiento.fecha)}`}
           </DialogDescription>
+          {movimientoId && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generarMovimientoPdf(movimientoId).catch(() => {})}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
         {loading ? (

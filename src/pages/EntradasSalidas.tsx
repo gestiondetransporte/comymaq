@@ -12,7 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/hooks/useOffline";
 import { savePendingSync } from "@/lib/offlineStorage";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowRightLeft, Trash2 } from "lucide-react";
+import { Search, ArrowRightLeft, Trash2, FileDown } from "lucide-react";
+import { generarMovimientoPdf } from "@/lib/movimientoPdf";
 import { formatMty } from "@/lib/timezone";
 
 import { Switch } from "@/components/ui/switch";
@@ -1241,6 +1242,23 @@ export default function EntradasSalidas() {
                             }}
                           >
                             Ver Detalle
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await generarMovimientoPdf(movimiento.id);
+                              } catch {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Error",
+                                  description: "No se pudo generar el PDF",
+                                });
+                              }
+                            }}
+                          >
+                            <FileDown className="h-4 w-4" />
                           </Button>
                           {isAdmin && (
                             <Button
