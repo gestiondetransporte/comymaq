@@ -202,6 +202,18 @@ export function EntradaSalidaDetailsDialog({
           <DialogDescription>
             {movimiento && `Registrado el ${formatDate(movimiento.fecha)}`}
           </DialogDescription>
+          {movimientoId && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generarMovimientoPdf(movimientoId).catch(() => {})}
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
         {loading ? (
