@@ -146,6 +146,40 @@ export default function Contratos() {
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const { isAdmin } = useAuth();
+  const [visibleColumns, setVisibleColumns] = useState<ControlColumnKey[]>(() => {
+    if (typeof window === "undefined") return DEFAULT_CONTROL_COLUMNS;
+    try {
+      const saved = window.localStorage.getItem(CONTROL_COLUMNS_STORAGE_KEY);
+      if (!saved) return DEFAULT_CONTROL_COLUMNS;
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return DEFAULT_CONTROL_COLUMNS;
+      const valid = parsed.filter(isControlColumnKey);
+      return valid.length > 0 ? valid : DEFAULT_CONTROL_COLUMNS;
+    } catch {
+      return DEFAULT_CONTROL_COLUMNS;
+    }
+  });
+
+  const visibleColumnSet = useMemo(() => new Set(visibleColumns), [visibleColumns]);
+
+  const updateVisibleColumns = (next: ControlColumnKey[]) => {
+    const normalized = next.filter(isControlColumnKey);
+    const safeNext = normalized.length > 0 ? normalized : ["numero"];
+    setVisibleColumns(safeNext);
+    window.localStorage.setItem(CONTROL_COLUMNS_STORAGE_KEY, JSON.stringify(safeNext));
+  };
+
+  const toggleColumn = (column: ControlColumnKey, checked: boolean) => {
+    if (checked) {
+      updateVisibleColumns(CONTROL_COLUMN_KEYS.filter((key) => key === column || visibleColumnSet.has(key)));
+      return;
+    }
+    updateVisibleColumns(visibleColumns.filter((key) => key !== column));
+  };
+
+  const resetColumns = () => updateVisibleColumns(DEFAULT_CONTROL_COLUMNS);
+
+  const isColumnVisible = (column: ControlColumnKey) => visibleColumnSet.has(column);
 
   const handleDeleteContrato = async (contrato: Contrato) => {
     try {
@@ -453,6 +487,36 @@ export default function Contratos() {
                 <Download className="h-4 w-4" />
                 Exportar Excel
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filtro
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                      {visibleColumns.length}
+                    </Badge>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 max-h-[70vh] overflow-y-auto">
+                  <DropdownMenuLabel>Columnas visibles</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {CONTROL_COLUMNS.map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.key}
+                      checked={isColumnVisible(column.key)}
+                      onCheckedChange={(checked) => toggleColumn(column.key, Boolean(checked))}
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      {column.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={resetColumns}>
+                    <RotateCcw className="h-4 w-4" />
+                    Restablecer columnas
+                  </Button>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -502,24 +566,36 @@ export default function Contratos() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            <div className="rounded-md border overflow-hidden">
+              <Table className="table-fixed text-[11px] leading-tight">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Número Contrato</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Equipo</TableHead>
-                    <TableHead>Obra</TableHead>
-                    <TableHead>Suma</TableHead>
-                    <TableHead>Fecha Inicio</TableHead>
-                    <TableHead>Vencimiento</TableHead>
-                    <TableHead>Días Transcurridos</TableHead>
-                    <TableHead>Días Restantes</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Documentación</TableHead>
-                    <TableHead>Vendedor</TableHead>
-                    <TableHead>Contacto</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    {isColumnVisible("numero") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Número Contrato</TableHead>}
+                    {isColumnVisible("folio") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Folio</TableHead>}
+                    {isColumnVisible("cliente") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Cliente</TableHead>}
+                    {isColumnVisible("equipo") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Equipo</TableHead>}
+                    {isColumnVisible("obra") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Obra</TableHead>}
+                    {isColumnVisible("suma") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Suma</TableHead>}
+                    {isColumnVisible("fecha_inicio") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Fecha Inicio</TableHead>}
+                    {isColumnVisible("vencimiento") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Vencimiento</TableHead>}
+                    {isColumnVisible("dias_transcurridos") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Días Transcurridos</TableHead>}
+                    {isColumnVisible("dias_restantes") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Días Restantes</TableHead>}
+                    {isColumnVisible("estado") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Estado</TableHead>}
+                    {isColumnVisible("documentacion") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Documentación</TableHead>}
+                    {isColumnVisible("vendedor") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Vendedor</TableHead>}
+                    {isColumnVisible("contacto") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Contacto</TableHead>}
+                    {isColumnVisible("comprador") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Comprador</TableHead>}
+                    {isColumnVisible("dentro_fuera") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Dentro/Fuera</TableHead>}
+                    {isColumnVisible("horas") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Horas</TableHead>}
+                    {isColumnVisible("factura") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Folio Factura</TableHead>}
+                    {isColumnVisible("direccion") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Dirección</TableHead>}
+                    {isColumnVisible("municipio") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Municipio</TableHead>}
+                    {isColumnVisible("estado_ubicacion") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Estado Ubicación</TableHead>}
+                    {isColumnVisible("gps") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Ubicación GPS</TableHead>}
+                    {isColumnVisible("motivo_baja") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Motivo Baja</TableHead>}
+                    {isColumnVisible("fecha_baja") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Fecha Baja</TableHead>}
+                    {isColumnVisible("comentarios") && <TableHead className="h-9 px-2 py-2 whitespace-normal break-words">Comentarios</TableHead>}
+                    <TableHead className="h-9 w-[92px] px-2 py-2 text-right whitespace-normal break-words">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -529,28 +605,29 @@ export default function Contratos() {
 
                     return (
                       <TableRow key={contrato.id}>
-                        <TableCell className="font-medium">{contrato.numero_contrato || contrato.folio_contrato}</TableCell>
-                        <TableCell>{contrato.cliente}</TableCell>
-                        <TableCell>
+                        {isColumnVisible("numero") && <TableCell className="px-2 py-2 align-top font-medium whitespace-normal break-words">{contrato.numero_contrato || contrato.folio_contrato}</TableCell>}
+                        {isColumnVisible("folio") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.folio_contrato}</TableCell>}
+                        {isColumnVisible("cliente") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.cliente}</TableCell>}
+                        {isColumnVisible("equipo") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">
                           {contrato.equipos ? (
-                            <div className="text-sm">
+                            <div>
                               <div className="font-medium">{contrato.equipos.numero_equipo}</div>
                               <div className="text-muted-foreground">{contrato.equipos.descripcion}</div>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">Sin asignar</span>
                           )}
-                        </TableCell>
-                        <TableCell>{contrato.obra || 'N/A'}</TableCell>
-                        <TableCell>{formatCurrency(contrato.suma)}</TableCell>
-                        <TableCell>{formatDate(contrato.fecha_inicio)}</TableCell>
-                        <TableCell>{formatDate(contrato.fecha_vencimiento)}</TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isColumnVisible("obra") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.obra || 'N/A'}</TableCell>}
+                        {isColumnVisible("suma") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{formatCurrency(contrato.suma)}</TableCell>}
+                        {isColumnVisible("fecha_inicio") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{formatDate(contrato.fecha_inicio)}</TableCell>}
+                        {isColumnVisible("vencimiento") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{formatDate(contrato.fecha_vencimiento)}</TableCell>}
+                        {isColumnVisible("dias_transcurridos") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">
                           <Badge variant="outline">{diasTranscurridos} días</Badge>
-                        </TableCell>
-                        <TableCell>{diasBadge(diasRestantes, contrato)}</TableCell>
-                        <TableCell>{getStatusBadge(contrato)}</TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isColumnVisible("dias_restantes") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{diasBadge(diasRestantes, contrato)}</TableCell>}
+                        {isColumnVisible("estado") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{getStatusBadge(contrato)}</TableCell>}
+                        {isColumnVisible("documentacion") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">
                           <div className="flex flex-col gap-1">
                             <Badge
                               variant="outline"
@@ -565,13 +642,14 @@ export default function Contratos() {
                               {contrato.orden_compra ? `O/C ${contrato.orden_compra_numero || "OK"}` : "Sin O/C"}
                             </Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>{contrato.vendedor || 'N/A'}</TableCell>
-                        <TableCell>
+                        </TableCell>}
+                        {isColumnVisible("vendedor") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.vendedor || 'N/A'}</TableCell>}
+                        {isColumnVisible("contacto") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-7 w-7"
                               title="Enviar WhatsApp de seguimiento"
                               onClick={() => contactarWhatsApp(contrato)}
                             >
@@ -580,6 +658,7 @@ export default function Contratos() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-7 w-7"
                               title="Enviar correo de seguimiento"
                               onClick={() => contactarCorreo(contrato)}
                             >
@@ -589,6 +668,7 @@ export default function Contratos() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-7 w-7"
                                 title="Reenviar contrato firmado por WhatsApp"
                                 onClick={() => reenviarContrato(contrato)}
                               >
@@ -596,21 +676,33 @@ export default function Contratos() {
                               </Button>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </TableCell>}
+                        {isColumnVisible("comprador") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.comprador || 'N/A'}</TableCell>}
+                        {isColumnVisible("dentro_fuera") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.dentro_fuera || 'N/A'}</TableCell>}
+                        {isColumnVisible("horas") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.horas_trabajo ?? 'N/A'}</TableCell>}
+                        {isColumnVisible("factura") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.folio_factura || 'N/A'}</TableCell>}
+                        {isColumnVisible("direccion") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.direccion || 'N/A'}</TableCell>}
+                        {isColumnVisible("municipio") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.municipio || 'N/A'}</TableCell>}
+                        {isColumnVisible("estado_ubicacion") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.estado_ubicacion || 'N/A'}</TableCell>}
+                        {isColumnVisible("gps") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.ubicacion_gps || 'N/A'}</TableCell>}
+                        {isColumnVisible("motivo_baja") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.motivo_baja || 'N/A'}</TableCell>}
+                        {isColumnVisible("fecha_baja") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{formatDate(contrato.fecha_baja || null)}</TableCell>}
+                        {isColumnVisible("comentarios") && <TableCell className="px-2 py-2 align-top whitespace-normal break-words">{contrato.comentarios || 'N/A'}</TableCell>}
+                        <TableCell className="px-2 py-2 align-top text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Ver detalles"
                               onClick={() => handleOpenDialog(contrato)}
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalles
+                              <Eye className="h-4 w-4" />
                             </Button>
                             {isAdmin && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Eliminar contrato">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
