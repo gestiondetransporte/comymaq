@@ -164,7 +164,7 @@ export default function Contratos() {
 
   const updateVisibleColumns = (next: ControlColumnKey[]) => {
     const normalized = next.filter(isControlColumnKey);
-    const safeNext = normalized.length > 0 ? normalized : ["numero"];
+    const safeNext: ControlColumnKey[] = normalized.length > 0 ? normalized : ["numero"];
     setVisibleColumns(safeNext);
     window.localStorage.setItem(CONTROL_COLUMNS_STORAGE_KEY, JSON.stringify(safeNext));
   };
