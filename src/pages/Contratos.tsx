@@ -5,11 +5,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, FileText, Eye, Plus, Trash2, MessageSquare, Mail, Download, Send } from "lucide-react";
+import { Search, FileText, Eye, Plus, Trash2, MessageSquare, Mail, Download, Send, Filter, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatMty, nowMty, diffDaysMty } from "@/lib/timezone";
 import { ContratoDetailsDialog } from "@/components/ContratoDetailsDialog";
 import { ExcelContratosImport } from "@/components/ExcelContratosImport";
@@ -70,6 +78,53 @@ interface ClienteContacto {
   correo_electronico: string | null;
   persona_contacto: string | null;
 }
+
+const CONTROL_COLUMNS = [
+  { key: "numero", label: "Número Contrato" },
+  { key: "folio", label: "Folio" },
+  { key: "cliente", label: "Cliente" },
+  { key: "equipo", label: "Equipo" },
+  { key: "obra", label: "Obra" },
+  { key: "suma", label: "Suma" },
+  { key: "fecha_inicio", label: "Fecha Inicio" },
+  { key: "vencimiento", label: "Vencimiento" },
+  { key: "dias_transcurridos", label: "Días Transcurridos" },
+  { key: "dias_restantes", label: "Días Restantes" },
+  { key: "estado", label: "Estado" },
+  { key: "documentacion", label: "Documentación" },
+  { key: "vendedor", label: "Vendedor" },
+  { key: "contacto", label: "Contacto" },
+  { key: "comprador", label: "Comprador" },
+  { key: "dentro_fuera", label: "Dentro/Fuera" },
+  { key: "horas", label: "Horas" },
+  { key: "factura", label: "Folio Factura" },
+  { key: "direccion", label: "Dirección" },
+  { key: "municipio", label: "Municipio" },
+  { key: "estado_ubicacion", label: "Estado Ubicación" },
+  { key: "gps", label: "Ubicación GPS" },
+  { key: "motivo_baja", label: "Motivo Baja" },
+  { key: "fecha_baja", label: "Fecha Baja" },
+  { key: "comentarios", label: "Comentarios" },
+] as const;
+
+type ControlColumnKey = (typeof CONTROL_COLUMNS)[number]["key"];
+
+const CONTROL_COLUMN_KEYS = CONTROL_COLUMNS.map((column) => column.key);
+const DEFAULT_CONTROL_COLUMNS: ControlColumnKey[] = [
+  "numero",
+  "cliente",
+  "equipo",
+  "obra",
+  "vencimiento",
+  "dias_restantes",
+  "estado",
+  "documentacion",
+  "contacto",
+];
+const CONTROL_COLUMNS_STORAGE_KEY = "control-visible-columns";
+
+const isControlColumnKey = (key: unknown): key is ControlColumnKey =>
+  typeof key === "string" && CONTROL_COLUMN_KEYS.includes(key as ControlColumnKey);
 
 const normalizarTelefono = (tel: string | null | undefined) => {
   if (!tel) return null;
