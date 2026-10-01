@@ -1080,7 +1080,7 @@ export function ContratoDetailsDialog({
                   )}
 
                   {/* Dar de Baja button - only when active */}
-                  {contrato.status === 'activo' && (
+                  {!['cancelado','baja'].includes((contrato.status || '').toLowerCase()) && !contrato.motivo_baja && (
                     <Button
                       type="button"
                       variant="outline"
